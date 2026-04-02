@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- CENTER-TOP GLOBAL NOTIFICATION SYSTEM -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="notificationWrapper" class="notification-container">
+        {% for category, message in messages %}
+          {% set theme = '#28a745' if category == 'success' else '#dc3545' if category == 'danger' else '#ffc107' %}
+          {% set icon = 'fa-print' if category == 'success' else 'fa-circle-xmark' if category == 'danger' else 'fa-triangle-exclamation' %}
+          {% set title = 'Ticket Printed' if category == 'success' else 'Error' if category == 'danger' else 'Printer Notice' %}
+
+          <div class="kiosk-alert shadow-lg slide-down" style="border-left: 10px solid {{ theme }};">
+              <div class="alert-icon" style="background: {{ theme }}15; color: {{ theme }};">
+                  <i class="fa-solid {{ icon }} fa-2x"></i>
+              </div>
+              <div class="alert-content">
+                  <h4 class="alert-title text-dark mb-0">{{ title }}</h4>
+                  <p class="alert-text text-muted mb-0">{{ message }}</p>
+              </div>
+              <div class="alert-progress" style="background: {{ theme }};"></div>
+          </div>
+        {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- Main Wrapper: 100vh flex container to prevent scrolling -->
+<div class="container-fluid d-flex flex-column justify-content-center py-2 page-fade-in" style="height: 100vh; max-height: 100vh; overflow: hidden;">
+
+    <div class="row justify-content-center">
+        <div class="col-xl-11">
+
+            <!-- KIOSK HEADER: Responsive Scaling -->
+            <div class="d-flex justify-content-between align-items-end mb-3">
+                <div>
+                    <h1 class="fw-900 text-dark mb-0" style="font-size: clamp(2rem, 5vw, 4.5rem); letter-spacing: -2px;">Touch to Start</h1>
+                    <p class="text-primary fw-bold text-uppercase tracking-widest mb-0" style="font-size: clamp(0.7rem, 1.2vw, 1.1rem);">Queuing Booking and Management System</p>
+                </div>
+                <div class="text-end d-none d-md-block">
+                    <!-- Complete Date & Time -->
+                    <h2 class="fw-900 mb-0 text-dark lh-1" id="kioskClock" style="font-size: clamp(3rem, 7vw, 6rem); letter-spacing: -2px;">00:00</h2>
+                    <p class="text-primary fw-900 mb-0 text-uppercase tracking-widest" id="kioskDate" style="font-size: clamp(0.8rem, 1.5vw, 1.4rem);">Monday, January 1, 2024</p>
+                </div>
+            </div>
+
+            <div class="row g-4 align-items-stretch">
+                <!-- LEFT COLUMN: APPOINTMENT PATH -->
+                <div class="col-lg-6">
+                    <div class="bento-card p-4 p-xl-5 border-0 shadow-deep h-100 bg-white position-relative overflow-hidden">
+                        <i class="fa-solid fa-calendar-check position-absolute kiosk-bg-icon" style="bottom: -20px; right: -20px;"></i>
+
+                        <div class="position-relative d-flex flex-column h-100" style="z-index: 1;">
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="bg-primary rounded-4 p-3 shadow-sm me-3">
+                                    <i class="fa-solid fa-qrcode fa-2x text-white"></i>
+                                </div>
+                                <div>
+                                    <h2 class="fw-900 mb-0 h3">Appointment</h2>
+                                    <p class="text-muted mb-0 small">I have a digital Booking ID</p>
+                                </div>
+                            </div>
+
+                            <form action="/check-in" method="POST" id="checkInForm" onsubmit="return handleKioskSubmit(this)" class="flex-grow-1 d-flex flex-column justify-content-center">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="mb-4">
+                                    <div class="bg-light p-3 rounded-5 border-2 border-dashed text-center">
+                                        <label class="form-label small fw-900 text-secondary text-uppercase tracking-widest mb-2">Input Reference Number</label>
+                                        <input type="number" name="booking_id"
+                                               class="form-control form-control-lg border-0 text-center fw-900 kiosk-input-field"
+                                               placeholder="0000" id="kioskInput"
+                                               style="font-size: clamp(3rem, 8vw, 5.5rem); background: transparent; color: #002d72; height: auto; letter-spacing: 10px;"
+                                               required autofocus autocomplete="off">
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-kiosk-premium w-100 py-3 py-xl-4 shadow-lg">
+                                    <i class="fa-solid fa-ticket-simple me-3"></i> PRINT TICKET
+                                </button>
+                            </form>
+
+                            <div class="mt-4 d-flex align-items-center justify-content-center text-success">
+                                <div class="pulse-dot me-3"></div>
+                                <span class="fw-900 small tracking-widest">PRIORITY QUEUE ACTIVE</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: WALK-IN PATH -->
+                <div class="col-lg-6">
+                    <div class="bento-card p-4 p-xl-5 border-0 shadow-deep h-100 bg-white d-flex flex-column justify-content-between position-relative overflow-hidden">
+                        <i class="fa-solid fa-user-plus position-absolute kiosk-bg-icon" style="bottom: -20px; right: -20px;"></i>
+
+                        <div class="position-relative" style="z-index: 1;">
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="bg-secondary rounded-4 p-3 shadow-sm me-3">
+                                    <i class="fa-solid fa-person-walking fa-2x text-white"></i>
+                                </div>
+                                <div>
+                                    <h2 class="fw-900 mb-0 h3">Walk-In</h2>
+                                    <p class="text-muted mb-0 small">No appointment / Guest</p>
+                                </div>
+                            </div>
+
+                            <p class="text-muted fs-5 mb-4">Please tap below for a general queue ticket.</p>
+
+                            <form action="/walk-in" method="POST" onsubmit="return handleKioskSubmit(this)">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-kiosk-outline-premium w-100 py-4 py-xl-5 mb-4" id="walkInBtn">
+                                    <span class="fs-2 fw-900">GET GUEST TICKET</span>
+                                </button>
+                            </form>
+
+                            <div class="qr-container p-3 rounded-5 d-flex align-items-center bg-light border-0 shadow-sm mb-2">
+                                <div class="position-relative me-3">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}register"
+                                         alt="Register QR" class="img-fluid rounded-3 shadow-sm" style="width: 70px; height: 70px;">
+                                    <div class="scan-line"></div>
+                                </div>
+                                <div>
+                                    <h6 class="fw-900 mb-1 text-dark">Register via Phone</h6>
+                                    <p class="small text-muted mb-0" style="font-size: 0.75rem;">Scan to skip the line instantly.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status area at bottom -->
+                        <div class="text-center position-relative" style="z-index: 1;">
+                            <div class="bento-card border-0 p-2 mb-2" style="background: #f0f7ff; border-left: 8px solid var(--bdo-blue) !important;">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fa-solid fa-clock-rotate-left text-primary icon-spin-slow me-2"></i>
+                                    <p class="mb-0 fw-900 text-dark small">Wait Time: Indeterminate</p>
+                                </div>
+                            </div>
+                            <a href="/register" class="btn-link-animated text-primary fw-900 text-decoration-none small">
+                                MANUAL REGISTRATION <i class="fa-solid fa-arrow-right-long ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { --bdo-blue: #0033a0; --bdo-yellow: #ffc72c; }
+
+    /* Lock viewport to prevent scrolling */
+    body { overflow: hidden; height: 100vh; background-color: #f4f7fa; }
+
+    .fw-900 { font-weight: 900; }
+    .tracking-widest { letter-spacing: 0.15em; }
+    .shadow-deep { box-shadow: 0 20px 50px rgba(0,0,0,0.06); }
+    .kiosk-bg-icon { font-size: 15rem; color: #f0f4f8; z-index: 0; pointer-events: none; }
+
+    .btn-kiosk-premium {
+        background: var(--bdo-blue); color: white; border: none; border-radius: 20px;
+        font-weight: 900; transition: all 0.2s ease;
+    }
+
+    .btn-kiosk-outline-premium {
+        background: transparent; border: 3px solid var(--bdo-blue); border-radius: 20px;
+        color: var(--bdo-blue); transition: all 0.3s ease;
+    }
+
+    /* Notification logic */
+    .notification-container {
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+        z-index: 10000; width: 90%; max-width: 450px; pointer-events: none;
+    }
+
+    @keyframes fa-spin { to { transform: rotate(360deg); } }
+    .icon-spin-slow { animation: fa-spin 8s infinite linear; }
+    .pulse-dot { height: 12px; width: 12px; background: #28a745; border-radius: 50%; animation: pulse-green 2s infinite; }
+
+    @keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(40, 167, 69, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    }
+
+    /* Remove browser arrows from number input */
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+</style>
+
+<script>
+    // Live Kiosk Clock with COMPLETE DATE
+    function updateKioskClock() {
+        const now = new Date();
+        document.getElementById('kioskClock').textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        document.getElementById('kioskDate').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    }
+    setInterval(updateKioskClock, 1000);
+    updateKioskClock();
+
+    // Auto-focus input for physical/onscreen keyboard
+    window.onload = function() {
+        const input = document.getElementById('kioskInput');
+        if(input) {
+            input.focus();
+            document.body.addEventListener('click', () => input.focus());
+        }
+    };
+
+    function handleKioskSubmit(form) {
+        const btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> PRINTING...';
+        return true;
+    }
+</script>
+{% endblock %}

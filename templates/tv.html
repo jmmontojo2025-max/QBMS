@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coolaire | Lobby Display</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bdo-blue: #002d72;
+            --bdo-yellow: #ffc107;
+            --glass-white: rgba(255, 255, 255, 0.95);
+            --radius-bento: 3vh;
+        }
+
+        /* Prevent all scrolling and force full screen */
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at top left, #fdfdfd 0%, #e8edf3 100%);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            padding: 2vh;
+            box-sizing: border-box;
+        }
+
+        /* 1. LAYOUT GRID - Autosizes based on Viewport */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: 1.7fr 1.3fr;
+            grid-template-rows: 12vh 1fr;
+            gap: 2vh;
+            flex: 1; /* Takes all available space between header and ticker */
+            min-height: 0; /* Important for grid overflow */
+        }
+
+        .header-box {
+            grid-column: span 2;
+            background: white;
+            border-radius: var(--radius-bento);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 3vw;
+            box-shadow: 0 1vh 3vh rgba(0, 45, 114, 0.04);
+        }
+
+        .header-box img { height: 6.5vh; width: auto; object-fit: contain; }
+        #time { font-size: 5vh; font-weight: 800; color: var(--bdo-blue); line-height: 1; font-variant-numeric: tabular-nums; }
+        #date { font-size: 1.8vh; font-weight: 700; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.1vh; text-align: right; }
+
+        /* NOW SERVING SECTION */
+        .card-now-serving {
+            background: white;
+            border-radius: var(--radius-bento);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4vh 10vh rgba(0, 45, 114, 0.08);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .radar-pulse {
+            position: absolute;
+            width: 70vh; height: 70vh;
+            background: radial-gradient(circle, rgba(0, 45, 114, 0.05) 0%, transparent 70%);
+            animation: pulse-radar 4s infinite ease-out;
+        }
+
+        .label-now-serving {
+            font-size: 3vh; font-weight: 900; color: #94a3b8;
+            letter-spacing: 1vw; text-transform: uppercase; margin-bottom: -1vh; z-index: 1;
+        }
+
+        .ticket-number {
+            /* Clamped sizing to ensure it doesn't overflow container width */
+            font-size: min(35vh, 25vw);
+            font-weight: 900; line-height: 0.8;
+            margin: 2vh 0; color: var(--bdo-blue);
+            letter-spacing: -1vh; z-index: 1;
+            text-shadow: 0 2vh 4vh rgba(0, 45, 114, 0.1);
+        }
+
+        .counter-badge {
+            background: var(--bdo-blue); color: white;
+            padding: 1.5vh 6vw; border-radius: 2vh;
+            font-size: 4vh; font-weight: 900;
+            box-shadow: 0 1.5vh 3vh rgba(0, 45, 114, 0.2); z-index: 1;
+        }
+
+        /* UP NEXT SECTION */
+        .card-up-next {
+            background: var(--glass-white);
+            backdrop-filter: blur(2vh);
+            border-radius: var(--radius-bento);
+            padding: 3vh;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .sidebar-title {
+            font-size: 3vh; font-weight: 900; color: var(--bdo-blue);
+            margin-bottom: 2vh; display: flex; align-items: center; gap: 1.5vh;
+            border-bottom: 0.3vh solid var(--bdo-yellow); padding-bottom: 1vh;
+        }
+
+        #waiting-list {
+            display: grid;
+            grid-template-columns: 1fr; /* Default to 1 col for better readability */
+            gap: 1.2vh;
+            overflow-y: hidden; /* No scrollbars on TV */
+            flex: 1;
+        }
+
+        .waiting-item {
+            background: white;
+            padding: 1.8vh 2.5vh;
+            border-radius: 2vh;
+            font-size: 4.5vh; /* Large for distant viewing */
+            font-weight: 800;
+            display: flex; align-items: center; justify-content: space-between;
+            color: var(--bdo-blue);
+            box-shadow: 0 0.5vh 1.5vh rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.02);
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        .pos-num { font-size: 1.8vh; color: #94a3b8; font-weight: 900; opacity: 0.5; }
+
+        /* TICKER SYSTEM */
+        .ticker-container {
+            height: 6vh;
+            min-height: 6vh;
+            background: var(--bdo-yellow);
+            color: var(--bdo-blue);
+            margin-top: 2vh;
+            border-radius: 1.5vh;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            box-shadow: 0 1vh 2vh rgba(0, 0, 0, 0.05);
+        }
+
+        .ticker-content {
+            white-space: nowrap;
+            display: inline-block;
+            animation: ticker 60s linear infinite;
+            font-size: 2.2vh;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .ticker-content strong { color: #d40000; margin: 0 2vw; }
+
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        @keyframes pulse-radar { 0% { transform: scale(0.8); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
+
+        /* RECALL ANIMATION */
+        .blink { animation: recall-blink 0.8s ease-in-out 6; }
+        @keyframes recall-blink {
+            0%, 100% { transform: scale(1); background: white; }
+            50% { transform: scale(1.05); background: #fff9e6; color: #ff0000; }
+        }
+
+        /* Overlay for audio sync */
+        #audioOverlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: var(--bdo-blue); z-index: 99999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;
+        }
+
+        /* Handle Portrait TVs */
+        @media (orientation: portrait) {
+            .bento-grid { grid-template-columns: 1fr; grid-template-rows: 10vh 45vh 1fr; }
+            .header-box { grid-column: span 1; }
+            .ticket-number { font-size: 20vh; }
+            #waiting-list { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="audioOverlay" onclick="startSystem()">
+        <i class="fa-solid fa-play-circle" style="font-size: 10vh; color: var(--bdo-yellow); margin-bottom: 3vh;"></i>
+        <h1 style="font-size: 4vh; font-weight: 900;">ACTIVATE LOBBY DISPLAY</h1>
+        <p style="font-size: 2vh; opacity: 0.7;">Click anywhere to start visual and audio sync</p>
+    </div>
+
+    <div class="bento-grid">
+        <div class="header-box">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Coolaire">
+            <div class="header-clock">
+                <div id="time">00:00:00</div>
+                <div id="date">...</div>
+            </div>
+        </div>
+
+        <div class="card-now-serving" id="serving-container">
+            <div class="radar-pulse"></div>
+            <p class="label-now-serving">Now Serving</p>
+            <div id="now-serving" class="ticket-number">---</div>
+            <div class="counter-badge">COUNTER 1</div>
+        </div>
+
+        <div class="card-up-next">
+            <h2 class="sidebar-title"><i class="fa-solid fa-users"></i> UP NEXT</h2>
+            <div id="waiting-list"></div>
+        </div>
+    </div>
+
+    <div class="ticker-container">
+        <div class="ticker-content">
+            WELCOME TO COOLAIRE CONSOLIDATED INC. • • •
+            <strong>MISSION:</strong> RESPONSIBLE FOR MAKING PEOPLE SAFE AND HEALTHY BY ENSURING PRODUCTS ARE KEPT SUSTAINABLY FRESH • • •
+            <strong>VISION:</strong> THE NUMBER ONE COLD CHAIN SUPPLIER IN THE PHILIPPINES PROVIDING RELIABLE TEMPERATURE CONTROL SYSTEMS • • •
+            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+        </div>
+    </div>
+
+    <audio id="dingSound">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+    </audio>
+
+<script>
+    let lastTicket = "";
+    let lastCallCount = 0;
+    const dingSound = document.getElementById('dingSound');
+
+    function startSystem() {
+        document.getElementById('audioOverlay').style.display = 'none';
+        // Unlock audio for browser
+        dingSound.play().then(() => { dingSound.pause(); dingSound.currentTime = 0; });
+
+        setInterval(updateDisplay, 2500);
+        setInterval(updateClock, 1000);
+        updateDisplay();
+        updateClock();
+    }
+
+    function updateDisplay() {
+        fetch('/api/get-latest-queue')
+            .then(r => r.json())
+            .then(data => {
+                const nowServingEl = document.getElementById('now-serving');
+                const servingContainer = document.getElementById('serving-container');
+                const waitingListEl = document.getElementById('waiting-list');
+
+                const isNew = data.now_serving !== lastTicket;
+                const isRecall = data.call_count > lastCallCount;
+
+                if ((isNew || isRecall) && data.now_serving !== "---") {
+                    dingSound.currentTime = 0;
+                    dingSound.play();
+
+                    // Trigger visual alert
+                    servingContainer.classList.remove('blink');
+                    void servingContainer.offsetWidth; // Force reflow
+                    servingContainer.classList.add('blink');
+                }
+
+                nowServingEl.innerText = data.now_serving;
+
+                let waitingHtml = "";
+                // Only show top 5-6 to prevent vertical overflow on TV
+                if (data.waiting && data.waiting.length > 0) {
+                    data.waiting.slice(0, 6).forEach((ticket, index) => {
+                        waitingHtml += `
+                            <div class="waiting-item">
+                                <span>${ticket}</span>
+                                <span class="pos-num">#${index + 1}</span>
+                            </div>`;
+                    });
+                } else {
+                    waitingHtml = '<div class="text-center mt-5" style="font-size: 3vh; opacity: 0.3; width: 100%;">No pending tickets</div>';
+                }
+                waitingListEl.innerHTML = waitingHtml;
+
+                lastTicket = data.now_serving;
+                lastCallCount = data.call_count;
+            })
+            .catch(err => console.error("API Error:", err));
+    }
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('time').innerText = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    }
+</script>
+</body>
+</html>

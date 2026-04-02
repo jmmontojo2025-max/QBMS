@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3 page-fade-in" style="min-height: 85vh;">
+    <div class="row g-4 align-items-stretch">
+
+        <!-- 1. PREMIUM HEADER BAR (FULL WIDTH) -->
+        <div class="col-12">
+            <div class="bento-card bg-white p-3 p-md-4 d-flex align-items-center justify-content-between shadow-deep border-0 rounded-4">
+                <div class="d-flex align-items-center overflow-hidden">
+                    <div class="position-relative me-3 me-md-4 flex-shrink-0">
+                        <img src="https://ui-avatars.com/api/?name={{ current_user.full_name }}&background=002d72&color=fff&bold=true&size=128"
+                             class="rounded-circle shadow-sm border border-3 border-light"
+                             style="width: clamp(50px, 8vw, 70px); height: clamp(50px, 8vw, 70px);" alt="Profile">
+                        <span class="position-absolute bottom-0 end-0 p-2 bg-success border border-2 border-white rounded-circle shadow-sm"></span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <h1 class="fw-900 text-dark mb-0 lh-1" style="font-size: clamp(1.2rem, 3vw, 2.2rem); letter-spacing: -1.5px;">Welcome, {{ current_user.full_name.split(' ')[0] }}</h1>
+                        <p class="text-muted mb-0 small fw-bold text-truncate">
+                            <i class="fa-solid fa-circle-check text-primary me-1"></i>
+                            ID: #{{ current_user.id + 1000 }} • SECURE SESSION
+                        </p>
+                    </div>
+                </div>
+                <div class="d-none d-lg-block text-end bg-light p-2 px-3 rounded-4 border flex-shrink-0">
+                    <div class="text-secondary fw-900 tracking-widest" style="font-size: 0.65rem;">LOCAL TIME</div>
+                    <div class="fw-900 text-primary" id="digitalClock" style="font-size: 1.5rem; font-variant-numeric: tabular-nums;">00:00:00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. MAIN STATUS SECTION (LEFT) -->
+        <div class="col-lg-8">
+            <div class="bento-card p-4 p-xl-5 bg-white shadow-deep border-0 h-100 rounded-5 d-flex flex-column">
+
+                <!-- JOURNEY TRACKER -->
+                <div class="mb-5">
+                    <h6 class="fw-900 text-secondary tracking-widest mb-4 small">YOUR SERVICE JOURNEY</h6>
+                    <div class="step-container">
+                        <div class="step-line"></div>
+                        <div class="step-line-active"
+                             style="width: {% if queue %}{% if queue.status == 'serving' %}100%{% else %}66%{% endif %}{% elif booking %}33%{% else %}0%{% endif %};">
+                        </div>
+
+                        <div class="step-item">
+                            <div class="step-dot active"><i class="fa-solid fa-calendar-check small"></i></div>
+                            <div class="step-label">BOOKED</div>
+                        </div>
+                        <div class="step-item">
+                            <div class="step-dot {% if booking and booking.status == 'checked_in' or queue %}active{% endif %}"><i class="fa-solid fa-location-dot small"></i></div>
+                            <div class="step-label">ARRIVED</div>
+                        </div>
+                        <div class="step-item">
+                            <div class="step-dot {% if queue and queue.status == 'serving' %}active{% endif %}"><i class="fa-solid fa-headset small"></i></div>
+                            <div class="step-label">SERVING</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-grow-1 d-flex flex-column justify-content-center">
+                    {% if queue %}
+                        <!-- LIVE TICKET -->
+                        <div class="text-center py-4 py-xl-5 rounded-5 position-relative overflow-hidden shadow-sm border"
+                             style="background: linear-gradient(145deg, #ffffff, #f0f7ff);">
+                            <i class="fa-solid fa-ticket-alt position-absolute opacity-10" style="font-size: 12rem; top: 10%; right: -20px; z-index: 0;"></i>
+
+                            <div class="position-relative" style="z-index: 1;">
+                                <p class="text-primary fw-900 tracking-widest mb-2 small">LIVE QUEUE TICKET</p>
+                                <h1 class="fw-900 text-primary mb-0" style="font-size: clamp(4rem, 15vw, 8rem); letter-spacing: -5px; line-height: 0.9;">{{ queue.ticket_number }}</h1>
+
+                                <div class="my-4 d-flex justify-content-center align-items-center">
+                                    <div class="pulse-dot me-3"></div>
+                                    <span class="fs-4 fw-900 text-dark text-uppercase">{{ queue.status }}</span>
+                                </div>
+                                <div class="p-3 mx-3 mx-md-5 rounded-4 bg-white shadow-sm border">
+                                    <p class="text-muted mb-0 small fw-medium">Watch the <strong>Lobby Monitor</strong>. Chime expected soon.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    {% elif booking %}
+                        <!-- UPCOMING TICKET STUB (AUTOFIT DESIGN) -->
+                        <div class="ticket-stub shadow-deep" style="background: linear-gradient(135deg, #002d72 0%, #001d4a 100%);">
+                            <div class="row g-0 align-items-center">
+                                <div class="col-md-7 p-4 p-xl-5">
+                                    <span class="badge bg-warning text-dark fw-900 mb-3">RESERVATION ACTIVE</span>
+                                    <h2 class="text-white fw-900 display-6 mb-2">Coolaire Visit</h2>
+                                    <p class="text-white-50 mb-4 small">
+                                        <i class="fa-solid fa-calendar-day me-2"></i>
+                                        {{ booking.scheduled_time.strftime('%B %d, %Y') }} at {{ booking.scheduled_time.strftime('%I:%M %p') }}
+                                    </p>
+                                    <div class="d-inline-flex align-items-center bg-white bg-opacity-10 p-3 rounded-4 border border-white border-opacity-10">
+                                        <div class="text-white me-3">
+                                            <div class="small opacity-50 fw-bold">BOOKING ID</div>
+                                            <div class="fs-5 fw-900">#{{ booking.id + 5000 }}</div>
+                                        </div>
+                                        <i class="fa-solid fa-fingerprint fa-xl text-warning"></i>
+                                    </div>
+                                </div>
+                                <div class="col-md-5 p-4 p-xl-5 text-center" style="border-left: 2px dashed rgba(255,255,255,0.2);">
+                                    <div class="bg-white p-2 d-inline-block rounded-4 shadow-lg mb-3">
+                                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ booking.id }}" class="img-fluid" style="max-width: 100px;" alt="QR">
+                                    </div>
+                                    <p class="text-white small fw-bold mb-0 opacity-50">SCAN AT KIOSK</p>
+                                </div>
+                            </div>
+                            <div class="ticket-notch-top"></div>
+                            <div class="ticket-notch-bottom"></div>
+                        </div>
+                        <a href="/" class="btn btn-primary btn-modern w-100 py-3 mt-4 fs-5 shadow-lg">CHECK-IN AT KIOSK</a>
+
+                    {% else %}
+                        <!-- EMPTY STATE -->
+                        <div class="text-center py-5">
+                            <div class="bg-light d-inline-block p-4 rounded-circle mb-4">
+                                <i class="fa-solid fa-calendar-plus fa-4x text-muted opacity-25"></i>
+                            </div>
+                            <h2 class="fw-900 text-dark">No Active Service</h2>
+                            <p class="text-muted mb-5 px-md-5">Get priority handling for your refrigeration maintenance.</p>
+                            <a href="/book" class="btn btn-primary btn-modern px-5 py-3 fs-5 shadow">START NEW BOOKING</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. SIDEBAR QUICK ACTIONS (RIGHT) -->
+        <div class="col-lg-4">
+            <div class="row g-3 g-xl-4 h-100">
+                <div class="col-12">
+                    <a href="/book" class="text-decoration-none">
+                        <div class="bento-card p-3 p-xl-4 border-0 shadow-sm action-card h-100" style="background: #ffc107;">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-white rounded-4 p-3 me-3 flex-shrink-0 shadow-sm">
+                                    <i class="fa-solid fa-calendar-plus fa-xl text-warning"></i>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <h5 class="fw-900 mb-0 text-dark">Modify Visit</h5>
+                                    <small class="fw-bold text-dark opacity-60">Change time or service</small>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-12">
+                    <a href="/tv" target="_blank" class="text-decoration-none">
+                        <div class="bento-card p-3 p-xl-4 border-0 shadow-sm action-card bg-dark text-white h-100">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-secondary bg-opacity-25 rounded-4 p-3 me-3 flex-shrink-0">
+                                    <i class="fa-solid fa-tv fa-xl text-white"></i>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <h5 class="fw-900 mb-0">Lobby Monitor</h5>
+                                    <small class="fw-bold opacity-50">Real-time queue</small>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-12 flex-grow-1">
+                    <div class="bento-card p-4 border-0 shadow-sm bg-white h-100 rounded-4">
+                        <h6 class="fw-900 text-secondary tracking-widest small mb-4 text-uppercase">Profile Data</h6>
+                        <div class="mb-4">
+                            <div class="p-3 rounded-4 bg-light mb-3">
+                                <div class="small fw-bold text-muted">EMAIL</div>
+                                <div class="fw-bold text-dark text-truncate">{{ current_user.email }}</div>
+                            </div>
+                            <div class="p-3 rounded-4 bg-light">
+                                <div class="small fw-bold text-muted">PHONE</div>
+                                <div class="fw-bold text-dark">{{ current_user.phone }}</div>
+                            </div>
+                        </div>
+                        <a href="/logout" class="btn btn-outline-danger w-100 py-3 fw-900 rounded-4 border-2">
+                            <i class="fa-solid fa-power-off me-2"></i> SIGN OUT
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .fw-900 { font-weight: 900; }
+    .tracking-widest { letter-spacing: 0.12em; }
+    .shadow-deep { box-shadow: 0 20px 60px rgba(0,0,0,0.05); }
+
+    /* Journey Tracker Adjustments */
+    .step-container { display: flex; justify-content: space-between; position: relative; padding: 0 5px; }
+    .step-line { position: absolute; top: 18px; left: 0; height: 4px; background: #f0f0f0; width: 100%; z-index: 1; border-radius: 10px; }
+    .step-line-active { position: absolute; top: 18px; left: 0; height: 4px; background: #002d72; z-index: 2; transition: width 1s ease; border-radius: 10px; }
+    .step-item { position: relative; z-index: 3; text-align: center; width: 60px; }
+    .step-dot { width: 40px; height: 40px; background: white; border: 4px solid #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: #ccc; transition: 0.3s; }
+    .step-dot.active { border-color: #002d72; background: #002d72; color: white; box-shadow: 0 5px 15px rgba(0, 45, 114, 0.2); }
+    .step-label { font-size: 0.6rem; font-weight: 900; margin-top: 8px; color: #999; letter-spacing: 0.5px; }
+
+    /* Auto-fitting Ticket Stub */
+    .ticket-stub { border-radius: 25px; position: relative; overflow: hidden; }
+    .ticket-notch-top, .ticket-notch-bottom {
+        position: absolute; left: 54%; width: 35px; height: 35px;
+        background: #f4f7fa; border-radius: 50%; z-index: 5;
+    }
+    .ticket-notch-top { top: -20px; }
+    .ticket-notch-bottom { bottom: -20px; }
+    @media (max-width: 767px) {
+        .ticket-notch-top, .ticket-notch-bottom { display: none; }
+    }
+
+    .action-card { transition: all 0.3s ease; cursor: pointer; }
+    .action-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+    .pulse-dot { height: 14px; width: 14px; background: #28a745; border-radius: 50%; animation: pulse-green 2s infinite; }
+    @keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(40, 167, 69, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    }
+</style>
+
+<script>
+    function updateClock() {
+        const el = document.getElementById('digitalClock');
+        if (el) {
+            el.textContent = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+</script>
+{% endblock %}

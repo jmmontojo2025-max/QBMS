@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Printing Ticket...</title>
+    <style>
+        /* receipt-size styling */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            width: 100%;
+            max-width: 80mm;
+            margin: 0 auto;
+            padding: 20px 10px;
+            text-align: center;
+            background-color: #ffffff;
+            color: #000;
+        }
+
+        .receipt {
+            padding: 10px;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        p {
+            margin: 5px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        hr {
+            border: none;
+            border-top: 2px dashed #000;
+            margin: 15px 0;
+        }
+
+        .label {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .ticket-num {
+            font-size: 70px;
+            font-weight: 900;
+            margin: 10px 0;
+            line-height: 1;
+        }
+
+        .date-time {
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            font-size: 12px;
+            margin-top: 20px;
+            border-top: 1px dashed #000;
+            padding-top: 15px;
+            line-height: 1.4;
+        }
+
+        /* Responsive UI: On mobile/tablet screens, show a "Printing" status bar */
+        .status-bar {
+            background: #002d72;
+            color: white;
+            padding: 10px;
+            font-family: sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            text-transform: uppercase;
+        }
+
+        /* Ensure only the receipt prints, no status bar */
+        @media print {
+            @page {
+                margin: 0;
+                size: 80mm auto;
+            }
+            body {
+                margin: 0;
+                padding: 5mm;
+                width: 70mm; /* Account for printer margins */
+            }
+            .status-bar { display: none; }
+        }
+
+        /* Tablet/Mobile viewing tweak */
+        @media screen and (max-width: 600px) {
+            body {
+                background-color: #f8f9fa;
+                padding-top: 50px;
+            }
+            .receipt {
+                background: white;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                border-radius: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="status-bar">
+        <i class="fa-solid fa-print"></i> Sending to Thermal Printer...
+    </div>
+
+    <div class="receipt">
+        <h2>COOLAIRE</h2>
+        <p>Consolidated Inc.</p>
+        <hr>
+        <div class="label">YOUR NUMBER</div>
+        <div class="ticket-num">{{ ticket.ticket_number }}</div>
+
+        <div class="date-time">
+            {{ ticket.created_at.strftime('%m/%d/%Y %I:%M %p') }}
+        </div>
+
+        <div class="footer">
+            PLEASE WATCH THE TV DISPLAY.<br>
+            <strong>THANK YOU FOR CHOOSING COOLAIRE!</strong>
+        </div>
+    </div>
+
+    <script>
+    window.onload = function() {
+        // Short delay to allow mobile browsers to render styles before printing
+        setTimeout(function() {
+            window.print();
+        }, 500);
+
+        // Redirect back home after the print dialog is closed or handled
+        // Increased to 3 seconds for better tablet performance
+        setTimeout(function() {
+            window.location.href = "/";
+        }, 3000);
+    };
+    </script>
+
+</body>
+</html>
