@@ -1,0 +1,263 @@
+{% extends "base_staff.html" %}
+
+{% block content %}
+<div class="animate__animated animate__fadeIn">
+
+    <!-- MASTER DATA CARD -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+
+        <!-- SOPHISTICATED HEADER -->
+        <div class="p-4 border-bottom bg-white">
+            <div class="row align-items-center g-3">
+                <div class="col-md-5">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary-soft p-3 rounded-4 me-3">
+                            <i class="fa-solid fa-box-archive text-primary fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-800 mb-0 text-dark letter-spacing-tight">Fleet Intelligence Archive</h5>
+                            <p class="text-muted extra-small fw-bold mb-0 text-uppercase ls-widest">
+                                Master Ledger: <span id="recordCount" class="text-primary">{{ bookings|length }}</span> Total Entries
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <div class="d-flex gap-2 justify-content-md-end flex-wrap">
+                        <!-- Search Bar -->
+                        <div class="input-group rounded-3 overflow-hidden border bg-light" style="max-width: 350px;">
+                            <span class="input-group-text border-0 bg-transparent ps-3">
+                                <i class="fa-solid fa-magnifying-glass text-muted small"></i>
+                            </span>
+                            <input type="text" id="recordSearch" class="form-control border-0 bg-transparent py-2 fw-600 small" placeholder="Filter by Plate, Ref, or Company...">
+                        </div>
+
+                        <!-- Export Button -->
+                        <button onclick="exportTableToCSV('coolaire-records.csv')" class="btn btn-white border shadow-sm fw-bold px-3">
+                            <i class="fa-solid fa-file-csv me-2 text-success"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- THE TABLE ENGINE -->
+        <div class="table-responsive" style="max-height: calc(100vh - 280px);">
+            <table class="table table-hover align-middle mb-0" id="masterTable">
+                <thead class="bg-light text-muted extra-small fw-800 text-uppercase sticky-top" style="z-index: 10; top: 0;">
+                    <tr>
+                        <th class="px-4 py-3 border-0">Reference</th>
+                        <th class="border-0">Entity / Operator</th>
+                        <th class="border-0">Asset Details</th>
+                        <th class="border-0">Log Date</th>
+                        <th class="border-0">Service Manifest</th>
+                        <th class="text-center border-0">Workflow</th>
+                    </tr>
+                </thead>
+                <tbody class="small" id="recordsBody">
+                    {% for b in bookings %}
+                    <tr class="record-row border-bottom transition-all">
+                        <!-- REFERENCE ID -->
+                        <td class="px-4">
+                            <span class="badge bg-light text-primary fw-800 border">#{{ b.ref_id }}</span>
+                        </td>
+
+                        <!-- COMPANY INFO -->
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-init">
+                                    {{ b.customer.company_name[:2] | upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-800 text-dark lh-1 mb-1">{{ b.customer.company_name }}</div>
+                                    <div class="extra-small text-muted fw-600">{{ b.customer.full_name }}</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- VEHICLE BADGE -->
+                        <td>
+                            <div class="plate-badge">
+                                <span class="plate-blue-tab"></span>
+                                <span class="plate-text">{{ b.vehicle.plate_number }}</span>
+                            </div>
+                            <div class="mt-1 extra-small text-muted fw-bold">{{ b.vehicle.model_description }}</div>
+                        </td>
+
+                        <!-- DATE/TIME -->
+                        <td>
+                            <div class="fw-700 text-dark">{{ b.scheduled_time.strftime('%b %d, %Y') }}</div>
+                            <div class="extra-small text-primary fw-bold text-uppercase">{{ b.scheduled_time.strftime('%I:%M %p') }}</div>
+                        </td>
+
+                        <!-- SERVICE TYPE -->
+                        <td>
+                            <div class="service-pill">
+                                <i class="fa-solid fa-screwdriver-wrench me-1 opacity-50"></i> {{ b.service_type }}
+                            </div>
+                        </td>
+
+                        <!-- STATUS PILL -->
+                        <td class="text-center">
+                            {% if b.status == 'done' %}
+                                <span class="badge-status bg-success-soft text-success">
+                                    <i class="fa-solid fa-circle-check me-1"></i> COMPLETED
+                                </span>
+                            {% else %}
+                                <span class="badge-status bg-warning-soft text-warning animate-pulse">
+                                    <i class="fa-solid fa-clock-rotate-left me-1"></i> IN-PROGRESS
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="opacity-25 py-5">
+                                <i class="fa-solid fa-database fa-4x mb-3"></i>
+                                <h5 class="fw-800">Archive Empty</h5>
+                                <p>No historical records match your current database.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- FOOTER SUMMARY -->
+        <div class="p-3 bg-white border-top d-flex justify-content-between align-items-center">
+            <span class="extra-small fw-bold text-muted text-uppercase tracking-widest px-2">
+                Coolaire QBMS Core Database v1.0
+            </span>
+            <div class="pagination-ui">
+                <button class="btn btn-sm btn-light border fw-800 me-1" disabled>PREV</button>
+                <button class="btn btn-sm btn-primary fw-800">NEXT</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Archive Specific Customizations */
+    .bg-primary-soft { background-color: rgba(0, 45, 114, 0.08); }
+    .bg-success-soft { background-color: #dcfce7; }
+    .bg-warning-soft { background-color: #fef9c3; }
+
+    .ls-widest { letter-spacing: 1.5px; }
+    .extra-small { font-size: 0.68rem; }
+    .fw-800 { font-weight: 800; }
+    .fw-600 { font-weight: 600; }
+
+    /* Record Row Interactions */
+    .record-row { cursor: default; }
+    .record-row:hover { background-color: #f8fafc !important; }
+
+    /* Modern Plate Badge */
+    .plate-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #1e293b;
+        color: white;
+        border-radius: 6px;
+        padding: 2px 8px 2px 2px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .plate-blue-tab {
+        width: 4px;
+        height: 14px;
+        background: #3b82f6;
+        border-radius: 3px;
+        margin-right: 8px;
+    }
+    .plate-text {
+        font-family: 'Monaco', monospace;
+        font-weight: 800;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+
+    /* Avatar Logic */
+    .avatar-init {
+        width: 36px;
+        height: 36px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: var(--coolaire-blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-weight: 800;
+        font-size: 0.7rem;
+        margin-right: 12px;
+    }
+
+    /* Service Text Styling */
+    .service-pill {
+        font-weight: 700;
+        color: #475569;
+        background: #f1f5f9;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: inline-block;
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Status Pill Logic */
+    .badge-status {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 0.65rem;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+
+    /* Table Scroll Customization */
+    .table-responsive::-webkit-scrollbar { width: 6px; }
+    .table-responsive::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+</style>
+
+<script>
+    // LIVE SEARCH LOGIC
+    document.getElementById('recordSearch').addEventListener('input', function() {
+        const val = this.value.toLowerCase();
+        const rows = document.querySelectorAll('.record-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            const isMatch = text.includes(val);
+            row.style.display = isMatch ? '' : 'none';
+            if (isMatch) visibleCount++;
+        });
+
+        document.getElementById('recordCount').innerText = visibleCount;
+    });
+
+    // CSV EXPORT LOGIC
+    function exportTableToCSV(filename) {
+        let csv = [];
+        let rows = document.querySelectorAll("table tr");
+        for (let i = 0; i < rows.length; i++) {
+            let row = [], cols = rows[i].querySelectorAll("td, th");
+            for (let j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.trim() + '"');
+            csv.push(row.join(","));
+        }
+        let csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
+        let downloadLink = document.createElement("a");
+        downloadLink.download = filename;
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = "none";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+    }
+</script>
+{% endblock %}

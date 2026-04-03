@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5 page-fade-in d-flex align-items-center justify-content-center" style="min-height: 85vh;">
+
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+
+        <!-- Terminal Container -->
+        <div class="bento-card p-4 p-md-5 bg-dark text-white border-0 shadow-deep rounded-5 overflow-hidden position-relative">
+
+            <!-- Tech Accent Lines -->
+            <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10 pointer-events-none"
+                 style="background-image: radial-gradient(#ffc107 1px, transparent 1px); background-size: 20px 20px;"></div>
+
+            <div class="position-relative z-1">
+                <!-- Header Section -->
+                <div class="text-center mb-5">
+                    <div class="d-inline-flex align-items-center gap-2 mb-3 px-3 py-1 rounded-pill bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                        <div class="status-dot-pulse"></div>
+                        <span class="extra-small fw-900 text-warning ls-widest">SYSTEM ONLINE</span>
+                    </div>
+
+                    <h1 class="display-6 fw-900 mb-1 tracking-tight">STAFF TERMINAL</h1>
+                    <p class="small text-white-50 fw-medium">Operator Authentication Required</p>
+                </div>
+
+                <!-- Terminal Login Form -->
+                <form action="/staff/auth" method="POST" id="terminalForm" autocomplete="off">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- Operator ID Input -->
+                    <div class="mb-4">
+                        <label class="section-tag text-warning opacity-75">Operator Username</label>
+                        <div class="input-group terminal-input-group shadow-sm">
+                            <span class="input-group-text bg-white bg-opacity-10 border-0 text-white-50 px-3">
+                                <i class="fa-solid fa-user-gear"></i>
+                            </span>
+                            <input type="text" name="username"
+                                   class="form-control bg-white bg-opacity-10 border-0 text-white py-3 fw-bold shadow-none"
+                                   placeholder="Username" required
+                                   autocomplete="username">
+                        </div>
+                    </div>
+
+                    <!-- Security Key Input -->
+                    <div class="mb-5">
+                        <label class="section-tag text-warning opacity-75">Security Key</label>
+                        <div class="input-group terminal-input-group shadow-sm">
+                            <span class="input-group-text bg-white bg-opacity-10 border-0 text-white-50 px-3">
+                                <i class="fa-solid fa-microchip"></i>
+                            </span>
+                            <input type="password" name="password"
+                                   class="form-control bg-white bg-opacity-10 border-0 text-white py-3 fw-bold shadow-none"
+                                   placeholder="••••••••" required
+                                   autocomplete="current-password">
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button type="submit" class="btn btn-warning w-100 py-3 fs-5 fw-900 rounded-4 shadow-lg border-0 transition-transform" id="authBtn">
+                        <span>INITIALIZE SESSION</span>
+                        <i class="fa-solid fa-right-to-bracket ms-2"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Navigation Back Link -->
+        <div class="text-center mt-4 animate__animated animate__fadeInUp animate__delay-1s">
+            <a href="/" class="text-muted text-decoration-none extra-small fw-900 tracking-widest hover-link">
+                <i class="fa-solid fa-chevron-left me-2"></i> RETURN TO KIOSK MODE
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-900 { font-weight: 900; }
+    .ls-widest { letter-spacing: 2px; }
+    .extra-small { font-size: 0.65rem; }
+    .shadow-deep { box-shadow: 0 30px 60px rgba(0,0,0,0.4); }
+
+    /* Input Group Styling */
+    .terminal-input-group {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .terminal-input-group:focus-within {
+        border-color: var(--coolaire-yellow);
+        background: rgba(255,255,255,0.08);
+    }
+
+    /* Pulse Indicator */
+    .status-dot-pulse {
+        width: 8px; height: 8px;
+        background-color: #ffc107;
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+        animation: status-pulse 2s infinite;
+    }
+
+    @keyframes status-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    }
+
+    /* Transition Effects */
+    .transition-transform:active { transform: scale(0.98); }
+    .hover-link { transition: color 0.3s ease; }
+    .hover-link:hover { color: var(--coolaire-yellow) !important; }
+
+    /* Loading Spinner */
+    .btn-loading span { opacity: 0; }
+    .btn-loading::after {
+        content: ""; position: absolute; width: 22px; height: 22px;
+        border: 3px solid rgba(0,0,0,0.1); border-top-color: #000;
+        border-radius: 50%; top: 50%; left: 50%; margin: -11px 0 0 -11px;
+        animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+    // Form submission UI logic
+    document.getElementById('terminalForm').addEventListener('submit', function() {
+        const btn = document.getElementById('authBtn');
+        btn.classList.add('btn-loading');
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}

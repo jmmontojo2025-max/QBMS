@@ -1,0 +1,237 @@
+{% extends "base_staff.html" %}
+
+{% block content %}
+<div class="animate__animated animate__fadeIn">
+
+    <!-- 1. DASHBOARD HEADER & INSIGHT -->
+    <div class="row mb-4 align-items-end">
+        <div class="col-md-8">
+            <h3 class="fw-800 mb-1 letter-spacing-tight">Analytics Dashboard</h3>
+            <p class="text-muted mb-0">Real-time business intelligence and performance forecasting.</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <button class="btn btn-white border shadow-sm fw-bold px-3 py-2 rounded-3 me-2">
+                <i class="fa-solid fa-calendar-day me-2 text-primary"></i> Last 30 Days
+            </button>
+            <a href="/staff/reports/export" class="btn btn-primary shadow-sm fw-bold px-3 py-2 rounded-3">
+                <i class="fa-solid fa-file-export me-2"></i> Export
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. SUMMARY HEADER CARD -->
+    <div class="card border-0 rounded-4 shadow-sm mb-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="row g-0">
+                <div class="col-lg-1 bg-primary d-none d-lg-flex align-items-center justify-content-center text-white">
+                    <i class="fa-solid fa-robot fs-3 opacity-50"></i>
+                </div>
+                <div class="col-lg-11 p-4 bg-white">
+                    <div class="d-flex align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="fw-800 text-primary text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">AI Insight Assistant</h6>
+                            <p class="text-secondary small mb-0">
+                                Your queue volume is <span class="badge bg-success-soft text-success">+12% higher</span> than last week.
+                                Based on historical data, we recommend opening an additional service bay on <strong class="text-dark" id="recommendationDay">...</strong>
+                                between 10:00 AM and 2:00 PM to maintain service speed.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. KPI GRID -->
+    <div class="row g-4 mb-4">
+        <!-- KPI 1 -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 transition-hover">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="rounded-3 bg-primary bg-opacity-10 p-2">
+                        <i class="fa-solid fa-truck-moving text-primary fs-5"></i>
+                    </div>
+                    <span class="badge bg-success-soft text-success rounded-pill fw-bold">+5%</span>
+                </div>
+                <div class="text-muted fw-bold small text-uppercase mb-1" style="font-size: 0.65rem;">Today's Throughput</div>
+                <h3 class="fw-800 mb-1">{{ daily_count }} <span class="fs-6 text-muted fw-normal">Units</span></h3>
+                <div class="progress mt-3" style="height: 6px;">
+                    <div class="progress-bar bg-primary" style="width: 70%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 2 -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 transition-hover">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="rounded-3 bg-warning bg-opacity-10 p-2">
+                        <i class="fa-solid fa-clock-rotate-left text-warning fs-5"></i>
+                    </div>
+                    <span class="badge bg-danger-soft text-danger rounded-pill fw-bold">-2m</span>
+                </div>
+                <div class="text-muted fw-bold small text-uppercase mb-1" style="font-size: 0.65rem;">Avg. Wait Time</div>
+                <h3 class="fw-800 mb-1">14.2 <span class="fs-6 text-muted fw-normal">Mins</span></h3>
+                <div class="progress mt-3" style="height: 6px;">
+                    <div class="progress-bar bg-warning" style="width: 45%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 3 (Large Visual Card) -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100"
+                 style="background: linear-gradient(225deg, var(--coolaire-blue-dark) 0%, var(--coolaire-blue) 100%);">
+                <div class="card-body p-4 d-flex flex-column justify-content-between position-relative">
+                    <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                        <i class="fa-solid fa-chart-line fa-6x text-white"></i>
+                    </div>
+                    <div class="z-index-1">
+                        <h5 class="fw-800 text-warning mb-2 text-uppercase" style="letter-spacing: 1px;">Growth Momentum</h5>
+                        <p class="text-white opacity-75 small mb-4">Cumulative monthly performance tracking vs previous fiscal year.</p>
+                    </div>
+                    <div class="d-flex align-items-end gap-3 z-index-1">
+                        <div>
+                            <h2 class="text-white fw-900 mb-0">854</h2>
+                            <small class="text-white opacity-50 text-uppercase fw-bold" style="font-size: 0.6rem;">Total Jobs This Month</small>
+                        </div>
+                        <div class="ms-auto flex-grow-1" style="max-width: 180px;">
+                             <canvas id="miniGrowthChart" height="60"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. CHART AREA -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+                <div class="card-header bg-white border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-800 mb-0">Weekly Traffic Forecast</h5>
+                        <p class="small text-muted mb-0">Predicted arrival volume based on 4-week rolling average</p>
+                    </div>
+                    <div class="bg-light p-1 rounded-3">
+                        <button class="btn btn-sm btn-white shadow-sm border-0 fw-bold px-3">Units</button>
+                        <button class="btn btn-sm text-muted fw-bold px-3">Revenue</button>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="chart-container" style="position: relative; height:340px; width:100%">
+                        <canvas id="forecastChart"></canvas>
+                    </div>
+                </div>
+                <!-- CHART FOOTER INSIGHT -->
+                <div class="card-footer bg-light border-0 p-3 px-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="p-2 bg-primary bg-opacity-10 rounded-circle me-3">
+                                <i class="fa-solid fa-magnifying-glass-chart text-primary"></i>
+                            </div>
+                            <span class="small fw-bold">Historical Peak: <span class="text-primary" id="busiestDayText">Calculating...</span></span>
+                        </div>
+                        <span class="small text-muted italic">Update frequency: Real-time</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Dashboard specific utility classes */
+    .fw-800 { font-weight: 800; }
+    .bg-success-soft { background-color: #dcfce7; }
+    .bg-danger-soft { background-color: #fee2e2; }
+    .transition-hover { transition: transform 0.2s ease-in-out; cursor: default; }
+    .transition-hover:hover { transform: translateY(-5px); }
+    .letter-spacing-tight { letter-spacing: -0.5px; }
+    .z-index-1 { position: relative; z-index: 1; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/analytics/forecast')
+        .then(res => res.json())
+        .then(data => {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const forecastValues = data.forecast;
+
+            const maxVal = Math.max(...forecastValues);
+            const busiestDayIndex = forecastValues.indexOf(maxVal);
+            const peakDay = days[busiestDayIndex];
+
+            document.getElementById('busiestDayText').innerText = peakDay;
+            document.getElementById('recommendationDay').innerText = peakDay;
+
+            const fCtx = document.getElementById('forecastChart').getContext('2d');
+
+            // Create Gradient
+            const gradient = fCtx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, '#002d72');
+            gradient.addColorStop(1, '#0056e0');
+
+            new Chart(fCtx, {
+                type: 'bar',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'Avg Units',
+                        data: forecastValues,
+                        backgroundColor: gradient,
+                        hoverBackgroundColor: '#ffc107',
+                        borderRadius: 8,
+                        barThickness: 45
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#001d4a',
+                            padding: 12,
+                            titleFont: { size: 14, weight: 'bold' },
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            border: { display: false },
+                            grid: { color: '#f1f5f9' }
+                        },
+                        x: {
+                            border: { display: false },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Small Mini Growth Chart
+    const mCtx = document.getElementById('miniGrowthChart').getContext('2d');
+    new Chart(mCtx, {
+        type: 'line',
+        data: {
+            labels: [1,2,3,4,5,6,7],
+            datasets: [{
+                data: [10, 25, 18, 35, 30, 45, 50],
+                borderColor: '#ffc107',
+                borderWidth: 3,
+                tension: 0.4,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { x: { display: false }, y: { display: false } }
+        }
+    });
+});
+</script>
+{% endblock %}

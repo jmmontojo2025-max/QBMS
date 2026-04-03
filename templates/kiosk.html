@@ -1,214 +1,312 @@
 {% extends "base.html" %}
+
 {% block content %}
+<style>
+    /* KIOSK TERMINAL HARDENING */
+    :root {
+        --kiosk-bg: #f8fafc;
+        --kiosk-card-shadow: 0 40px 100px -20px rgba(0, 45, 114, 0.15);
+    }
 
-<!-- CENTER-TOP GLOBAL NOTIFICATION SYSTEM -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div id="notificationWrapper" class="notification-container">
-        {% for category, message in messages %}
-          {% set theme = '#28a745' if category == 'success' else '#dc3545' if category == 'danger' else '#ffc107' %}
-          {% set icon = 'fa-print' if category == 'success' else 'fa-circle-xmark' if category == 'danger' else 'fa-triangle-exclamation' %}
-          {% set title = 'Ticket Printed' if category == 'success' else 'Error' if category == 'danger' else 'Printer Notice' %}
+    body {
+        overflow: hidden !important;
+        background: var(--kiosk-bg);
+        height: 100vh;
+        width: 100vw;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
 
-          <div class="kiosk-alert shadow-lg slide-down" style="border-left: 10px solid {{ theme }};">
-              <div class="alert-icon" style="background: {{ theme }}15; color: {{ theme }};">
-                  <i class="fa-solid {{ icon }} fa-2x"></i>
-              </div>
-              <div class="alert-content">
-                  <h4 class="alert-title text-dark mb-0">{{ title }}</h4>
-                  <p class="alert-text text-muted mb-0">{{ message }}</p>
-              </div>
-              <div class="alert-progress" style="background: {{ theme }};"></div>
-          </div>
-        {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
+    /* Hide standard UI elements */
+    .navbar, .mobile-dock, footer { display: none !important; }
 
-<!-- Main Wrapper: 100vh flex container to prevent scrolling -->
-<div class="container-fluid d-flex flex-column justify-content-center py-2 page-fade-in" style="height: 100vh; max-height: 100vh; overflow: hidden;">
+    .kiosk-wrapper {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 2.5vh 3vw;
+        gap: 2vh;
+    }
 
-    <div class="row justify-content-center">
-        <div class="col-xl-11">
+    /* HEADER */
+    .kiosk-header {
+        background: white;
+        border-radius: 2rem;
+        padding: 1.5vh 3vw;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
 
-            <!-- KIOSK HEADER: Responsive Scaling -->
-            <div class="d-flex justify-content-between align-items-end mb-3">
-                <div>
-                    <h1 class="fw-900 text-dark mb-0" style="font-size: clamp(2rem, 5vw, 4.5rem); letter-spacing: -2px;">Touch to Start</h1>
-                    <p class="text-primary fw-bold text-uppercase tracking-widest mb-0" style="font-size: clamp(0.7rem, 1.2vw, 1.1rem);">Queuing Booking and Management System</p>
-                </div>
-                <div class="text-end d-none d-md-block">
-                    <!-- Complete Date & Time -->
-                    <h2 class="fw-900 mb-0 text-dark lh-1" id="kioskClock" style="font-size: clamp(3rem, 7vw, 6rem); letter-spacing: -2px;">00:00</h2>
-                    <p class="text-primary fw-900 mb-0 text-uppercase tracking-widest" id="kioskDate" style="font-size: clamp(0.8rem, 1.5vw, 1.4rem);">Monday, January 1, 2024</p>
+    #kioskClock {
+        font-size: clamp(2rem, 5vh, 4rem);
+        font-weight: 900;
+        color: var(--coolaire-blue);
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+    }
+
+    /* CARDS */
+    .kiosk-card {
+        background: white;
+        border-radius: 3rem;
+        box-shadow: var(--kiosk-card-shadow);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 5vh 3vw !important;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: transform 0.2s ease;
+    }
+
+    .kiosk-card:active { transform: scale(0.98); }
+
+    .card-appointment { border-top: 15px solid var(--coolaire-blue); }
+    .card-walkin { border-top: 15px solid var(--coolaire-yellow); }
+
+    /* INPUT STYLING */
+    .kiosk-input-massive {
+        font-size: 5rem !important;
+        font-weight: 950;
+        letter-spacing: 15px;
+        color: var(--coolaire-blue);
+        text-align: center;
+        border: 4px solid #e2e8f0 !important;
+        background: #f1f5f9 !important;
+        border-radius: 2rem;
+        padding: 3vh !important;
+        width: 100%;
+        margin-bottom: 3vh;
+        transition: all 0.3s ease;
+    }
+
+    .kiosk-input-massive:focus {
+        background: white !important;
+        border-color: var(--coolaire-blue) !important;
+        box-shadow: 0 0 0 10px rgba(0, 45, 114, 0.05);
+        outline: none;
+    }
+
+    /* BUTTONS */
+    .btn-kiosk-primary {
+        background: var(--coolaire-blue);
+        color: white;
+        font-size: 2.2rem;
+        font-weight: 900;
+        padding: 3vh;
+        border-radius: 2rem;
+        border: none;
+        box-shadow: 0 20px 40px rgba(0, 45, 114, 0.2);
+    }
+
+    .btn-kiosk-outline {
+        border: 4px solid #e2e8f0;
+        background: white;
+        padding: 5vh;
+        border-radius: 2.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        transition: all 0.2s;
+    }
+
+    .btn-kiosk-outline:active { background: #f8fafc; border-color: var(--coolaire-yellow); }
+
+    /* OVERLAY */
+    .kiosk-overlay {
+        position: fixed; inset: 0;
+        background: var(--coolaire-blue-dark);
+        z-index: 9999; display: none;
+        flex-direction: column; align-items: center; justify-content: center;
+        color: white; text-align: center;
+    }
+
+    /* BENTO FOOTER */
+    .kiosk-footer {
+        background: #0f172a;
+        border-radius: 2.5rem;
+        padding: 2vh 3vw;
+        display: flex;
+        align-items: center;
+        gap: 2vw;
+        color: white;
+        margin-top: auto;
+    }
+
+    .qr-box {
+        background: white;
+        padding: 12px;
+        border-radius: 1.5rem;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    /* HIDDEN GATEWAYS */
+    .admin-gate {
+        position: absolute; bottom: 10px; right: 10px;
+        width: 50px; height: 50px; opacity: 0.01; z-index: 100;
+    }
+</style>
+
+<!-- DISPENSING OVERLAY -->
+<div class="kiosk-overlay animate__animated animate__fadeIn" id="printOverlay">
+    <div class="spinner-grow text-warning mb-5" style="width: 8rem; height: 8rem;"></div>
+    <h1 class="display-1 fw-950 mb-3" id="overlayTitle">GENERATING TICKET</h1>
+    <p class="fs-2 opacity-75" id="overlaySub">Please wait, connecting to thermal printer...</p>
+</div>
+
+<div class="kiosk-wrapper">
+    <!-- 1. HEADER -->
+    <header class="kiosk-header">
+        <div class="d-flex align-items-center gap-4">
+            <img src="{{ url_for('static', filename='logo.png') }}" height="60" alt="Coolaire" onerror="this.src='https://placehold.co/200x60/002d72/ffffff?text=COOLAIRE'">
+            <div class="vr opacity-10 mx-2" style="height: 40px;"></div>
+            <div>
+                <h3 class="fw-900 mb-0 text-dark">Self-Service Terminal</h3>
+                <p class="text-muted small fw-bold mb-0" id="kioskDate">MONDAY, JANUARY 1, 2024</p>
+            </div>
+        </div>
+        <div id="kioskClock">00:00:00 AM</div>
+    </header>
+
+    <!-- 2. MAIN MODES -->
+    <div class="row g-4 flex-grow-1">
+        <!-- MODE A: APPOINTMENT -->
+        <div class="col-lg-6">
+            <div class="kiosk-card card-appointment animate__animated animate__fadeInLeft">
+                <div class="text-center">
+                    <div class="bg-primary bg-opacity-10 d-inline-flex p-4 rounded-circle mb-4">
+                        <i class="fa-solid fa-calendar-check fa-5x text-primary"></i>
+                    </div>
+                    <h1 class="display-3 fw-950 text-dark mb-2">Booked Units</h1>
+                    <p class="fs-3 text-muted mb-5">Enter your 4-digit Reference Code</p>
+
+                    <form action="/check-in" method="POST" class="kiosk-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="number" name="booking_id" id="mainInput"
+                               class="kiosk-input-massive" placeholder="----"
+                               inputmode="numeric" required autofocus autocomplete="off">
+
+                        <button type="submit" class="btn btn-kiosk-primary w-100 shadow-lg">
+                            CHECK-IN <i class="fa-solid fa-arrow-right ms-3"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
+        </div>
 
-            <div class="row g-4 align-items-stretch">
-                <!-- LEFT COLUMN: APPOINTMENT PATH -->
-                <div class="col-lg-6">
-                    <div class="bento-card p-4 p-xl-5 border-0 shadow-deep h-100 bg-white position-relative overflow-hidden">
-                        <i class="fa-solid fa-calendar-check position-absolute kiosk-bg-icon" style="bottom: -20px; right: -20px;"></i>
-
-                        <div class="position-relative d-flex flex-column h-100" style="z-index: 1;">
-                            <div class="d-flex align-items-center mb-4">
-                                <div class="bg-primary rounded-4 p-3 shadow-sm me-3">
-                                    <i class="fa-solid fa-qrcode fa-2x text-white"></i>
-                                </div>
-                                <div>
-                                    <h2 class="fw-900 mb-0 h3">Appointment</h2>
-                                    <p class="text-muted mb-0 small">I have a digital Booking ID</p>
-                                </div>
-                            </div>
-
-                            <form action="/check-in" method="POST" id="checkInForm" onsubmit="return handleKioskSubmit(this)" class="flex-grow-1 d-flex flex-column justify-content-center">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <div class="mb-4">
-                                    <div class="bg-light p-3 rounded-5 border-2 border-dashed text-center">
-                                        <label class="form-label small fw-900 text-secondary text-uppercase tracking-widest mb-2">Input Reference Number</label>
-                                        <input type="number" name="booking_id"
-                                               class="form-control form-control-lg border-0 text-center fw-900 kiosk-input-field"
-                                               placeholder="0000" id="kioskInput"
-                                               style="font-size: clamp(3rem, 8vw, 5.5rem); background: transparent; color: #002d72; height: auto; letter-spacing: 10px;"
-                                               required autofocus autocomplete="off">
-                                    </div>
-                                </div>
-
-                                <button type="submit" class="btn btn-primary btn-kiosk-premium w-100 py-3 py-xl-4 shadow-lg">
-                                    <i class="fa-solid fa-ticket-simple me-3"></i> PRINT TICKET
-                                </button>
-                            </form>
-
-                            <div class="mt-4 d-flex align-items-center justify-content-center text-success">
-                                <div class="pulse-dot me-3"></div>
-                                <span class="fw-900 small tracking-widest">PRIORITY QUEUE ACTIVE</span>
-                            </div>
-                        </div>
+        <!-- MODE B: WALK-IN -->
+        <div class="col-lg-6">
+            <div class="kiosk-card card-walkin justify-content-center animate__animated animate__fadeInRight">
+                <div class="text-center d-flex flex-column h-100">
+                    <div class="bg-warning bg-opacity-10 d-inline-flex p-4 rounded-circle mb-4 mx-auto">
+                        <i class="fa-solid fa-person-walking fa-5x text-warning"></i>
                     </div>
-                </div>
+                    <h1 class="display-3 fw-950 text-dark mb-2">Walk-In</h1>
+                    <p class="fs-3 text-muted mb-5">No appointment? Tap below to join the standard service queue.</p>
 
-                <!-- RIGHT COLUMN: WALK-IN PATH -->
-                <div class="col-lg-6">
-                    <div class="bento-card p-4 p-xl-5 border-0 shadow-deep h-100 bg-white d-flex flex-column justify-content-between position-relative overflow-hidden">
-                        <i class="fa-solid fa-user-plus position-absolute kiosk-bg-icon" style="bottom: -20px; right: -20px;"></i>
-
-                        <div class="position-relative" style="z-index: 1;">
-                            <div class="d-flex align-items-center mb-4">
-                                <div class="bg-secondary rounded-4 p-3 shadow-sm me-3">
-                                    <i class="fa-solid fa-person-walking fa-2x text-white"></i>
-                                </div>
-                                <div>
-                                    <h2 class="fw-900 mb-0 h3">Walk-In</h2>
-                                    <p class="text-muted mb-0 small">No appointment / Guest</p>
-                                </div>
-                            </div>
-
-                            <p class="text-muted fs-5 mb-4">Please tap below for a general queue ticket.</p>
-
-                            <form action="/walk-in" method="POST" onsubmit="return handleKioskSubmit(this)">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-kiosk-outline-premium w-100 py-4 py-xl-5 mb-4" id="walkInBtn">
-                                    <span class="fs-2 fw-900">GET GUEST TICKET</span>
-                                </button>
-                            </form>
-
-                            <div class="qr-container p-3 rounded-5 d-flex align-items-center bg-light border-0 shadow-sm mb-2">
-                                <div class="position-relative me-3">
-                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}register"
-                                         alt="Register QR" class="img-fluid rounded-3 shadow-sm" style="width: 70px; height: 70px;">
-                                    <div class="scan-line"></div>
-                                </div>
-                                <div>
-                                    <h6 class="fw-900 mb-1 text-dark">Register via Phone</h6>
-                                    <p class="small text-muted mb-0" style="font-size: 0.75rem;">Scan to skip the line instantly.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Status area at bottom -->
-                        <div class="text-center position-relative" style="z-index: 1;">
-                            <div class="bento-card border-0 p-2 mb-2" style="background: #f0f7ff; border-left: 8px solid var(--bdo-blue) !important;">
-                                <div class="d-flex align-items-center justify-content-center">
-                                    <i class="fa-solid fa-clock-rotate-left text-primary icon-spin-slow me-2"></i>
-                                    <p class="mb-0 fw-900 text-dark small">Wait Time: Indeterminate</p>
-                                </div>
-                            </div>
-                            <a href="/register" class="btn-link-animated text-primary fw-900 text-decoration-none small">
-                                MANUAL REGISTRATION <i class="fa-solid fa-arrow-right-long ms-1"></i>
-                            </a>
-                        </div>
-                    </div>
+                    <form action="/walk-in" method="POST" class="mt-auto">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-kiosk-outline w-100">
+                            <i class="fa-solid fa-ticket fa-5x text-muted opacity-50"></i>
+                            <span class="display-4 fw-900 text-dark">DISPENSE TICKET</span>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- 3. FOOTER BENTO -->
+    <footer class="kiosk-footer shadow-lg">
+        <div class="qr-box">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}register&bgcolor=ffffff&color=002d72" width="90">
+        </div>
+        <div class="flex-grow-1">
+            <h2 class="fw-900 text-warning mb-1">Skip the Line!</h2>
+            <p class="fs-4 mb-0 opacity-75">Scan to register and book via mobile next time.</p>
+        </div>
+        <div class="text-end d-none d-xl-block">
+            <div class="opacity-50 small fw-bold">TERMINAL ID: CCI-K01</div>
+            <div class="opacity-50 small fw-bold">LOCATION: MAIN HUB</div>
+        </div>
+    </footer>
+
+    <!-- Hidden Gates for Admins -->
+    <a href="/login" class="admin-gate"></a>
 </div>
 
-<style>
-    :root { --bdo-blue: #0033a0; --bdo-yellow: #ffc72c; }
-
-    /* Lock viewport to prevent scrolling */
-    body { overflow: hidden; height: 100vh; background-color: #f4f7fa; }
-
-    .fw-900 { font-weight: 900; }
-    .tracking-widest { letter-spacing: 0.15em; }
-    .shadow-deep { box-shadow: 0 20px 50px rgba(0,0,0,0.06); }
-    .kiosk-bg-icon { font-size: 15rem; color: #f0f4f8; z-index: 0; pointer-events: none; }
-
-    .btn-kiosk-premium {
-        background: var(--bdo-blue); color: white; border: none; border-radius: 20px;
-        font-weight: 900; transition: all 0.2s ease;
-    }
-
-    .btn-kiosk-outline-premium {
-        background: transparent; border: 3px solid var(--bdo-blue); border-radius: 20px;
-        color: var(--bdo-blue); transition: all 0.3s ease;
-    }
-
-    /* Notification logic */
-    .notification-container {
-        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-        z-index: 10000; width: 90%; max-width: 450px; pointer-events: none;
-    }
-
-    @keyframes fa-spin { to { transform: rotate(360deg); } }
-    .icon-spin-slow { animation: fa-spin 8s infinite linear; }
-    .pulse-dot { height: 12px; width: 12px; background: #28a745; border-radius: 50%; animation: pulse-green 2s infinite; }
-
-    @keyframes pulse-green {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
-        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(40, 167, 69, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
-    }
-
-    /* Remove browser arrows from number input */
-    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-</style>
-
 <script>
-    // Live Kiosk Clock with COMPLETE DATE
-    function updateKioskClock() {
+    // 1. DYNAMIC CLOCK
+    function updateClock() {
         const now = new Date();
-        document.getElementById('kioskClock').textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-        document.getElementById('kioskDate').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        document.getElementById('kioskClock').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        document.getElementById('kioskDate').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase();
     }
-    setInterval(updateKioskClock, 1000);
-    updateKioskClock();
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    // Auto-focus input for physical/onscreen keyboard
-    window.onload = function() {
-        const input = document.getElementById('kioskInput');
-        if(input) {
-            input.focus();
-            document.body.addEventListener('click', () => input.focus());
-        }
-    };
+    // 2. KIOSK FOCUS ENFORCEMENT
+    const mainInput = document.getElementById('mainInput');
+    document.addEventListener('click', () => { if(mainInput) mainInput.focus(); });
 
-    function handleKioskSubmit(form) {
-        const btn = form.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> PRINTING...';
-        return true;
-    }
+    // 3. AJAX SUBMISSION ENGINE
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const overlay = document.getElementById('printOverlay');
+            const title = document.getElementById('overlayTitle');
+            const sub = document.getElementById('overlaySub');
+
+            // Prevent duplicate taps
+            if (this.dataset.busy === "true") return;
+            this.dataset.busy = "true";
+
+            // Visual Start
+            overlay.style.display = 'flex';
+            title.innerText = "PROCESSING...";
+            sub.innerText = "Please wait, confirming request...";
+
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: new FormData(this),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) throw new Error('Queue Error');
+                const data = await response.json();
+
+                // SUCCESS STATE
+                title.innerText = "TICKET DISPENSED";
+                sub.innerText = "Please take your printed slip. Thank you!";
+
+                // Animation cooldown
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    this.dataset.busy = "false";
+                    this.reset();
+                    if(mainInput) mainInput.focus();
+                }, 2500);
+
+            } catch (err) {
+                title.innerText = "ERROR";
+                sub.innerText = "Unable to process. Please see the counter personnel.";
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    this.dataset.busy = "false";
+                }, 3000);
+            }
+        });
+    });
+
+    // Auto-refresh Kiosk every hour
+    setTimeout(() => { window.location.reload(); }, 3600000);
 </script>
 {% endblock %}

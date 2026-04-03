@@ -3,148 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Printing Ticket...</title>
+    <title>Queue Ticket | {{ ticket.ticket_number }}</title>
     <style>
-        /* receipt-size styling */
+        /* THERMAL PRINTER RESET */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Courier New', Courier, monospace;
-            width: 100%;
-            max-width: 80mm;
-            margin: 0 auto;
-            padding: 20px 10px;
-            text-align: center;
-            background-color: #ffffff;
+            background-color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
             color: #000;
         }
 
-        .receipt {
-            padding: 10px;
+        /* 80mm THERMAL ROLL SPECIFICATION */
+        .receipt-container {
+            width: 80mm;
+            background: #fff;
+            padding: 30px 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
-        h2 {
-            margin: 0;
-            font-size: 24px;
-            letter-spacing: 2px;
+        .header-brand {
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 2px;
+            font-family: 'Helvetica', 'Arial', sans-serif;
         }
 
-        p {
-            margin: 5px 0;
-            font-size: 14px;
+        .header-sub {
+            font-size: 11px;
             text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            opacity: 0.8;
         }
 
-        hr {
-            border: none;
+        .divider {
             border-top: 2px dashed #000;
+            margin: 15px 0;
+            width: 100%;
+        }
+
+        /* TICKET DATA BLOCK */
+        .ticket-box {
+            border: 4px solid #000;
+            padding: 15px 0;
             margin: 15px 0;
         }
 
         .label {
-            font-size: 16px;
-            font-weight: bold;
-            margin-top: 10px;
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 5px;
         }
 
         .ticket-num {
-            font-size: 70px;
+            font-size: 82px;
             font-weight: 900;
+            line-height: 0.9;
+            font-family: 'Arial Black', Gadget, sans-serif;
+        }
+
+        .timestamp {
+            font-size: 12px;
             margin: 10px 0;
-            line-height: 1;
-        }
-
-        .date-time {
-            font-size: 13px;
-            margin-bottom: 20px;
-        }
-
-        .footer {
-            font-size: 12px;
-            margin-top: 20px;
-            border-top: 1px dashed #000;
-            padding-top: 15px;
-            line-height: 1.4;
-        }
-
-        /* Responsive UI: On mobile/tablet screens, show a "Printing" status bar */
-        .status-bar {
-            background: #002d72;
-            color: white;
-            padding: 10px;
-            font-family: sans-serif;
-            font-size: 12px;
             font-weight: bold;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            text-transform: uppercase;
         }
 
-        /* Ensure only the receipt prints, no status bar */
+        .footer-note {
+            font-size: 10px;
+            margin-top: 20px;
+            line-height: 1.4;
+            font-weight: bold;
+        }
+
+        .ref-id {
+            font-size: 9px;
+            margin-top: 10px;
+            opacity: 0.6;
+        }
+
+        /* PRINT MEDIA QUERIES */
         @media print {
             @page {
                 margin: 0;
                 size: 80mm auto;
             }
-            body {
-                margin: 0;
+            body { background: white; }
+            .receipt-container {
+                box-shadow: none;
+                width: 72mm; /* Narrower to prevent edge cutting */
                 padding: 5mm;
-                width: 70mm; /* Account for printer margins */
             }
-            .status-bar { display: none; }
+            .no-print { display: none !important; }
         }
 
-        /* Tablet/Mobile viewing tweak */
-        @media screen and (max-width: 600px) {
-            body {
-                background-color: #f8f9fa;
-                padding-top: 50px;
-            }
-            .receipt {
-                background: white;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-                border-radius: 8px;
-            }
+        /* KIOSK STATUS OVERLAY */
+        .status-overlay {
+            position: fixed;
+            inset: 0;
+            background: #002d72;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <div class="status-bar">
-        <i class="fa-solid fa-print"></i> Sending to Thermal Printer...
+    <!-- VISIBLE ONLY ON KIOSK SCREEN -->
+    <div class="status-overlay no-print">
+        <div style="font-size: 80px; margin-bottom: 20px;">🖨️</div>
+        <h1 style="font-size: 40px; font-weight: 900; margin-bottom: 10px;">PRINTING TICKET</h1>
+        <p style="font-size: 20px; opacity: 0.8;">Number: <strong>{{ ticket.ticket_number }}</strong></p>
+        <div style="margin-top: 40px; border: 2px solid rgba(255,255,255,0.3); padding: 10px 30px; border-radius: 50px;">
+            Please take your receipt from the slot.
+        </div>
     </div>
 
-    <div class="receipt">
-        <h2>COOLAIRE</h2>
-        <p>Consolidated Inc.</p>
-        <hr>
-        <div class="label">YOUR NUMBER</div>
-        <div class="ticket-num">{{ ticket.ticket_number }}</div>
+    <!-- THE ACTUAL THERMAL RECEIPT -->
+    <div class="receipt-container">
+        <div class="header-brand">COOLAIRE</div>
+        <div class="header-sub">Consolidated Inc.</div>
 
-        <div class="date-time">
-            {{ ticket.created_at.strftime('%m/%d/%Y %I:%M %p') }}
+        <div class="divider"></div>
+
+        <div class="label">Queue Number</div>
+        <div class="ticket-box">
+            <div class="ticket-num">{{ ticket.ticket_number }}</div>
         </div>
 
-        <div class="footer">
-            PLEASE WATCH THE TV DISPLAY.<br>
-            <strong>THANK YOU FOR CHOOSING COOLAIRE!</strong>
+        <div class="timestamp">
+            {{ ticket.created_at.strftime('%Y-%m-%d | %I:%M %p') }}
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="footer-note">
+            PLEASE PROCEED TO THE LOUNGE<br>
+            AND WATCH THE TV DISPLAY.<br>
+            THANK YOU FOR CHOOSING COOLAIRE.
+        </div>
+
+        <div class="ref-id">
+            REF: {{ ticket.booking_id + 5000 if ticket.booking_id else 'WALK-IN' }}
         </div>
     </div>
 
     <script>
-    window.onload = function() {
-        // Short delay to allow mobile browsers to render styles before printing
-        setTimeout(function() {
-            window.print();
-        }, 500);
+        (function() {
+            // Trigger print dialog immediately
+            window.onload = function() {
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+            };
 
-        // Redirect back home after the print dialog is closed or handled
-        // Increased to 3 seconds for better tablet performance
-        setTimeout(function() {
-            window.location.href = "/";
-        }, 3000);
-    };
+            // Event listener for when the print dialog closes
+            window.onafterprint = function() {
+                window.location.href = "/";
+            };
+
+            // Safety redirect (if browser prevents onafterprint)
+            setTimeout(() => {
+                window.location.href = "/";
+            }, 8000);
+        })();
     </script>
-
 </body>
 </html>

@@ -1,0 +1,187 @@
+{% extends "base_staff.html" %}
+
+{% block content %}
+<div class="animate__animated animate__fadeIn">
+
+    <!-- HEADER SECTION -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <h3 class="fw-800 mb-1 letter-spacing-tight">Service Categories</h3>
+            <p class="text-muted mb-0">Define and manage the types of services offered in the queue.</p>
+        </div>
+        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+            <div class="input-group shadow-sm rounded-3 overflow-hidden border-0" style="max-width: 300px; margin-left: auto;">
+                <span class="input-group-text bg-white border-0"><i class="fa-solid fa-magnifying-glass text-muted small"></i></span>
+                <input type="text" id="categorySearch" class="form-control border-0 px-2 py-2 small" placeholder="Quick find service...">
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- LEFT: ADD CATEGORY FORM -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden sticky-top" style="top: 1.5rem;">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="bg-primary-soft p-2 rounded-3 me-3">
+                            <i class="fa-solid fa-folder-plus text-primary fs-5"></i>
+                        </div>
+                        <h6 class="fw-800 mb-0">Register New Service</h6>
+                    </div>
+                    <hr class="opacity-10">
+                </div>
+
+                <div class="card-body p-4 pt-2">
+                    <form action="/staff/categories" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-800 text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Service Name</label>
+                            <input type="text" name="category_name"
+                                   class="form-control bg-light border-0 py-3 px-3 fw-bold custom-input"
+                                   placeholder="e.g. Preventative Maintenance" required>
+                            <div class="form-text extra-small opacity-75 mt-2">
+                                Use a clear, concise name that technicians will recognize.
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-3 fw-800 rounded-3 shadow-sm border-0 mt-2 hover-lift">
+                            <i class="fa-solid fa-plus-circle me-2"></i>ADD CATEGORY
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card-footer bg-light border-0 p-3 text-center">
+                    <span class="extra-small text-muted fw-bold italic">
+                        <i class="fa-solid fa-info-circle me-1"></i> These appear in the Live Console dropdown.
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: CATEGORY LIST -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 bg-white min-vh-50">
+                <div class="card-header bg-white border-0 p-4 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-800 mb-0">Active Service Portfolio</h6>
+                    <span class="badge bg-primary-soft text-primary rounded-pill fw-bold" id="catCount">{{ categories|length }} Categories</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="categoryTable">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th class="ps-4 border-0 py-3 extra-small text-muted text-uppercase fw-800">Category Name</th>
+                                <th class="text-center border-0 py-3 extra-small text-muted text-uppercase fw-800">Date Added</th>
+                                <th class="text-end pe-4 border-0 py-3 extra-small text-muted text-uppercase fw-800">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in categories %}
+                            <tr class="category-row transition-all">
+                                <td class="ps-4 border-bottom-light">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-ice rounded-circle d-flex align-items-center justify-content-center me-3 border" style="width: 36px; height: 36px;">
+                                            <i class="fa-solid fa-tag text-primary small"></i>
+                                        </div>
+                                        <div>
+                                            <span class="fw-700 text-dark category-name">{{ cat.name }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center border-bottom-light">
+                                    <span class="text-muted small fw-600">Active</span>
+                                </td>
+                                <td class="text-end pe-4 border-bottom-light">
+                                    <a href="{{ url_for('delete_category', id=cat.id) }}"
+                                       class="btn btn-outline-danger btn-sm rounded-3 border-0 px-3 hover-danger-bg"
+                                       onclick="return confirm('Archive this service category?')">
+                                        <i class="fa-solid fa-trash-can me-1"></i> Delete
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="p-5 text-center">
+                                    <div class="opacity-25 py-4">
+                                        <i class="fa-solid fa-layer-group fa-4x mb-3"></i>
+                                        <h5 class="fw-800">No Categories Found</h5>
+                                        <p class="small">Add your first service type to get started.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* Component Specific Styles */
+    .bg-primary-soft { background-color: rgba(0, 45, 114, 0.08); }
+    .bg-ice { background-color: #f8fafc; }
+    .border-bottom-light { border-bottom: 1px solid #f1f5f9 !important; }
+
+    .custom-input:focus {
+        background-color: white !important;
+        box-shadow: 0 0 0 4px rgba(0, 45, 114, 0.1);
+        border: 1px solid var(--coolaire-blue) !important;
+    }
+
+    .extra-small { font-size: 0.65rem; }
+    .fw-700 { font-weight: 700; }
+    .fw-800 { font-weight: 800; }
+
+    .hover-lift { transition: transform 0.2s; }
+    .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1) !important; }
+
+    .hover-danger-bg:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .category-row {
+        cursor: default;
+    }
+
+    .category-row:hover {
+        background-color: #fcfdfe !important;
+    }
+
+    /* Sticky handling for sidebar form */
+    .sticky-top {
+        z-index: 10;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('categorySearch');
+    const tableRows = document.querySelectorAll('.category-row');
+    const catCount = document.getElementById('catCount');
+
+    // Real-time Filtering
+    searchInput.addEventListener('keyup', function(e) {
+        const term = e.target.value.toLowerCase();
+        let visibleCount = 0;
+
+        tableRows.forEach(row => {
+            const text = row.querySelector('.category-name').textContent.toLowerCase();
+            if(text.includes(term)) {
+                row.style.display = "";
+                visibleCount++;
+            } else {
+                row.style.display = "none";
+            }
+        });
+
+        catCount.innerText = `${visibleCount} Found`;
+    });
+});
+</script>
+{% endblock %}

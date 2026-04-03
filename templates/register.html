@@ -1,214 +1,319 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="container-fluid d-flex flex-column justify-content-center py-2 page-fade-in" style="min-height: 85vh; max-height: 100vh;">
-    <div class="row justify-content-center h-100">
-        <div class="col-xl-11 h-100">
-            <!-- Main Bento Wrapper (Split Layout) -->
-            <div class="bento-card p-0 overflow-hidden shadow-deep border-0 d-flex flex-column flex-lg-row bg-white h-100 rounded-5">
+<div class="container-fluid py-4 min-vh-100 d-flex flex-column justify-content-center animate__animated animate__fadeIn">
+    <div class="row justify-content-center">
+        <div class="col-xl-11 col-xxl-10">
 
-                <!-- Left Side: Branding (Auto-scales height) -->
-                <div class="p-4 p-xl-5 text-white d-flex flex-column justify-content-between position-relative"
-                     style="flex: 1; background: linear-gradient(135deg, #002d72 0%, #001d4a 100%); min-height: 300px;">
+            <!-- MASTER ENROLLMENT BENTO -->
+            <div class="login-card border-0 shadow-2xl overflow-hidden d-flex flex-column flex-lg-row bg-white rounded-5 position-relative">
 
-                    <!-- Background Pattern -->
+                <!-- LEFT SIDE: SYSTEM IDENTITY & VALUE -->
+                <div class="p-5 text-white d-flex flex-column justify-content-between position-relative d-none d-lg-flex"
+                     style="flex: 1.1; background: linear-gradient(165deg, var(--coolaire-blue) 0%, var(--coolaire-blue-dark) 100%);">
+
+                    <!-- Tech Pattern Overlay -->
                     <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10"
-                         style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); pointer-events: none;"></div>
+                         style="background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'); pointer-events: none;"></div>
 
-                    <div class="position-relative" style="z-index: 1;">
-                        <span class="badge rounded-pill mb-3 px-3 py-2" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); font-size: 0.75rem;">
-                            <i class="fa-solid fa-snowflake me-2 text-warning"></i>Leading Cold Chain Partner
-                        </span>
-                        <h1 class="fw-900 mb-2 lh-1" style="font-size: clamp(1.8rem, 4vw, 3rem); letter-spacing: -2px;">Join the Network</h1>
-                        <p class="opacity-75 small mb-0" style="font-size: clamp(0.85rem, 1.2vw, 1rem);">Track maintenance and enjoy priority queuing.</p>
-                    </div>
-
-                    <!-- Features List (Self-adjusting/Hiding on small height) -->
-                    <div class="mt-4 mt-xl-5 position-relative d-none d-sm-block" style="z-index: 1;">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm flex-shrink-0" style="width: 35px; height: 35px;">
-                                <i class="fa-solid fa-bolt-lightning fa-sm"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold small">Priority Servicing</h6>
-                                <p class="opacity-60 mb-0" style="font-size: 0.65rem;">Skip the general walk-in line.</p>
-                            </div>
+                    <div class="position-relative z-index-2">
+                        <div class="brand-badge mb-5">
+                            <span class="badge rounded-pill px-3 py-2 glass-badge">
+                                <i class="fa-solid fa-user-plus me-2"></i> IDENTITY ENROLLMENT
+                            </span>
                         </div>
-                        <div class="d-flex align-items-center">
-                            <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm flex-shrink-0" style="width: 35px; height: 35px;">
-                                <i class="fa-solid fa-clock-rotate-left fa-sm"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold small">Service History</h6>
-                                <p class="opacity-60 mb-0" style="font-size: 0.65rem;">Digital records for all your units.</p>
-                            </div>
+
+                        <!-- FULL SYSTEM TITLE -->
+                        <h1 class="display-5 fw-950 mb-3 letter-spacing-tight leading-tight">
+                            Queueing and <br>
+                            <span class="text-warning">Online Booking</span> <br>
+                            Management System <br>
+                            <span class="fs-4 opacity-50 fw-bold">ver 1.0</span>
+                        </h1>
+
+                        <!-- UPDATED TAGLINE -->
+                        <div class="mt-4 border-start border-warning border-4 ps-3">
+                            <p class="fs-6 opacity-85 fw-600 mb-0 leading-relaxed">
+                                The Pioneer in Refrigerated <br>
+                                Transport & Cold Storage <br>
+                                Solutions since 1969.
+                            </p>
                         </div>
                     </div>
 
-                    <div class="position-relative pt-3 border-top border-white border-opacity-10 mt-4" style="z-index: 1;">
-                        <p class="small opacity-50 mb-0" style="font-size: 0.65rem;">Trusted by cold chain operators nationwide.</p>
+                    <!-- FEATURE HIGHLIGHTS -->
+                    <div class="position-relative z-index-2">
+                        <div class="d-flex align-items-center mb-4 gap-3 p-3 rounded-4 glass-panel">
+                            <div class="bg-white bg-opacity-10 rounded-3 p-2">
+                                <i class="fa-solid fa-bolt-lightning text-warning"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-800 small">Priority Processing</h6>
+                                <p class="extra-small opacity-50 mb-0">Registered units bypass manual check-in steps.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3 p-3 rounded-4 glass-panel">
+                            <div class="bg-white bg-opacity-10 rounded-3 p-2">
+                                <i class="fa-solid fa-chart-line text-info"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-800 small">Fleet Intelligence</h6>
+                                <p class="extra-small opacity-50 mb-0">Track service history and maintenance logs live.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="position-relative z-index-2">
+                        <p class="extra-small opacity-50 mb-0 fw-800 text-uppercase tracking-widest">Secure Enrollment Portal &bull; CCI CORE</p>
                     </div>
                 </div>
 
-                <!-- Right Side: Registration Form (Scrollable internally if needed) -->
-                <div class="p-4 p-xl-5 bg-white d-flex flex-column" style="flex: 1.5; overflow-y: auto; max-height: 100%;">
-                    <form action="/register" method="POST" id="registerForm">
+                <!-- RIGHT SIDE: ENROLLMENT ENGINE -->
+                <div class="p-4 p-xl-5 bg-white d-flex flex-column justify-content-center" style="flex: 1.4;">
+
+                    <!-- Notification Area -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% for category, message in messages %}
+                          <div class="alert alert-{{ category }} border-0 rounded-4 shadow-sm d-flex align-items-center mb-4 animate__animated animate__shakeX">
+                              <i class="fa-solid fa-circle-exclamation me-3"></i>
+                              <div class="small fw-800">{{ message }}</div>
+                          </div>
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+
+                    <form action="/register" method="POST" id="registerForm" autocomplete="off">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                        <div class="d-flex justify-content-between align-items-end mb-3 mb-xl-4">
+                        <!-- SECTION 1: IDENTITY -->
+                        <div class="d-flex justify-content-between align-items-end mb-4">
                             <div>
-                                <h3 class="fw-900 text-dark mb-0" style="font-size: clamp(1.4rem, 2.5vw, 1.8rem);">Registration</h3>
-                                <p class="text-muted small mb-0">Fill in your identity details</p>
+                                <h3 class="fw-950 text-dark mb-0">Enrollment Details</h3>
+                                <p class="text-muted fw-600 small mb-0">Enter your official business information.</p>
                             </div>
-                            <span class="badge bg-light text-primary fw-bold px-3 py-2 rounded-pill border small">1 / 2</span>
+                            <span class="badge bg-light text-primary border px-3 py-2 rounded-pill fw-800 extra-small">STEP 01</span>
                         </div>
 
-                        <div class="row g-2 g-xl-3">
+                        <div class="row g-3 mb-5">
                             <div class="col-md-6">
-                                <label class="form-label small fw-900 text-secondary tracking-widest text-uppercase" style="font-size: 0.65rem;">Full Name</label>
-                                <div class="input-group bento-input-group shadow-sm">
-                                    <span class="input-group-text border-0 bg-light rounded-start-4 ps-3"><i class="fa-solid fa-id-card text-muted"></i></span>
-                                    <input type="text" name="full_name" class="form-control border-0 bg-light rounded-end-4 shadow-none py-2 py-xl-3" placeholder="Juan Dela Cruz" required>
+                                <label class="form-label auth-label">Contact Full Name</label>
+                                <div class="auth-input-group">
+                                    <span class="input-icon"><i class="fa-solid fa-id-badge"></i></span>
+                                    <input type="text" name="full_name" class="form-control auth-input" placeholder="Full Name" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-900 text-secondary tracking-widest text-uppercase" style="font-size: 0.65rem;">Phone Number</label>
-                                <div class="input-group bento-input-group shadow-sm">
-                                    <span class="input-group-text border-0 bg-light rounded-start-4 ps-3"><i class="fa-solid fa-mobile-screen text-muted"></i></span>
-                                    <input type="tel" name="phone" class="form-control border-0 bg-light rounded-end-4 shadow-none py-2 py-xl-3" placeholder="0917 XXX XXXX" required>
+                                <label class="form-label auth-label">Mobile Number</label>
+                                <div class="auth-input-group">
+                                    <span class="input-icon"><i class="fa-solid fa-phone"></i></span>
+                                    <input type="tel" name="phone" class="form-control auth-input" placeholder="09XX XXX XXXX" required>
                                 </div>
                             </div>
                             <div class="col-12">
-                                <label class="form-label small fw-900 text-secondary tracking-widest text-uppercase" style="font-size: 0.65rem;">Email Address</label>
-                                <div class="input-group bento-input-group shadow-sm">
-                                    <span class="input-group-text border-0 bg-light rounded-start-4 ps-3"><i class="fa-solid fa-envelope text-muted"></i></span>
-                                    <input type="email" name="email" class="form-control border-0 bg-light rounded-end-4 shadow-none py-2 py-xl-3" placeholder="juan.delacruz@email.com" required>
+                                <label class="form-label auth-label">Official Email Address</label>
+                                <div class="auth-input-group">
+                                    <span class="input-icon"><i class="fa-solid fa-envelope"></i></span>
+                                    <input type="email" name="email" class="form-control auth-input" placeholder="name@company.com" required>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label auth-label">Organization / Entity Name</label>
+                                <div class="auth-input-group">
+                                    <span class="input-icon"><i class="fa-solid fa-building"></i></span>
+                                    <input type="text" name="company_name" class="form-control auth-input" placeholder="Registered Company Name" required>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Security Section (Step 2) -->
-                        <div class="d-flex justify-content-between align-items-end mb-3 mb-xl-4 mt-4 mt-xl-5">
+                        <!-- SECTION 2: AUTHENTICATION -->
+                        <div class="d-flex justify-content-between align-items-end mb-4">
                             <div>
-                                <h3 class="fw-900 text-dark mb-0" style="font-size: clamp(1.4rem, 2.5vw, 1.8rem);">Security</h3>
-                                <p class="text-muted small mb-0">Access credentials</p>
+                                <h3 class="fw-950 text-dark mb-0">Access Keys</h3>
+                                <p class="text-muted fw-600 small mb-0">Define your portal credentials.</p>
                             </div>
-                            <span class="badge bg-light text-primary fw-bold px-3 py-2 rounded-pill border small">2 / 2</span>
+                            <span class="badge bg-light text-primary border px-3 py-2 rounded-pill fw-800 extra-small">STEP 02</span>
                         </div>
 
-                        <div class="row g-2 g-xl-3">
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label small fw-900 text-secondary tracking-widest text-uppercase" style="font-size: 0.65rem;">Username</label>
-                                <div class="input-group bento-input-group shadow-sm">
-                                    <span class="input-group-text border-0 bg-light rounded-start-4 ps-3"><i class="fa-solid fa-user-circle text-muted"></i></span>
-                                    <input type="text" name="username" class="form-control border-0 bg-light rounded-end-4 shadow-none py-2 py-xl-3" placeholder="juan.coolaire" required>
+                                <label class="form-label auth-label">Portal Username</label>
+                                <div class="auth-input-group">
+                                    <span class="input-icon"><i class="fa-solid fa-at"></i></span>
+                                    <input type="text" name="username" class="form-control auth-input" placeholder="username" required autocomplete="username">
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-900 text-secondary tracking-widest text-uppercase" style="font-size: 0.65rem;">Password</label>
-                                <div class="input-group bento-input-group shadow-sm">
-                                    <span class="input-group-text border-0 bg-light rounded-start-4 ps-3"><i class="fa-solid fa-key text-muted"></i></span>
-                                    <input type="password" name="password" id="regPassword" class="form-control border-0 bg-light shadow-none py-2 py-xl-3" placeholder="••••••••" required>
-                                    <span class="input-group-text border-0 bg-light rounded-end-4 pe-3" style="cursor: pointer;" onclick="toggleRegPassword()">
-                                        <i class="fa-solid fa-eye text-muted" id="regToggleIcon"></i>
-                                    </span>
+                                <label class="form-label auth-label">Security Password</label>
+                                <div class="auth-input-group">
+                                    <span class="input-icon"><i class="fa-solid fa-shield-keyhole"></i></span>
+                                    <input type="password" name="password" id="regPassword" class="form-control auth-input" placeholder="••••••••" required autocomplete="new-password">
+                                    <button type="button" class="btn-toggle-pass" onclick="toggleRegPass()">
+                                        <i class="fa-solid fa-eye-slash" id="regIcon"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mt-4 mt-xl-5">
-                            <button type="submit" class="btn btn-primary btn-modern w-100 py-3 py-xl-4 fs-5 shadow-lg border-0" id="regSubmitBtn">
-                                <span>CREATE MY ACCOUNT</span>
-                                <i class="fa-solid fa-user-check ms-2"></i>
+                        <div class="mt-5">
+                            <button type="submit" class="btn btn-auth-submit w-100 py-4 mb-4" id="regSubmitBtn">
+                                <span class="btn-text">Complete Enrollment <i class="fa-solid fa-circle-check ms-2"></i></span>
                             </button>
-                        </div>
-
-                        <div class="mt-3 text-center">
-                            <p class="text-muted small mb-0">Already a member?
-                                <a href="/login" class="text-primary fw-900 text-decoration-none ms-1">Sign In <i class="fa-solid fa-chevron-right small"></i></a>
-                            </p>
+                            <div class="text-center">
+                                <span class="text-muted small fw-700">Already enrolled?</span>
+                                <a href="/login" class="register-link">Sign In to Portal</a>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Mobile Security Badge -->
-            <div class="text-center mt-3 d-none d-lg-block opacity-75">
-                <div class="d-inline-flex align-items-center bg-white px-3 py-1 rounded-pill shadow-sm border">
-                    <i class="fa-solid fa-shield-halved text-success me-2 small"></i>
-                    <small class="text-muted fw-bold text-uppercase tracking-wider" style="font-size: 0.6rem;">SSL Encrypted Registration</small>
-                </div>
+            <!-- Global Footer Note -->
+            <div class="text-center mt-5">
+                <p class="text-muted extra-small fw-800 text-uppercase tracking-widest opacity-50">
+                    Queueing and Online Booking Management System &bull; ver 1.0 &bull; CCI 2024
+                </p>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    .fw-900 { font-weight: 900; }
-    .shadow-deep { box-shadow: 0 20px 60px rgba(0,0,0,0.06); }
-    .tracking-widest { letter-spacing: 0.12em; }
+    :root {
+        --coolaire-blue: #002d72;
+        --coolaire-blue-dark: #001d4a;
+        --coolaire-yellow: #ffc107;
+    }
 
-    /* Bento Input Styles */
-    .bento-input-group {
+    .fw-950 { font-weight: 950; }
+    .fw-800 { font-weight: 800; }
+    .letter-spacing-tight { letter-spacing: -1.5px; }
+    .z-index-2 { z-index: 2; }
+    .opacity-85 { opacity: 0.85; }
+    .extra-small { font-size: 0.65rem; }
+
+    /* Card Styling */
+    .login-card {
+        box-shadow: 0 50px 100px -20px rgba(0, 45, 114, 0.25);
+        min-height: 800px;
+    }
+
+    .glass-badge {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: transform 0.3s ease;
+    }
+    .glass-panel:hover { transform: translateX(5px); }
+
+    /* Inputs */
+    .auth-label {
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #64748b;
+    }
+
+    .auth-input-group {
+        display: flex;
+        align-items: center;
+        background: #f1f5f9;
+        border-radius: 14px;
+        padding: 4px 16px;
         border: 2px solid transparent;
-        border-radius: 16px;
         transition: all 0.3s ease;
     }
-    .bento-input-group:focus-within {
-        border-color: rgba(0, 45, 114, 0.2);
+
+    .auth-input-group:focus-within {
         background: white;
-    }
-    .bento-input-group input {
-        border-radius: 0 16px 16px 0 !important;
-    }
-
-    /* Button Styling */
-    .btn-modern {
-        border-radius: 18px;
-        font-weight: 800;
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .btn-modern:hover {
+        border-color: var(--coolaire-blue);
+        box-shadow: 0 10px 20px rgba(0, 45, 114, 0.05);
         transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(0, 45, 114, 0.2) !important;
     }
 
-    /* Spinner logic */
-    .btn-loading span { display: none; }
-    .btn-loading::after {
-        content: ""; width: 22px; height: 22px;
-        border: 3px solid rgba(255,255,255,0.3);
-        border-top-color: #fff; border-radius: 50%;
-        animation: spin 0.8s linear infinite; display: inline-block;
+    .input-icon { color: #94a3b8; font-size: 1.1rem; margin-right: 12px; }
+    .auth-input {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 12px 0;
+        font-weight: 700;
+        color: var(--coolaire-blue-dark);
     }
+
+    .btn-toggle-pass {
+        background: none; border: none; color: #94a3b8; padding: 8px;
+    }
+
+    /* Submit Button */
+    .btn-auth-submit {
+        background: var(--coolaire-blue);
+        border: none;
+        border-radius: 14px;
+        color: white;
+        font-weight: 800;
+        font-size: 1.1rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .btn-auth-submit:hover {
+        background: var(--coolaire-blue-dark);
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(0, 45, 114, 0.3);
+    }
+
+    .btn-auth-submit.loading .btn-text { visibility: hidden; }
+    .btn-auth-submit.loading::after {
+        content: "";
+        position: absolute;
+        width: 24px; height: 24px;
+        top: 50%; left: 50%;
+        margin: -12px 0 0 -12px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Custom scrollbar for form area */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+    .register-link { font-size: 0.85rem; font-weight: 900; text-decoration: none; color: var(--coolaire-blue); margin-left: 5px; }
 
     @media (max-width: 991px) {
-        .bento-card { border-radius: 24px !important; margin: 0; }
-        body { overflow-y: auto !important; }
+        .login-card { flex-direction: column !important; min-height: auto; border-radius: 30px !important; }
+        .display-5 { font-size: 2.2rem; }
     }
 </style>
 
 <script>
-    function toggleRegPassword() {
-        const input = document.getElementById('regPassword');
-        const icon = document.getElementById('regToggleIcon');
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.classList.replace('fa-eye', 'fa-eye-slash');
-        } else {
-            input.type = 'password';
+    function toggleRegPass() {
+        const pInput = document.getElementById('regPassword');
+        const icon = document.getElementById('regIcon');
+        if (pInput.type === 'password') {
+            pInput.type = 'text';
             icon.classList.replace('fa-eye-slash', 'fa-eye');
+        } else {
+            pInput.type = 'password';
+            icon.classList.replace('fa-eye', 'fa-eye-slash');
         }
     }
 
-    document.getElementById('registerForm').onsubmit = function() {
+    document.getElementById('registerForm').addEventListener('submit', function() {
         const btn = document.getElementById('regSubmitBtn');
-        btn.classList.add('btn-loading');
+        btn.classList.add('loading');
         btn.disabled = true;
-    };
+    });
 </script>
 {% endblock %}
