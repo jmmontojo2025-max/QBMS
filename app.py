@@ -16,6 +16,7 @@ import csv
 from io import StringIO
 from flask import make_response
 from datetime import timedelta
+from flask_login import LoginManager
 
 import smtplib
 from email.mime.text import MIMEText
@@ -34,7 +35,11 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = '3cc4b579f785f434049ef47d012d9715be0f6eecd80049d6' # Required for CSRF
 csrf = CSRFProtect(app)
+
+
+login_manager = LoginManager(app)
 
 
 # --- CONFIGURATION ---
