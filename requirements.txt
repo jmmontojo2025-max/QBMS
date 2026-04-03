@@ -1,7 +1,21 @@
-Flask
-Flask-SQLAlchemy
-Flask-Login
-Flask-WTF
-Flask-Limiter
-psycopg2-binary
-gunicorn
+# Core Framework
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+
+# Security & Utilities
+Werkzeug==3.0.1
+itsdangerous==2.1.2
+python-dotenv==1.0.0
+email-validator==2.1.0.post1
+
+# Database Driver (SQLite is built-in, but this is for migrations/production)
+SQLAlchemy==2.0.23
+
+# Performance & Deployment
+gunicorn==21.2.0
+requests==2.31.0
+
+# Optional: For QR Code generation locally if not using the external API
+# qrcode[pil]==7.4.2
