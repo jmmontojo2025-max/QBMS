@@ -1,0 +1,49 @@
+{% extends "base_staff.html" %}
+{% block content %}
+<div class="row g-4 animate__animated animate__fadeIn">
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h6 class="fw-800 text-primary mb-4">REGISTER TECHNICIAN</h6>
+            <form action="/staff/technicians" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted">FULL NAME</label>
+                    <input type="text" name="tech_name" class="form-control" placeholder="e.g. Juan Dela Cruz" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 fw-bold">ADD TO HUB</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white p-4">
+                <h6 class="fw-800 mb-0">TECHNICIANS AT {{ session.get('location_name') }}</h6>
+            </div>
+            <table class="table align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">NAME</th>
+                        <th>STATUS</th>
+                        <th class="text-end pe-4">ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in technicians %}
+                    <tr>
+                        <td class="ps-4 fw-bold">{{ t.name }}</td>
+                        <td><span class="badge bg-success">Active</span></td>
+                        <td class="text-end pe-4">
+                            <a href="/staff/technicians/delete/{{ t.id }}" class="btn btn-sm btn-outline-danger border-0">
+                                <i class="fa-solid fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center py-5 text-muted">No technicians assigned to this branch.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

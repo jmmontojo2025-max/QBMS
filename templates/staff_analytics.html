@@ -1,42 +1,50 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<div class="animate__animated animate__fadeIn">
+<div class="p-4 animate__animated animate__fadeIn" style="background: #f8fafc; min-height: 100vh;">
 
-    <!-- 1. DASHBOARD HEADER & INSIGHT -->
-    <div class="row mb-4 align-items-end">
+    <!-- 1. HEADER: BRANCH & SESSION CONTEXT -->
+    <div class="row mb-4 align-items-center">
         <div class="col-md-8">
-            <h3 class="fw-800 mb-1 letter-spacing-tight">Analytics Dashboard</h3>
-            <p class="text-muted mb-0">Real-time business intelligence and performance forecasting.</p>
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-navy p-3 rounded-4 shadow-lg text-white icon-pulse">
+                    <i class="fa-solid fa-chart-line fs-4"></i>
+                </div>
+                <div>
+                    <h3 class="fw-900 mb-0 letter-spacing-tight text-dark">{{ session.get('location_name') }} Analytics</h3>
+                    <p class="text-muted small mb-0 font-monospace text-uppercase">
+                        <span class="status-indicator-green"></span> NODE: {{ session.get('location_code') }} // STREAM: LIVE_DATA_FEED
+                    </p>
+                </div>
+            </div>
         </div>
         <div class="col-md-4 text-md-end mt-3 mt-md-0">
-            <button class="btn btn-white border shadow-sm fw-bold px-3 py-2 rounded-3 me-2">
-                <i class="fa-solid fa-calendar-day me-2 text-primary"></i> Last 30 Days
+            <button onclick="window.location.reload()" class="btn btn-white border shadow-sm fw-bold px-4 py-2 rounded-3 transition-all hover-lift">
+                <i class="fa-solid fa-arrows-rotate me-2 text-primary rotate-icon"></i> Live Refresh
             </button>
-            <a href="/staff/reports/export" class="btn btn-primary shadow-sm fw-bold px-3 py-2 rounded-3">
-                <i class="fa-solid fa-file-export me-2"></i> Export
-            </a>
         </div>
     </div>
 
-    <!-- 2. SUMMARY HEADER CARD -->
-    <div class="card border-0 rounded-4 shadow-sm mb-4 overflow-hidden">
-        <div class="card-body p-0">
-            <div class="row g-0">
-                <div class="col-lg-1 bg-primary d-none d-lg-flex align-items-center justify-content-center text-white">
-                    <i class="fa-solid fa-robot fs-3 opacity-50"></i>
+    <!-- 2. AI STRATEGIC INSIGHT (ANIMATED ORB) -->
+    <div class="card border-0 rounded-4 shadow-sm mb-4 overflow-hidden" style="border-left: 6px solid #002d72 !important;">
+        <div class="card-body p-4 bg-glass">
+            <div class="d-flex align-items-center gap-4">
+                <div class="ai-orb-container d-none d-lg-block">
+                    <div class="orb-core"></div>
+                    <div class="orb-ring ring-1"></div>
+                    <div class="orb-ring ring-2"></div>
                 </div>
-                <div class="col-lg-11 p-4 bg-white">
-                    <div class="d-flex align-items-start">
-                        <div class="flex-grow-1">
-                            <h6 class="fw-800 text-primary text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">AI Insight Assistant</h6>
-                            <p class="text-secondary small mb-0">
-                                Your queue volume is <span class="badge bg-success-soft text-success">+12% higher</span> than last week.
-                                Based on historical data, we recommend opening an additional service bay on <strong class="text-dark" id="recommendationDay">...</strong>
-                                between 10:00 AM and 2:00 PM to maintain service speed.
-                            </p>
-                        </div>
-                    </div>
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold text-primary mb-1 text-uppercase ls-1">Strategic AI Insight</h6>
+                    <p class="text-secondary mb-0 fw-500">
+                        Operational efficiency is tracking
+                        <span class="fw-bold text-{{ 'success' if momentum >= 0 else 'danger' }}">
+                            {{ momentum }}% {{ 'higher' if momentum >= 0 else 'lower' }}
+                        </span>
+                        than the previous cycle. Recommendation: Allocate additional technical resources on
+                        <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" id="recommendationDay">Analyzing Patterns...</span>
+                        to mitigate peak arrival latency.
+                    </p>
                 </div>
             </div>
         </div>
@@ -44,147 +52,158 @@
 
     <!-- 3. KPI GRID -->
     <div class="row g-4 mb-4">
-        <!-- KPI 1 -->
+        <!-- TODAY'S JOBS -->
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 transition-hover">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="rounded-3 bg-primary bg-opacity-10 p-2">
-                        <i class="fa-solid fa-truck-moving text-primary fs-5"></i>
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100 kpi-card overflow-hidden">
+                <div class="kpi-bg-icon"><i class="fa-solid fa-truck-fast"></i></div>
+                <div class="text-muted fw-bold small text-uppercase mb-2 ls-1">Today's Jobs</div>
+                <div class="d-flex align-items-center justify-content-between position-relative">
+                    <h2 class="fw-900 mb-0">{{ daily_count }}</h2>
+                    <div class="icon-shape bg-primary-soft text-primary ani-float">
+                        <i class="fa-solid fa-calendar-day"></i>
                     </div>
-                    <span class="badge bg-success-soft text-success rounded-pill fw-bold">+5%</span>
                 </div>
-                <div class="text-muted fw-bold small text-uppercase mb-1" style="font-size: 0.65rem;">Today's Throughput</div>
-                <h3 class="fw-800 mb-1">{{ daily_count }} <span class="fs-6 text-muted fw-normal">Units</span></h3>
-                <div class="progress mt-3" style="height: 6px;">
-                    <div class="progress-bar bg-primary" style="width: 70%"></div>
+                <div class="mt-3 small text-muted position-relative">
+                    <i class="fa-solid fa-circle-check text-success me-1"></i> Data synced 1m ago
                 </div>
             </div>
         </div>
 
-        <!-- KPI 2 -->
+        <!-- AVG WAIT TIME -->
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 transition-hover">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="rounded-3 bg-warning bg-opacity-10 p-2">
-                        <i class="fa-solid fa-clock-rotate-left text-warning fs-5"></i>
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100 kpi-card overflow-hidden">
+                <div class="kpi-bg-icon"><i class="fa-solid fa-clock"></i></div>
+                <div class="text-muted fw-bold small text-uppercase mb-2 ls-1">Avg Wait Time</div>
+                <div class="d-flex align-items-center justify-content-between position-relative">
+                    <h2 class="fw-900 mb-0">{{ avg_wait }} <span class="fs-6 fw-normal">m</span></h2>
+                    <div class="icon-shape bg-warning-soft text-warning ani-pendulum">
+                        <i class="fa-solid fa-hourglass-half"></i>
                     </div>
-                    <span class="badge bg-danger-soft text-danger rounded-pill fw-bold">-2m</span>
                 </div>
-                <div class="text-muted fw-bold small text-uppercase mb-1" style="font-size: 0.65rem;">Avg. Wait Time</div>
-                <h3 class="fw-800 mb-1">14.2 <span class="fs-6 text-muted fw-normal">Mins</span></h3>
-                <div class="progress mt-3" style="height: 6px;">
-                    <div class="progress-bar bg-warning" style="width: 45%"></div>
+                <div class="mt-3 position-relative">
+                    <div class="progress" style="height: 6px; background: #f1f5f9;">
+                        <div class="progress-bar bg-warning" style="width: 75%"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- KPI 3 (Large Visual Card) -->
+        <!-- MOMENTUM CARD (GLASSMORPHISM) -->
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100"
-                 style="background: linear-gradient(225deg, var(--coolaire-blue-dark) 0%, var(--coolaire-blue) 100%);">
-                <div class="card-body p-4 d-flex flex-column justify-content-between position-relative">
-                    <div class="position-absolute top-0 end-0 p-3 opacity-25">
-                        <i class="fa-solid fa-chart-line fa-6x text-white"></i>
-                    </div>
-                    <div class="z-index-1">
-                        <h5 class="fw-800 text-warning mb-2 text-uppercase" style="letter-spacing: 1px;">Growth Momentum</h5>
-                        <p class="text-white opacity-75 small mb-4">Cumulative monthly performance tracking vs previous fiscal year.</p>
-                    </div>
-                    <div class="d-flex align-items-end gap-3 z-index-1">
-                        <div>
-                            <h2 class="text-white fw-900 mb-0">854</h2>
-                            <small class="text-white opacity-50 text-uppercase fw-bold" style="font-size: 0.6rem;">Total Jobs This Month</small>
+            <div class="card border-0 shadow-lg rounded-4 h-100 overflow-hidden text-white"
+                 style="background: linear-gradient(135deg, #002d72 0%, #001d4a 100%);">
+                <div class="card-body p-4 position-relative">
+                    <div class="row align-items-center h-100">
+                        <div class="col-7 z-index-2">
+                            <h6 class="text-warning fw-bold mb-1 text-uppercase ls-1">Monthly Momentum</h6>
+                            <h1 class="fw-900 mb-1 animate__animated animate__pulse animate__infinite">{{ '+' if momentum >= 0 }}{{ momentum }}%</h1>
+                            <p class="small opacity-75 mb-0">Processed <span class="fw-bold">{{ monthly_count }}</span> assets vs <span class="fw-bold">{{ prev_month_count }}</span> last cycle.</p>
                         </div>
-                        <div class="ms-auto flex-grow-1" style="max-width: 180px;">
-                             <canvas id="miniGrowthChart" height="60"></canvas>
+                        <div class="col-5">
+                            <canvas id="miniGrowthChart" style="height: 90px !important;"></canvas>
                         </div>
                     </div>
+                    <!-- Background decorative icon -->
+                    <i class="fa-solid fa-chart-line position-absolute bottom-0 end-0 opacity-10 mb-n4 me-n2" style="font-size: 10rem;"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 4. CHART AREA -->
-    <div class="row g-4 mb-5">
-        <div class="col-lg-12">
-            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
-                <div class="card-header bg-white border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="fw-800 mb-0">Weekly Traffic Forecast</h5>
-                        <p class="small text-muted mb-0">Predicted arrival volume based on 4-week rolling average</p>
-                    </div>
-                    <div class="bg-light p-1 rounded-3">
-                        <button class="btn btn-sm btn-white shadow-sm border-0 fw-bold px-3">Units</button>
-                        <button class="btn btn-sm text-muted fw-bold px-3">Revenue</button>
-                    </div>
-                </div>
-                <div class="card-body p-4">
-                    <div class="chart-container" style="position: relative; height:340px; width:100%">
-                        <canvas id="forecastChart"></canvas>
-                    </div>
-                </div>
-                <!-- CHART FOOTER INSIGHT -->
-                <div class="card-footer bg-light border-0 p-3 px-4">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center">
-                            <div class="p-2 bg-primary bg-opacity-10 rounded-circle me-3">
-                                <i class="fa-solid fa-magnifying-glass-chart text-primary"></i>
-                            </div>
-                            <span class="small fw-bold">Historical Peak: <span class="text-primary" id="busiestDayText">Calculating...</span></span>
-                        </div>
-                        <span class="small text-muted italic">Update frequency: Real-time</span>
-                    </div>
-                </div>
+    <!-- 4. PRODUCTION FORECAST CHART -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-5">
+        <div class="card-header bg-transparent border-0 p-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-900 mb-0">Arrival Load Prediction</h5>
+                <p class="small text-muted mb-0">Historical daily throughput based on 30-day rolling averages.</p>
+            </div>
+            <div class="badge bg-success-soft text-success px-3 py-2 rounded-pill">
+                <i class="fa-solid fa-server me-1"></i> VERIFIED HISTORY
+            </div>
+        </div>
+        <div class="card-body p-4 pt-0">
+            <div style="height: 350px;">
+                <canvas id="forecastChart"></canvas>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    /* Dashboard specific utility classes */
-    .fw-800 { font-weight: 800; }
-    .bg-success-soft { background-color: #dcfce7; }
-    .bg-danger-soft { background-color: #fee2e2; }
-    .transition-hover { transition: transform 0.2s ease-in-out; cursor: default; }
-    .transition-hover:hover { transform: translateY(-5px); }
-    .letter-spacing-tight { letter-spacing: -0.5px; }
-    .z-index-1 { position: relative; z-index: 1; }
+    :root { --coolaire-navy: #002d72; --coolaire-green: #76b82a; }
+    .bg-navy { background: var(--coolaire-navy); }
+    .fw-900 { font-weight: 900; }
+    .ls-1 { letter-spacing: 1px; }
+    .letter-spacing-tight { letter-spacing: -1.5px; }
+
+    /* KPI Card Styling */
+    .kpi-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 1px solid #f1f5f9 !important; }
+    .kpi-card:hover { transform: translateY(-8px); border-color: var(--coolaire-navy) !important; box-shadow: 0 15px 30px rgba(0,45,114,0.1) !important; }
+    .kpi-bg-icon { position: absolute; right: -10px; bottom: -10px; font-size: 5rem; color: #f8fafc; z-index: 0; }
+    .icon-shape { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.25rem; z-index: 1; position: relative; }
+    .bg-primary-soft { background: #eef2ff; }
+    .bg-warning-soft { background: #fffbeb; }
+    .bg-success-soft { background: #f0fdf4; }
+
+    /* Animated AI Orb */
+    .ai-orb-container { width: 45px; height: 45px; position: relative; }
+    .orb-core { width: 100%; height: 100%; background: var(--coolaire-navy); border-radius: 50%; z-index: 5; position: relative; }
+    .orb-ring { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px solid var(--coolaire-navy); border-radius: 50%; }
+    .ring-1 { animation: orb-expand 2s infinite; }
+    .ring-2 { animation: orb-expand 2s infinite 1s; }
+    @keyframes orb-expand { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
+
+    /* Status Indicator */
+    .status-indicator-green { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 10px #22c55e; }
+
+    /* Icon Animations */
+    .ani-float { animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    .ani-pendulum { animation: pendulum 2s ease-in-out infinite; transform-origin: top center; }
+    @keyframes pendulum { 0%, 100% { transform: rotate(-15deg); } 50% { transform: rotate(15deg); } }
+    .rotate-icon { transition: transform 0.5s ease; }
+    .hover-lift:hover .rotate-icon { transform: rotate(180deg); }
+
+    .z-index-2 { z-index: 2; position: relative; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const fCtx = document.getElementById('forecastChart').getContext('2d');
+
+    // FETCH REAL FORECAST DATA
     fetch('/api/analytics/forecast')
         .then(res => res.json())
         .then(data => {
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const daysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const daysFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             const forecastValues = data.forecast;
 
             const maxVal = Math.max(...forecastValues);
-            const busiestDayIndex = forecastValues.indexOf(maxVal);
-            const peakDay = days[busiestDayIndex];
+            if (maxVal > 0) {
+                const busiestIdx = forecastValues.indexOf(maxVal);
+                document.getElementById('recommendationDay').innerText = daysFull[busiestIdx];
+            } else {
+                document.getElementById('recommendationDay').innerText = "Insufficient Data";
+            }
 
-            document.getElementById('busiestDayText').innerText = peakDay;
-            document.getElementById('recommendationDay').innerText = peakDay;
-
-            const fCtx = document.getElementById('forecastChart').getContext('2d');
-
-            // Create Gradient
+            // Create Professional Gradient
             const gradient = fCtx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, '#002d72');
-            gradient.addColorStop(1, '#0056e0');
+            gradient.addColorStop(1, 'rgba(0, 45, 114, 0.05)');
 
             new Chart(fCtx, {
                 type: 'bar',
                 data: {
-                    labels: days,
+                    labels: daysShort,
                     datasets: [{
-                        label: 'Avg Units',
+                        label: 'Average Arrivals',
                         data: forecastValues,
                         backgroundColor: gradient,
-                        hoverBackgroundColor: '#ffc107',
-                        borderRadius: 8,
-                        barThickness: 45
+                        hoverBackgroundColor: '#76b82a',
+                        borderRadius: 10,
+                        barThickness: 55
                     }]
                 },
                 options: {
@@ -193,41 +212,35 @@ document.addEventListener('DOMContentLoaded', function() {
                         legend: { display: false },
                         tooltip: {
                             backgroundColor: '#001d4a',
-                            padding: 12,
-                            titleFont: { size: 14, weight: 'bold' },
-                            cornerRadius: 8
+                            padding: 15,
+                            cornerRadius: 10,
+                            callbacks: { label: (c) => ` Projected Load: ${c.raw} Units` }
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            border: { display: false },
-                            grid: { color: '#f1f5f9' }
-                        },
-                        x: {
-                            border: { display: false },
-                            grid: { display: false }
-                        }
+                        y: { beginAtZero: true, grid: { borderDash: [5,5], color: '#f1f5f9' }, border: { display: false } },
+                        x: { grid: { display: false }, border: { display: false } }
                     }
                 }
             });
         });
 
-    // Small Mini Growth Chart
+    // MINI SPARKLINE CHART
     const mCtx = document.getElementById('miniGrowthChart').getContext('2d');
     new Chart(mCtx, {
         type: 'line',
         data: {
-            labels: [1,2,3,4,5,6,7],
+            labels: [1,2,3,4,5],
             datasets: [{
-                data: [10, 25, 18, 35, 30, 45, 50],
-                borderColor: '#ffc107',
-                borderWidth: 3,
+                data: [15, 25, 18, 32, {{ monthly_count }}],
+                borderColor: '#76b82a',
+                borderWidth: 4,
                 tension: 0.4,
                 pointRadius: 0
             }]
         },
         options: {
+            maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: { x: { display: false }, y: { display: false } }
         }

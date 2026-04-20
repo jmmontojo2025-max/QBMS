@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coolaire QBMS | Live Display</title>
+    <title>Coolaire Display | {{ location.name }}</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Professional Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
     <style>
         :root {
-            --coolaire-blue: #002d72;
-            --coolaire-blue-dark: #001d4a;
+            --coolaire-navy: #002d72;
+            --coolaire-navy-dark: #001533;
+            --coolaire-green: #76b82a;
             --coolaire-yellow: #ffc107;
-            --bg-canvas: #f8fafc;
-            --card-radius: 2rem;
-            --size-now-serving: clamp(120px, 32vh, 450px);
+            --bg-canvas: #f1f5f9;
+            --card-radius: 1.5rem;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,248 +25,218 @@
         body {
             height: 100vh; width: 100vw;
             background: var(--bg-canvas);
-            background-image: radial-gradient(circle at 0% 0%, #e2e8f0 0%, transparent 50%),
-                              radial-gradient(circle at 100% 100%, #cbd5e1 0%, transparent 50%);
             font-family: 'Plus Jakarta Sans', sans-serif;
             display: flex; flex-direction: column;
-            padding: 1.5vh;
+            padding: 2vh;
             overflow: hidden;
+            color: #1e293b;
         }
 
-        /* --- HEADER --- */
+        /* --- HEADER AREA --- */
         .tv-header {
-            height: 10vh;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
+            height: 12vh;
+            background: white;
             border-radius: var(--card-radius);
-            margin-bottom: 1.5vh;
+            margin-bottom: 2vh;
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 2.5vw;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
-            border: 1px solid rgba(255,255,255,0.8);
+            padding: 0 3vw;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border-bottom: 5px solid var(--coolaire-navy);
         }
 
-        .brand-block img { height: 5vh; max-height: 60px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05)); }
+        .branch-info { display: flex; align-items: center; gap: 20px; }
+        .hub-icon-wrapper { position: relative; }
+        .hub-icon {
+            width: 60px; height: 60px; background: var(--coolaire-navy); color: white;
+            border-radius: 15px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; position: relative; z-index: 2;
+        }
+        .radar-ping {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            border: 3px solid var(--coolaire-navy); border-radius: 15px;
+            animation: radar-expand 2s infinite;
+        }
+
+        .branch-label h1 { font-size: 2.2rem; font-weight: 900; color: var(--coolaire-navy); line-height: 1; margin-bottom: 2px; }
+        .branch-label span { font-size: 0.9rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 2px; }
 
         .clock-block { text-align: right; }
-        #time {
-            font-size: clamp(2rem, 5vh, 4rem);
-            font-weight: 900;
-            color: var(--coolaire-blue);
-            line-height: 1;
-            font-variant-numeric: tabular-nums;
-        }
-        #date { font-size: clamp(0.7rem, 1.4vh, 1.1rem); font-weight: 800; color: #94a3b8; letter-spacing: 2px; margin-top: 2px; }
+        #time { font-size: 3.5rem; font-weight: 900; color: var(--coolaire-navy); line-height: 1; font-family: 'JetBrains Mono', monospace; }
+        #date { font-size: 1rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
 
-        /* --- MAIN CONTENT --- */
+        /* --- MAIN CONTENT GRID --- */
         .tv-main {
             display: grid;
-            grid-template-columns: 1.8fr 1.2fr;
-            gap: 1.5vh;
+            grid-template-columns: 2fr 1fr;
+            gap: 2vh;
             flex-grow: 1;
             min-height: 0;
-            margin-bottom: 10vh; /* Space for the absolute footer */
+            margin-bottom: 10vh;
         }
 
-        /* LEFT: NOW SERVING */
+        /* LEFT: NOW SERVING (THE STAGE) */
         .now-serving-pane {
             background: white;
             border-radius: var(--card-radius);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 45, 114, 0.15);
-            border: 1px solid rgba(0, 45, 114, 0.05);
+            box-shadow: 0 20px 40px rgba(0, 45, 114, 0.1);
             position: relative;
-            overflow: hidden;
-        }
-
-        /* Subtle background watermark */
-        .now-serving-pane::before {
-            content: "COOLAIRE";
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 20vw; font-weight: 900; opacity: 0.02; z-index: 0; pointer-events: none;
+            border: 1px solid #e2e8f0;
         }
 
         .label-now-serving {
-            font-size: clamp(1.5rem, 4vh, 2.8rem); font-weight: 900; color: #cbd5e1;
-            text-transform: uppercase; letter-spacing: 1.2vw;
-            margin-bottom: 0; position: relative;
+            font-size: 4vh; font-weight: 900; color: #94a3b8;
+            text-transform: uppercase; letter-spacing: 1rem; margin-bottom: 2vh;
         }
 
         #nowServingNumber {
-            font-size: var(--size-now-serving); font-weight: 950;
-            color: var(--coolaire-blue);
-            line-height: 0.75;
-            margin: 2vh 0;
-            letter-spacing: -1.5vh;
-            text-shadow: 0 10px 20px rgba(0, 45, 114, 0.1);
-            position: relative;
+            font-size: 40vh; font-weight: 900;
+            color: var(--coolaire-navy);
+            line-height: 0.8;
+            letter-spacing: -2vh;
+            font-family: 'JetBrains Mono', monospace;
+            text-shadow: 10px 10px 0px rgba(0,0,0,0.02);
         }
 
-        .counter-badge {
-            background: var(--coolaire-blue);
+        .instruction-box {
+            margin-top: 4vh;
+            background: var(--coolaire-green);
             color: white;
-            padding: 1.5vh 4vw;
-            border-radius: 1.2rem;
-            font-size: clamp(1rem, 3.5vh, 2rem);
+            padding: 2vh 5vw;
+            border-radius: 50px;
+            font-size: 2.5vh;
             font-weight: 900;
-            box-shadow: 0 15px 30px rgba(0, 45, 114, 0.25);
-            display: flex; align-items: center; gap: 15px;
-            position: relative;
+            display: flex; align-items: center; gap: 20px;
+            box-shadow: 0 10px 20px rgba(118, 184, 42, 0.3);
         }
 
         /* RIGHT: UP NEXT */
         .up-next-pane {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(20px);
+            background: #eef2ff;
             border-radius: var(--card-radius);
-            padding: 2.5vh;
+            padding: 3vh;
             display: flex; flex-direction: column;
-            border: 1px solid rgba(255,255,255,0.7);
+            border: 1px solid rgba(0, 45, 114, 0.05);
         }
 
         .pane-title {
-            font-size: clamp(1.2rem, 2.5vh, 1.8rem); font-weight: 900; color: var(--coolaire-blue-dark);
-            border-left: 8px solid var(--coolaire-yellow);
-            padding-left: 1.2vh; margin-bottom: 2vh;
+            font-size: 1.8rem; font-weight: 900; color: var(--coolaire-navy-dark);
+            margin-bottom: 3vh; padding-bottom: 1vh; border-bottom: 4px solid var(--coolaire-navy);
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        .queue-scroller {
-            display: flex; flex-direction: column; gap: 1.2vh;
-            overflow: hidden; flex-grow: 1;
-        }
-
+        .queue-list { display: flex; flex-direction: column; gap: 1.5vh; flex-grow: 1; }
         .waiting-card {
             background: white;
-            padding: 2vh 2.5vh;
+            padding: 2.5vh;
             border-radius: 1.2rem;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            border: 1px solid rgba(0,0,0,0.02);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+            border-left: 8px solid #cbd5e1;
             animation: slideInRight 0.5s ease forwards;
         }
 
-        .waiting-ticket { font-size: clamp(1.8rem, 4.2vh, 3.2rem); font-weight: 900; color: var(--coolaire-blue); font-variant-numeric: tabular-nums; }
-        .waiting-status {
-            font-size: clamp(0.7rem, 1.4vh, 0.9rem);
-            font-weight: 800;
-            color: white;
-            background: #94a3b8;
-            padding: 4px 12px;
-            border-radius: 6px;
-            text-transform: uppercase;
-        }
+        .waiting-ticket { font-size: 3rem; font-weight: 900; color: var(--coolaire-navy); font-family: 'JetBrains Mono', monospace; }
+        .waiting-label { font-size: 1rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
 
-        /* --- FOOTER TICKER --- */
+        /* --- FOOTER ANNOUNCEMENTS --- */
         .ticker-wrap {
-            position: fixed;
-            bottom: 1.5vh; left: 1.5vh; right: 1.5vh;
-            height: 7vh;
-            background: var(--coolaire-blue-dark);
-            border-radius: 1.2rem;
-            display: flex; align-items: center;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            z-index: 999;
+            position: fixed; bottom: 2vh; left: 2vh; right: 2vh;
+            height: 8vh; background: var(--coolaire-navy-dark);
+            border-radius: 1.2rem; display: flex; align-items: center; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 999;
         }
 
         .ticker-label {
-            background: var(--coolaire-yellow);
-            color: var(--coolaire-blue-dark);
-            height: 100%;
-            display: flex; align-items: center;
-            padding: 0 2vw;
-            font-weight: 900;
-            font-size: 1.2rem;
-            z-index: 2;
-            box-shadow: 10px 0 20px rgba(0,0,0,0.2);
+            background: var(--coolaire-yellow); color: var(--coolaire-navy-dark);
+            height: 100%; display: flex; align-items: center; padding: 0 2vw;
+            font-weight: 900; font-size: 1.2rem; z-index: 10;
         }
 
         .ticker-content {
-            white-space: nowrap;
-            display: inline-block;
-            padding-left: 100%; /* Start the text just off-screen to the right */
-            animation: marquee 60s linear infinite;
-            font-size: 2.8vh; font-weight: 700;
-            color: white;
-            padding-left: 20px;
+            white-space: nowrap; display: inline-block; animation: marquee 40s linear infinite;
+            font-size: 2.5vh; font-weight: 700; color: white; padding-left: 50px;
         }
 
-        @keyframes marquee {
-    0%   { transform: translateX(0); }
-    100% { transform: translateX(-100%); }
-}
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.6); opacity: 0; } }
 
-        /* RECALL ANIMATION */
-        .recall-flash { animation: flash-alert 0.8s ease-in-out 5; }
-        @keyframes flash-alert {
-            0%, 100% { background: white; border-color: transparent; }
-            50% { background: var(--coolaire-yellow); border-color: white; transform: scale(1.02); }
+        /* RECALL FLASH */
+        .recall-flash { animation: flash-bg 1s ease-in-out 3; }
+        @keyframes flash-bg {
+            0%, 100% { background: white; }
+            50% { background: var(--coolaire-yellow); }
         }
 
-        /* OVERLAYS */
+        /* OVERLAY INIT */
         #tvInit {
-            position: fixed; inset: 0; background: var(--coolaire-blue);
+            position: fixed; inset: 0; background: var(--coolaire-navy);
             z-index: 10000; display: flex; flex-direction: column;
             align-items: center; justify-content: center; color: white; cursor: pointer;
-            text-align: center;
         }
-
-        #status-dot { width: 10px; height: 10px; background: #22c55e; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 8px #22c55e; }
-        .offline #status-dot { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
     </style>
 </head>
 <body>
 
-    <!-- CLICK TO UNLOCK AUDIO -->
+    <!-- CLICK TO UNLOCK -->
     <div id="tvInit" onclick="startDisplay()">
-        <div class="animate__animated animate__pulse animate__infinite" style="background: white; border-radius: 50%; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 2rem;">
-            <i class="fa-solid fa-play" style="font-size: 50px; color: var(--coolaire-blue); margin-left: 8px;"></i>
+        <div class="animate__animated animate__pulse animate__infinite mb-4" style="background: white; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
+            <i class="fa-solid fa-play" style="font-size: 40px; color: var(--coolaire-navy); margin-left: 5px;"></i>
         </div>
-        <h1 style="font-size: 2.5rem; font-weight: 900;">INITIALIZE LIVE DISPLAY</h1>
-        <p style="opacity: 0.7; font-weight: 600;">Click anywhere to start audio-visual sync</p>
+        <h1 style="font-weight: 900; font-size: 3rem;">ACTIVATE MONITOR</h1>
+        <p style="opacity: 0.6; font-weight: 600;">Click to synchronize with {{ location.name }}</p>
     </div>
 
     <!-- HEADER -->
     <header class="tv-header">
-        <div class="brand-block">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Coolaire" onerror="this.src='https://placehold.co/300x80/002d72/ffffff?text=COOLAIRE'">
+        <div class="branch-info">
+            <div class="hub-icon-wrapper">
+                <div class="radar-ping"></div>
+                <div class="hub-icon shadow-sm">
+                    <i class="fa-solid fa-tower-broadcast"></i>
+                </div>
+            </div>
+            <div class="branch-label">
+                <h1>{{ location.name }} Hub</h1>
+                <span><i class="fa-solid fa-microchip me-1"></i> System Node: {{ location.code }}</span>
+            </div>
         </div>
+
+        <img src="{{ url_for('static', filename='logo.png') }}" style="height: 6vh;" onerror="this.src='https://placehold.co/300x80/ffffff/002d72?text=COOLAIRE'">
+
         <div class="clock-block">
-            <div id="time">00:00:00</div>
-            <div id="date">LOADING CALENDAR...</div>
+            <div id="time">00:00</div>
+            <div id="date">CALENDAR SYNCING...</div>
         </div>
     </header>
 
     <!-- MAIN GRID -->
     <main class="tv-main">
-        <section class="now-serving-pane" id="mainPane">
+        <section class="now-serving-pane shadow-lg" id="mainPane">
             <h2 class="label-now-serving">Now Serving</h2>
             <div id="nowServingNumber" class="animate__animated">---</div>
-            <div class="counter-badge">
-                <i class="fa-solid fa-arrow-right-long"></i>
-                PROCEED TO COUNTER
+            <div class="instruction-box animate__animated animate__pulse animate__infinite">
+                <i class="fa-solid fa-circle-arrow-right"></i>
+                PROCEED TO SERVICE BAY
             </div>
         </section>
 
         <section class="up-next-pane">
             <div class="pane-title">
-                <span><i class="fa-solid fa-list-ol me-2"></i> UP NEXT</span>
-                <span id="waitStatus" style="font-size: 1.4vh; opacity: 0.6;"><div id="status-dot"></div> LIVE STREAMING</span>
+                <span><i class="fa-solid fa-layer-group me-2"></i> UP NEXT</span>
+                <div class="badge bg-white text-navy px-3 rounded-pill" style="font-size: 0.8rem; color: var(--coolaire-navy);">QUEUE</div>
             </div>
-            <div id="waitingFeed" class="queue-scroller">
-                <!-- Data populated by JS -->
+            <div id="waitingFeed" class="queue-list">
+                <!-- Data via JS -->
             </div>
         </section>
     </main>
 
-    <!-- NEWS TICKER -->
+    <!-- FOOTER TICKER -->
     <footer class="ticker-wrap">
-        <div class="ticker-label">ANNOUNCEMENTS</div>
+        <div class="ticker-label">NEWS & INFO</div>
         <div class="ticker-content">
-            Welcome to Coolaire Consolidated Inc. &bull; Freshness Delivered Since 1969 &bull; Please prepare your Ticket Reference Number for counter verification &bull; Leader in Cold Chain Solutions &bull; Thank you for your continued trust in our service &bull;
-            <strong>OUR MISSION:</strong> WE ARE RESPONSIBLE FOR MAKING PEOPLE SAFE AND HEALTHY BY ENSURING THAT PRODUCTS ARE KEPT SUSTAINABLY FRESH FROM FARM TO TABLE •
-            <strong>OUR VISION:</strong> TO BE THE NUMBER ONE COLD CHAIN SUPPLIER IN THE PHILIPPINES BY PROVIDING AFFORDABLE, SUSTAINABLE, AND RELIABLE TEMPERATURE CONTROL SYSTEMS.
+            Welcome to {{ location.name }} &bull; Please prepare your Ticket Number for verification &bull; Freshness Delivered Since 1969 &bull; Mission: Responsible for making people safe and healthy by ensuring products are kept sustainably fresh from farm to table &bull; Leader in Cold Chain Solutions &bull;
         </div>
     </footer>
 
@@ -280,7 +251,6 @@
 
         function startDisplay() {
             document.getElementById('tvInit').style.display = 'none';
-            // Browser policy requires a user gesture to play audio
             chime.play().then(() => { chime.pause(); chime.currentTime = 0; });
 
             setInterval(syncData, 3000);
@@ -291,27 +261,24 @@
 
         async function syncData() {
             try {
-                const response = await fetch('/api/get-latest-queue');
-                if (!response.ok) throw new Error('Network Error');
-
+                const response = await fetch('/api/get-latest-queue?loc_id={{ location.id }}');
                 const data = await response.json();
-                document.body.classList.remove('offline');
 
                 const pane = document.getElementById('mainPane');
                 const numDisplay = document.getElementById('nowServingNumber');
                 const feed = document.getElementById('waitingFeed');
 
-                // Trigger Alert on Change or Recall
+                // Alert Logic
                 const ticketChanged = data.now_serving !== "---" && data.now_serving !== lastTicket;
                 const manualRecall = data.now_serving !== "---" && data.call_count > lastCallCount;
 
                 if (ticketChanged || manualRecall) {
                     chime.currentTime = 0;
-                    chime.play().catch(e => console.warn("Audio play blocked"));
+                    chime.play();
 
                     pane.classList.remove('recall-flash');
                     numDisplay.classList.remove('animate__bounceIn');
-                    void pane.offsetWidth; // Force Reflow
+                    void pane.offsetWidth; // Trigger Reflow
                     pane.classList.add('recall-flash');
                     numDisplay.classList.add('animate__bounceIn');
                 }
@@ -321,36 +288,32 @@
                 // Build Waiting List
                 let html = "";
                 if(data.waiting && data.waiting.length > 0) {
-                    data.waiting.slice(0, 6).forEach((ticket, index) => {
+                    data.waiting.slice(0, 5).forEach((t) => {
                         html += `
-                            <div class="waiting-card" style="animation-delay: ${index * 100}ms">
-                                <span class="waiting-ticket">${ticket}</span>
-                                <span class="waiting-status">Wait POS ${index + 1}</span>
+                            <div class="waiting-card">
+                                <span class="waiting-ticket">${t}</span>
+                                <span class="waiting-label">Waiting</span>
                             </div>
                         `;
                     });
                 } else {
-                    html = '<div style="text-align:center; margin-top:8vh; opacity:0.15;"><i class="fa-solid fa-check-double fa-6x"></i><p style="font-weight:900; margin-top:2vh; font-size: 2rem;">NO QUEUE</p></div>';
+                    html = '<div style="text-align:center; margin-top:10vh; opacity:0.2;"><i class="fa-solid fa-check-double fa-5x"></i><p style="font-weight:800; font-size: 1.5rem;">ALL CLEAR</p></div>';
                 }
-
-                if (feed.innerHTML !== html) feed.innerHTML = html;
+                feed.innerHTML = html;
 
                 lastTicket = data.now_serving;
                 lastCallCount = data.call_count;
-
-            } catch (err) {
-                document.body.classList.add('offline');
-            }
+            } catch (e) { console.error("Sync Error", e); }
         }
 
         function updateClock() {
             const now = new Date();
             document.getElementById('time').innerText = now.toLocaleTimeString('en-US', {
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+                hour: '2-digit', minute: '2-digit', hour12: false
             });
             document.getElementById('date').innerText = now.toLocaleDateString('en-US', {
-                weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-            }).toUpperCase();
+                weekday: 'long', month: 'short', day: 'numeric', year: 'numeric'
+            });
         }
     </script>
 </body>

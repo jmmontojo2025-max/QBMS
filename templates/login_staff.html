@@ -1,134 +1,304 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="container py-5 page-fade-in d-flex align-items-center justify-content-center" style="min-height: 85vh;">
+<!-- GOOGLE FONTS: Source Sans 3 -->
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-    <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+<div class="sn-portal-wrapper">
 
-        <!-- Terminal Container -->
-        <div class="bento-card p-4 p-md-5 bg-dark text-white border-0 shadow-deep rounded-5 overflow-hidden position-relative">
+    <!-- MAIN CONTENT -->
+    <div class="container d-flex flex-column align-items-center justify-content-center" style="flex: 1; padding-bottom: 100px;">
 
-            <!-- Tech Accent Lines -->
-            <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10 pointer-events-none"
-                 style="background-image: radial-gradient(#ffc107 1px, transparent 1px); background-size: 20px 20px;"></div>
+        <div class="sn-card col-12 col-sm-8 col-md-6 col-lg-4">
+            <!-- WIDGET HEADER -->
+            <div class="sn-card-header">
+                <h1 class="sn-card-title">Staff Terminal</h1>
+                <p class="sn-card-subtitle">Internal Access: Operator Credentials Required</p>
+            </div>
 
-            <div class="position-relative z-1">
-                <!-- Header Section -->
-                <div class="text-center mb-5">
-                    <div class="d-inline-flex align-items-center gap-2 mb-3 px-3 py-1 rounded-pill bg-warning bg-opacity-10 border border-warning border-opacity-25">
-                        <div class="status-dot-pulse"></div>
-                        <span class="extra-small fw-900 text-warning ls-widest">SYSTEM ONLINE</span>
-                    </div>
-
-                    <h1 class="display-6 fw-900 mb-1 tracking-tight">STAFF TERMINAL</h1>
-                    <p class="small text-white-50 fw-medium">Operator Authentication Required</p>
-                </div>
-
-                <!-- Terminal Login Form -->
-                <form action="/staff/auth" method="POST" id="terminalForm" autocomplete="off">
+            <div class="sn-card-body">
+                <form action="/staff/login" method="POST" id="staffLoginForm" autocomplete="off">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                    <!-- Operator ID Input -->
-                    <div class="mb-4">
-                        <label class="section-tag text-warning opacity-75">Operator Username</label>
-                        <div class="input-group terminal-input-group shadow-sm">
-                            <span class="input-group-text bg-white bg-opacity-10 border-0 text-white-50 px-3">
-                                <i class="fa-solid fa-user-gear"></i>
-                            </span>
-                            <input type="text" name="username"
-                                   class="form-control bg-white bg-opacity-10 border-0 text-white py-3 fw-bold shadow-none"
-                                   placeholder="Username" required
-                                   autocomplete="username">
+                    <!-- INPUT GROUP -->
+                    <div class="sn-form-group">
+                        <label class="sn-label">Operator ID / Username</label>
+                        <input type="text" name="username" class="sn-input" placeholder="Enter ID" required autofocus>
+                    </div>
+
+                    <!-- INPUT GROUP -->
+                    <div class="sn-form-group">
+                        <div class="d-flex justify-content-between">
+                            <label class="sn-label">Password</label>
+                            <a href="#" class="sn-link-sm">Reset Credentials</a>
+                        </div>
+                        <div class="sn-input-container">
+                            <input type="password" name="password" id="staffPassword" class="sn-input" placeholder="••••••••" required>
+                            <button type="button" class="sn-eye-btn" onclick="toggleStaffPass()">
+                                <i class="fa-solid fa-eye-slash" id="staffEyeIcon"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Security Key Input -->
-                    <div class="mb-5">
-                        <label class="section-tag text-warning opacity-75">Security Key</label>
-                        <div class="input-group terminal-input-group shadow-sm">
-                            <span class="input-group-text bg-white bg-opacity-10 border-0 text-white-50 px-3">
-                                <i class="fa-solid fa-microchip"></i>
-                            </span>
-                            <input type="password" name="password"
-                                   class="form-control bg-white bg-opacity-10 border-0 text-white py-3 fw-bold shadow-none"
-                                   placeholder="••••••••" required
-                                   autocomplete="current-password">
-                        </div>
-                    </div>
-
-                    <!-- Action Button -->
-                    <button type="submit" class="btn btn-warning w-100 py-3 fs-5 fw-900 rounded-4 shadow-lg border-0 transition-transform" id="authBtn">
-                        <span>INITIALIZE SESSION</span>
-                        <i class="fa-solid fa-right-to-bracket ms-2"></i>
+                    <button type="submit" class="btn-sn-primary" id="staffSubmitBtn">
+                        Initialize Terminal
                     </button>
+
+                    <div class="sn-divider">
+                        <span>OR</span>
+                    </div>
+
+                    <a href="/login" class="btn-sn-secondary text-center">
+                        Exit to Client Portal
+                    </a>
                 </form>
             </div>
         </div>
 
-        <!-- Navigation Back Link -->
-        <div class="text-center mt-4 animate__animated animate__fadeInUp animate__delay-1s">
-            <a href="/" class="text-muted text-decoration-none extra-small fw-900 tracking-widest hover-link">
-                <i class="fa-solid fa-chevron-left me-2"></i> RETURN TO KIOSK MODE
-            </a>
+        <!-- DISCREET INFO -->
+        <div class="mt-4">
+            <div class="sn-admin-badge">
+                <i class="fa-solid fa-shield-halved me-1"></i> Secure Staff Environment
+            </div>
         </div>
     </div>
+
+    <!-- FOOTER -->
+    <footer class="sn-footer">
+        <div>&copy; 2024 Coolaire Fleet Management</div>
+        <div class="d-none d-md-block">System Node: STAFF-01-NAVY</div>
+    </footer>
 </div>
 
 <style>
-    .fw-900 { font-weight: 900; }
-    .ls-widest { letter-spacing: 2px; }
-    .extra-small { font-size: 0.65rem; }
-    .shadow-deep { box-shadow: 0 30px 60px rgba(0,0,0,0.4); }
-
-    /* Input Group Styling */
-    .terminal-input-group {
-        border-radius: 16px;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        transition: all 0.3s ease;
+    :root {
+        /* DARK NAVY BLUE INTERNAL THEME */
+        --sn-primary: #002d72;      /* Coolaire Navy */
+        --sn-primary-hover: #001f4d;
+        --sn-bg: #f0f3f4;
+        --sn-card-bg: #ffffff;
+        --sn-text-main: #1e293b;
+        --sn-text-muted: #64748b;
+        --sn-border: #cbd5e1;
+        --sn-input-focus: #002d72;
     }
 
-    .terminal-input-group:focus-within {
-        border-color: var(--coolaire-yellow);
-        background: rgba(255,255,255,0.08);
+    body, html {
+        height: 100%;
+        margin: 0;
+        background-color: var(--sn-bg) !important;
+        font-family: 'Source Sans 3', sans-serif !important;
+        color: var(--sn-text-main);
     }
 
-    /* Pulse Indicator */
-    .status-dot-pulse {
-        width: 8px; height: 8px;
-        background-color: #ffc107;
-        border-radius: 50%;
-        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
-        animation: status-pulse 2s infinite;
+    .sn-portal-wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
     }
 
-    @keyframes status-pulse {
-        0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    /* THE CARD */
+    .sn-card {
+        background: var(--sn-card-bg);
+        border: 1px solid var(--sn-border);
+        border-radius: 2px; /* Sharper edges for "Internal" feel */
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-top: 50px;
     }
 
-    /* Transition Effects */
-    .transition-transform:active { transform: scale(0.98); }
-    .hover-link { transition: color 0.3s ease; }
-    .hover-link:hover { color: var(--coolaire-yellow) !important; }
-
-    /* Loading Spinner */
-    .btn-loading span { opacity: 0; }
-    .btn-loading::after {
-        content: ""; position: absolute; width: 22px; height: 22px;
-        border: 3px solid rgba(0,0,0,0.1); border-top-color: #000;
-        border-radius: 50%; top: 50%; left: 50%; margin: -11px 0 0 -11px;
-        animation: spin 0.8s linear infinite;
+    .sn-card-header {
+        padding: 30px 30px 10px 30px;
+        border-top: 4px solid var(--sn-primary); /* Navy Indicator */
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .sn-card-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--sn-primary); /* Navy Title */
+        margin-bottom: 8px;
+    }
+
+    .sn-card-subtitle {
+        font-size: 0.85rem;
+        color: var(--sn-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .sn-card-body {
+        padding: 0 30px 30px 30px;
+    }
+
+    /* FORM ELEMENTS */
+    .sn-form-group {
+        margin-bottom: 20px;
+    }
+
+    .sn-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: var(--sn-text-main);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .sn-input-container {
+        display: flex;
+        position: relative;
+    }
+
+    .sn-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--sn-border);
+        border-radius: 3px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        background-color: #fafafa;
+    }
+
+    .sn-input:focus {
+        outline: none;
+        border-color: var(--sn-input-focus);
+        box-shadow: 0 0 0 1px var(--sn-input-focus);
+        background-color: #fff;
+    }
+
+    .sn-eye-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: none;
+        color: var(--sn-text-muted);
+        cursor: pointer;
+    }
+
+    /* BUTTONS - DARK NAVY BLUE */
+    .btn-sn-primary {
+        width: 100%;
+        background-color: var(--sn-primary) !important;
+        color: white !important;
+        border: none;
+        padding: 12px;
+        border-radius: 3px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .btn-sn-primary:hover {
+        background-color: var(--sn-primary-hover) !important;
+    }
+
+    .btn-sn-secondary {
+        display: block;
+        width: 100%;
+        background-color: transparent;
+        color: var(--sn-primary) !important;
+        border: 1px solid var(--sn-primary) !important;
+        padding: 10px;
+        border-radius: 3px;
+        font-weight: 700;
+        text-decoration: none;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        transition: 0.2s;
+    }
+
+    .btn-sn-secondary:hover {
+        background-color: #f0f4f8;
+        color: var(--sn-primary-hover) !important;
+        border-color: var(--sn-primary-hover) !important;
+    }
+
+    .sn-divider {
+        text-align: center;
+        margin: 20px 0;
+        position: relative;
+    }
+
+    .sn-divider::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: var(--sn-border);
+        z-index: 1;
+    }
+
+    .sn-divider span {
+        background: white;
+        padding: 0 15px;
+        position: relative;
+        z-index: 2;
+        color: var(--sn-text-muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .sn-link-sm {
+        font-size: 0.8rem;
+        color: var(--sn-primary);
+        text-decoration: none;
+        font-weight: 700;
+    }
+
+    .sn-link-sm:hover {
+        text-decoration: underline;
+    }
+
+    /* FOOTER */
+    .sn-footer {
+        height: 60px;
+        border-top: 1px solid var(--sn-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 40px;
+        font-size: 0.75rem;
+        color: var(--sn-text-muted);
+        background: #fff;
+    }
+
+    .sn-admin-badge {
+        font-size: 0.75rem;
+        color: var(--sn-primary);
+        background: #e2e8f0;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-weight: 800;
+        text-transform: uppercase;
+        border: 1px solid var(--sn-border);
+    }
+
 </style>
 
 <script>
-    // Form submission UI logic
-    document.getElementById('terminalForm').addEventListener('submit', function() {
-        const btn = document.getElementById('authBtn');
-        btn.classList.add('btn-loading');
+    document.getElementById('staffLoginForm').addEventListener('submit', function() {
+        const btn = document.getElementById('staffSubmitBtn');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> INITIALIZING...';
         btn.disabled = true;
     });
+
+    function toggleStaffPass() {
+        const passInput = document.getElementById('staffPassword');
+        const eyeIcon = document.getElementById('staffEyeIcon');
+        if (passInput.type === "password") {
+            passInput.type = "text";
+            eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+        } else {
+            passInput.type = "password";
+            eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+        }
+    }
 </script>
 {% endblock %}

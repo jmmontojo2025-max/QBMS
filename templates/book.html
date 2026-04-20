@@ -5,169 +5,163 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
-<div class="container py-5 animate__animated animate__fadeIn">
-    <div class="row justify-content-center">
-        <div class="col-xl-11 col-xxl-10">
-            <div class="row g-4">
+<div class="booking-terminal-wrapper d-flex align-items-center justify-content-center py-3 py-lg-5 animate__animated animate__fadeIn">
+    <div class="container-fluid px-2 px-md-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-9">
+                <div class="card border-0 rounded-4 overflow-hidden shadow-2xl main-booking-card">
 
-                <!-- LEFT COLUMN: BOOKING ENGINE -->
-                <div class="col-lg-8">
-                    <div class="login-card bg-white shadow-2xl border-0 overflow-hidden rounded-5">
-
-                        <!-- Branding Header -->
-                        <div class="p-4 p-md-5 border-bottom bg-white d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 class="fw-950 text-dark mb-1 letter-spacing-tight">New Service Appointment</h3>
-                                <p class="text-muted fw-600 small mb-0">CCI CORE v1.0 &bull; Secure Booking Gateway</p>
+                    <!-- 1. TERMINAL HEADER -->
+                    <div class="card-header bg-white p-3 p-md-5 border-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="icon-scan-wrapper d-none d-sm-block">
+                                    <div class="radar-ping"></div>
+                                    <div class="bg-navy p-3 rounded-4 text-white position-relative shadow">
+                                        <i class="fa-solid fa-calendar-check fs-4 text-white ani-pulse-icon"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="fw-900 text-navy mb-1 ls-tight fs-4 fs-md-2">Service Deployment</h3>
+                                    <p class="text-muted small fw-600 mb-0 text-uppercase ls-1">
+                                        <i class="fa-solid fa-network-wired text-primary me-1 ani-heartbeat"></i> Active Node Initialization
+                                    </p>
+                                </div>
                             </div>
-                            <div class="bg-primary-soft p-3 rounded-4 text-primary">
-                                <i class="fa-solid fa-calendar-plus fs-3"></i>
+                            <div class="terminal-status-tag">
+                                <span class="pulse-dot-green"></span> SYSTEM_READY
                             </div>
                         </div>
+                        <div class="header-divider mt-3 mt-md-4"></div>
+                    </div>
 
-                        <form action="/book" method="POST" id="bookingForm" class="p-4 p-md-5">
+                    <div class="card-body bg-white p-3 p-md-5 pt-0">
+                        <form action="/book" method="POST" id="bookingForm">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="time" id="finalDateTime">
 
-                            <!-- STEP 1: VEHICLE ASSET -->
-                            <div class="mb-5">
-                                <div class="d-flex align-items-center mb-4">
-                                    <span class="step-badge me-3">01</span>
-                                    <h6 class="auth-label mb-0">Vehicle Identification</h6>
-                                    <div class="flex-grow-1 border-bottom ms-3 opacity-10"></div>
-                                </div>
+                            <div class="row g-4 g-md-5">
 
-                                <div class="auth-input-group mb-3">
-                                    <span class="input-icon"><i class="fa-solid fa-truck-container"></i></span>
-                                    <select name="vehicle_id" id="vSelect" class="form-select auth-input border-0" onchange="toggleNewVehicle()" required>
-                                        <option value="" disabled selected>Select vehicle from fleet...</option>
-                                        {% for v in vehicles %}
-                                            <option value="{{ v.id }}" data-plate="{{ v.plate_number }}">{{ v.plate_number }} ({{ v.model_description }})</option>
-                                        {% endfor %}
-                                        <option value="new" class="text-primary fw-bold">+ Register New Unit</option>
-                                    </select>
-                                </div>
+                                <!-- COLUMN 01: ASSET ASSIGNMENT -->
+                                <div class="col-12 col-md-6 border-end-md">
+                                    <div class="d-flex align-items-center mb-4">
+                                        <div class="step-hex me-2 me-md-3">01</div>
+                                        <h6 class="biz-label mb-0">Asset Identification</h6>
+                                    </div>
 
-                                <!-- Collapsible New Vehicle Form -->
-                                <div id="newVehicleFields" class="d-none animate__animated animate__fadeIn p-4 rounded-4 bg-light border-2 border-dashed">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label class="auth-label">Plate Number</label>
-                                            <input type="text" name="new_plate" id="newPlate" class="form-control auth-input bg-white px-3" placeholder="ABC-1234" oninput="updateSummary()">
+                                    <div class="mb-4">
+                                        <label class="biz-label">Fleet Registry Search</label>
+                                        <div class="biz-input-group border">
+                                            <span class="input-icon"><i class="fa-solid fa-truck-container text-primary ani-float"></i></span>
+                                            <select name="vehicle_id" id="vSelect" class="form-select biz-select border-0" required>
+                                                <option value="" disabled selected>Select asset...</option>
+                                                {% for v in vehicles %}
+                                                    <option value="{{ v.id }}" data-plate="{{ v.plate_number }} ({{ v.model_description }})">
+                                                        {{ v.plate_number }} ({{ v.model_description }})
+                                                    </option>
+                                                {% endfor %}
+                                                <option value="new" class="text-primary fw-bold">+ Provision New Asset Node</option>
+                                            </select>
                                         </div>
-                                        <div class="col-md-6">
-                                            <label class="auth-label">Model Description</label>
-                                            <input type="text" name="new_model" class="form-control auth-input bg-white px-3" placeholder="e.g. Reefer Van">
+                                    </div>
+
+                                    <!-- NEW ASSET BOX (CLEAR ON SIGHT) -->
+                                    <div id="newVehicleFields" class="d-none animate__animated animate__fadeIn p-4 rounded-4 bg-white border border-primary border-2 shadow-sm mb-3">
+                                        <div class="mb-3">
+                                            <label class="biz-label text-primary">Plate Identification</label>
+                                            <div class="biz-input-group border bg-light">
+                                                <span class="input-icon"><i class="fa-solid fa-id-card-clip text-primary"></i></span>
+                                                <input type="text" name="new_plate" id="newPlate" class="form-control biz-input" placeholder="ABC-1234">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="biz-label text-primary">Asset Model / Type</label>
+                                            <div class="biz-input-group border bg-light">
+                                                <span class="input-icon"><i class="fa-solid fa-tags text-primary"></i></span>
+                                                <input type="text" name="new_model" id="newModel" class="form-control biz-input" placeholder="e.g. Isuzu HI-ACE">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- STEP 2: LOGISTICS -->
-                            <div class="mb-5">
-                                <div class="d-flex align-items-center mb-4">
-                                    <span class="step-badge me-3">02</span>
-                                    <h6 class="auth-label mb-0">Service Schedule</h6>
-                                    <div class="flex-grow-1 border-bottom ms-3 opacity-10"></div>
-                                </div>
+                                <!-- COLUMN 02: HUB & SERVICES -->
+                                <div class="col-12 col-md-6">
+                                    <div class="d-flex align-items-center mb-4">
+                                        <div class="step-hex me-2 me-md-3">02</div>
+                                        <h6 class="biz-label mb-0">Hub & Service Logic</h6>
+                                    </div>
 
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-12">
-                                        <label class="auth-label">Requested Service Category</label>
-                                        <div class="auth-input-group">
-                                            <span class="input-icon"><i class="fa-solid fa-screwdriver-wrench"></i></span>
-                                            <select name="product" class="form-select auth-input border-0" required>
-                                                <option value="" disabled selected>Choose service type...</option>
+                                    <div class="mb-3">
+                                        <label class="biz-label">Service Hub (Location)</label>
+                                        <div class="biz-input-group border">
+                                            <span class="input-icon"><i class="fa-solid fa-location-crosshairs text-primary ani-pulse-icon"></i></span>
+                                            <select name="location_id" id="locSelect" class="form-select biz-select border-0" required>
+                                                <option value="" disabled selected>Select terminal...</option>
+                                                {% for loc in locations %}
+                                                    <option value="{{ loc.id }}">{{ loc.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="biz-label">Services:</label>
+                                        <div class="biz-input-group border">
+                                            <span class="input-icon"><i class="fa-solid fa-screwdriver-wrench text-primary gear-spin"></i></span>
+                                            <select name="product" id="prodSelect" class="form-select biz-select border-0" required>
+                                                <option value="" disabled selected>Select service type...</option>
                                                 {% for category in categories %}
                                                     <option value="{{ category.name }}">{{ category.name }}</option>
                                                 {% endfor %}
                                             </select>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="auth-label">Preferred Date</label>
-                                        <div class="auth-input-group">
-                                            <span class="input-icon"><i class="fa-solid fa-calendar-day"></i></span>
-                                            <input type="text" id="datePicker" class="form-control auth-input" placeholder="Select Date" readonly required>
+                                    <div class="row g-3">
+                                        <div class="col-6">
+                                            <label class="biz-label">Target Date</label>
+                                            <div class="biz-input-group border bg-light">
+                                                <input type="text" id="datePicker" class="form-control biz-input text-center" placeholder="SET DATE" readonly required>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="auth-label">Arrival Window</label>
-                                        <div class="auth-input-group">
-                                            <span class="input-icon"><i class="fa-solid fa-clock"></i></span>
-                                            <input type="text" id="timePicker" class="form-control auth-input" placeholder="Select Time" readonly required>
+                                        <div class="col-6">
+                                            <label class="biz-label">Time Window</label>
+                                            <div class="biz-input-group border bg-light">
+                                                <input type="text" id="timePicker" class="form-control biz-input text-center" placeholder="SET TIME" readonly required>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- DYNAMIC SUMMARY BAR -->
-                            <div id="bookingSummary" class="d-none animate__animated animate__fadeInUp">
-                                <div class="alert glass-panel border-0 rounded-4 p-4 mb-4" style="background: var(--coolaire-blue-dark); color: white;">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-white bg-opacity-10 rounded-circle p-3 me-4">
-                                            <i class="fa-solid fa-clipboard-check text-warning fs-4"></i>
+                            <!-- INTERACTIVE DIGITAL TICKET -->
+                            <div id="bookingSummary" class="d-none animate__animated animate__fadeInUp mt-4 mt-md-5">
+                                <div class="summary-ticket p-3 p-md-4 rounded-4 border-0 text-white shadow-lg">
+                                    <div class="row align-items-center">
+                                        <div class="col-12 col-md-8 text-center text-md-start">
+                                            <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-2">
+                                                <i class="fa-solid fa-ticket-simple text-warning fs-4 ani-heartbeat"></i>
+                                                <h6 class="fw-800 extra-small text-uppercase ls-1 text-warning mb-0">Configuration Validated</h6>
+                                            </div>
+                                            <p id="summaryText" class="mb-0 small fw-500 font-monospace text-uppercase ls-1"></p>
                                         </div>
-                                        <div>
-                                            <h6 class="mb-1 fw-800">Verification Summary</h6>
-                                            <p id="summaryText" class="mb-0 small opacity-75 fw-500"></p>
+                                        <div class="col-12 col-md-4 mt-3 mt-md-0">
+                                            <button type="submit" class="btn btn-confirm-final w-100 py-3 rounded-3 shadow hover-lift">
+                                                INITIALIZE <i class="fa-solid fa-check-double ms-1"></i>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-auth-submit w-100 py-4 shadow-lg" id="confirmBtn">
-                                <span class="btn-text">Confirm & Generate Reference <i class="fa-solid fa-qrcode ms-2"></i></span>
-                            </button>
+                            <div class="mt-4 mt-md-5" id="mainSubmitContainer">
+                                <button type="button" class="btn btn-navy-submit w-100 py-3 py-md-4 rounded-3 shadow-lg opacity-50" disabled>
+                                    INITIALIZING PARAMETERS...
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
-
-                <!-- RIGHT COLUMN: SIDEBAR -->
-                <div class="col-lg-4">
-                    <div class="login-card p-4 p-md-5 h-100 border-0 rounded-5 d-flex flex-column text-white"
-                         style="background: linear-gradient(165deg, var(--coolaire-blue-dark) 0%, #00378b 100%);">
-
-                        <div class="brand-badge mb-4">
-                            <span class="badge rounded-pill px-3 py-2 glass-badge w-100 text-start">
-                                <i class="fa-solid fa-circle-info me-2 text-warning"></i> SYSTEM PROTOCOL
-                            </span>
-                        </div>
-
-                        <h4 class="fw-950 mb-4 letter-spacing-tight">Why Book Online?</h4>
-
-                        <div class="space-y-4 mb-5">
-                            <div class="d-flex align-items-start mb-4 glass-panel p-3 rounded-4">
-                                <div class="bg-white bg-opacity-10 p-2 rounded-3 me-3 text-warning">
-                                    <i class="fa-solid fa-bolt"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-1 fw-800 small text-uppercase">Instant Lane</h6>
-                                    <p class="extra-small opacity-75 mb-0">Pre-booked units receive high-priority processing at the terminal gate.</p>
-                                </div>
-                            </div>
-
-                            <div class="d-flex align-items-start mb-4 glass-panel p-3 rounded-4">
-                                <div class="bg-white bg-opacity-10 p-2 rounded-3 me-3 text-info">
-                                    <i class="fa-solid fa-map-location-dot"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-1 fw-800 small text-uppercase">Live Tracking</h6>
-                                    <p class="extra-small opacity-75 mb-0">Monitor your unit's status in the service queue from your mobile device.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-auto pt-4 border-top border-white border-opacity-10 text-center">
-                            <p class="extra-small fw-800 text-uppercase tracking-widest opacity-50 mb-2">CCI QBMS PORTAL &copy; 2024</p>
-                            <img src="{{ url_for('static', filename='logo.png') }}" class="opacity-25" style="height: 30px; filter: brightness(0) invert(1);">
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
@@ -175,96 +169,115 @@
 
 <style>
     :root {
-        --coolaire-blue: #002d72;
-        --coolaire-blue-dark: #001d4a;
+        --coolaire-navy: #002d72;
+        --coolaire-green: #22c55e;
         --coolaire-yellow: #ffc107;
     }
 
-    .fw-950 { font-weight: 950; }
-    .fw-800 { font-weight: 800; }
-    .fw-600 { font-weight: 600; }
-    .letter-spacing-tight { letter-spacing: -1px; }
-    .extra-small { font-size: 0.68rem; }
+    .booking-terminal-wrapper { min-height: calc(100vh - 120px); }
+    .text-navy { color: var(--coolaire-navy); }
+    .fw-900 { font-weight: 900; }
+    .ls-tight { letter-spacing: -1.5px; }
+    .ls-1 { letter-spacing: 1px; }
+    .extra-small { font-size: 0.65rem; }
+    .biz-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 8px; display: block; }
 
-    .bg-primary-soft { background-color: rgba(0, 45, 114, 0.08); }
-    .glass-panel { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-    .border-dashed { border: 2px dashed #e2e8f0 !important; }
+    .main-booking-card { border-radius: 1.5rem !important; box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.15); }
+    .header-divider { height: 1px; background: linear-gradient(to right, #e2e8f0, transparent); }
 
-    /* Step Indicators */
-    .step-badge {
-        background: var(--coolaire-blue);
-        color: white;
-        font-size: 0.7rem;
-        font-weight: 900;
-        padding: 4px 8px;
-        border-radius: 6px;
+    .step-hex { background: var(--coolaire-navy); color: white; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; border-radius: 8px; }
+
+    .biz-input-group { display: flex; align-items: center; background: #f8fafc; border-radius: 12px; padding: 4px 15px; transition: 0.3s; }
+    .biz-input-group:focus-within { background: white; border-color: var(--coolaire-navy) !important; box-shadow: 0 0 0 4px rgba(0,45,114,0.05); }
+    .input-icon { width: 25px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 1.1rem; }
+    .input-icon i { color: var(--coolaire-navy) !important; } /* FORCE ICON VISIBILITY */
+
+    .biz-select, .biz-input { background: transparent !important; border: none !important; box-shadow: none !important; padding: 12px 0; font-weight: 700; color: #1e293b; font-size: 0.9rem; width: 100%; }
+
+    .summary-ticket { background: linear-gradient(135deg, var(--coolaire-navy) 0%, #001d4a 100%); border-left: 6px solid var(--coolaire-yellow) !important; }
+
+    .btn-navy-submit { background: var(--coolaire-navy); color: white !important; font-weight: 800; border: none; transition: 0.3s; }
+    .btn-confirm-final { background-color: var(--coolaire-yellow); color: #000 !important; font-weight: 900; border: none; transition: 0.3s; }
+    .btn-confirm-final:hover { background-color: #eab308; transform: translateY(-2px); }
+
+    /* ANIMATIONS */
+    .icon-scan-wrapper { position: relative; }
+    .radar-ping { position: absolute; inset: 0; border: 2px solid var(--coolaire-navy); border-radius: 1rem; animation: radar-expand 2s infinite; }
+    @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.6); opacity: 0; } }
+
+    .ani-float { animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    .gear-spin { animation: fa-spin 6s linear infinite; }
+    .ani-heartbeat { animation: heartbeat 1.5s ease-in-out infinite; }
+    @keyframes heartbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    .ani-pulse-icon { animation: pulse-icon 2s infinite; }
+    @keyframes pulse-icon { 0%, 100% { transform: scale(1); } 50% { transform: opacity 0.5; } }
+
+    .terminal-status-tag { background: #f0fdf4; padding: 6px 15px; border-radius: 50px; font-size: 0.6rem; font-weight: 900; color: #166534; border: 1px solid #dcfce7; }
+
+    @media (max-width: 768px) {
+        .border-end-md { border-right: none !important; border-bottom: 1px solid #f1f5f9; padding-bottom: 2rem; margin-bottom: 1rem; }
+        .biz-input { font-size: 0.85rem; }
     }
-
-    /* Auth Themed Inputs */
-    .auth-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 0.5rem; display: block; }
-    .auth-input-group { display: flex; align-items: center; background: #f8fafc; border-radius: 14px; padding: 4px 16px; border: 2px solid transparent; transition: all 0.3s ease; }
-    .auth-input-group:focus-within { background: white; border-color: var(--coolaire-blue); box-shadow: 0 10px 20px rgba(0, 45, 114, 0.05); transform: translateY(-2px); }
-    .input-icon { color: #94a3b8; font-size: 1.1rem; margin-right: 12px; }
-    .auth-input { background: transparent !important; border: none !important; box-shadow: none !important; padding: 12px 0; font-weight: 700; color: var(--coolaire-blue-dark); }
-
-    /* Button */
-    .btn-auth-submit { background: var(--coolaire-blue); border: none; border-radius: 14px; color: white; font-weight: 800; font-size: 1.1rem; position: relative; overflow: hidden; transition: all 0.3s ease; }
-    .btn-auth-submit:hover { background: var(--coolaire-blue-dark); transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0, 45, 114, 0.3); }
-
-    .shadow-2xl { box-shadow: 0 50px 100px -20px rgba(0, 45, 114, 0.2); }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-    const holidays = {{ holidays | tojson if holidays else '[]' }};
     const datePicker = flatpickr("#datePicker", {
-        minDate: "today",
-        disable: [(date) => date.getDay() === 0, ...holidays],
-        dateFormat: "F j, Y",
-        onChange: updateSummary
+        minDate: "today", disable: [(date) => date.getDay() === 0],
+        dateFormat: "F j, Y", onChange: updateSummary
     });
     const timePicker = flatpickr("#timePicker", {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: "h:i K",
-        minTime: "08:00",
-        maxTime: "17:00",
-        minuteIncrement: 30,
-        onChange: updateSummary
+        enableTime: true, noCalendar: true, dateFormat: "h:i K",
+        minTime: "08:00", maxTime: "17:00", minuteIncrement: 30, onChange: updateSummary
     });
 
-    function toggleNewVehicle() {
-        const select = document.getElementById('vSelect');
-        const fields = document.getElementById('newVehicleFields');
-        fields.classList.toggle('d-none', select.value !== 'new');
+    document.getElementById('vSelect').addEventListener('change', function() {
+        document.getElementById('newVehicleFields').classList.toggle('d-none', this.value !== 'new');
         updateSummary();
-    }
+    });
+    document.getElementById('locSelect').addEventListener('change', updateSummary);
+    document.getElementById('prodSelect').addEventListener('change', updateSummary);
+    document.getElementById('newPlate').addEventListener('input', updateSummary);
+    document.getElementById('newModel').addEventListener('input', updateSummary);
 
     function updateSummary() {
-        const select = document.getElementById('vSelect');
+        const vSelect = document.getElementById('vSelect');
+        const locSelect = document.getElementById('locSelect');
+        const prodSelect = document.getElementById('prodSelect');
         const d = datePicker.input.value;
         const t = timePicker.input.value;
-        let plate = "";
+        const finalInput = document.getElementById('finalDateTime');
 
-        if (select.value === 'new') {
-            plate = document.getElementById('newPlate').value || "New Unit";
-        } else if (select.selectedIndex > 0) {
-            plate = select.options[select.selectedIndex].getAttribute('data-plate');
+        let plateStr = "";
+        let branch = locSelect.selectedIndex > 0 ? locSelect.options[locSelect.selectedIndex].text : "";
+
+        if (vSelect.value === 'new') {
+            const p = document.getElementById('newPlate').value.trim().toUpperCase();
+            const m = document.getElementById('newModel').value.trim().toUpperCase();
+            plateStr = p + (m ? ` (${m})` : "");
+        } else if (vSelect.selectedIndex > 0) {
+            plateStr = vSelect.options[vSelect.selectedIndex].getAttribute('data-plate');
         }
 
         const summaryBox = document.getElementById('bookingSummary');
-        if (d && t && plate) {
+        const mainBtn = document.getElementById('mainSubmitContainer');
+
+        if (d && t && plateStr && branch && prodSelect.value) {
             summaryBox.classList.remove('d-none');
-            document.getElementById('summaryText').innerText = `Unit ${plate} is scheduled for arrival on ${d} at ${t}. Please be at the terminal 15 mins early.`;
+            mainBtn.classList.add('d-none');
+            document.getElementById('summaryText').innerText = `NODE:[${plateStr}] // HUB:${branch} // ARRIVAL:${d} @ ${t}`;
 
             const dObj = datePicker.selectedDates[0];
             const tObj = timePicker.selectedDates[0];
             if(dObj && tObj) {
                 const isoStr = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}T${String(tObj.getHours()).padStart(2,'0')}:${String(tObj.getMinutes()).padStart(2,'0')}`;
-                document.getElementById('finalDateTime').value = isoStr;
+                finalInput.value = isoStr;
             }
         } else {
             summaryBox.classList.add('d-none');
+            mainBtn.classList.remove('d-none');
+            finalInput.value = "";
         }
     }
 </script>

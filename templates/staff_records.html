@@ -1,40 +1,42 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<div class="animate__animated animate__fadeIn">
+<div class="animate__animated animate__fadeIn p-2">
 
     <!-- MASTER DATA CARD -->
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
 
-        <!-- SOPHISTICATED HEADER -->
+        <!-- HEADER WITH SCANNING ANIMATION -->
         <div class="p-4 border-bottom bg-white">
             <div class="row align-items-center g-3">
                 <div class="col-md-5">
                     <div class="d-flex align-items-center">
-                        <div class="bg-primary-soft p-3 rounded-4 me-3">
-                            <i class="fa-solid fa-box-archive text-primary fs-4"></i>
+                        <div class="icon-scan-wrapper me-3">
+                            <div class="radar-ping"></div>
+                            <div class="bg-navy p-3 rounded-4 text-white position-relative">
+                                <i class="fa-solid fa-box-archive fs-4 icon-float"></i>
+                            </div>
                         </div>
                         <div>
-                            <h5 class="fw-800 mb-0 text-dark letter-spacing-tight">Fleet Intelligence Archive</h5>
+                            <h5 class="fw-800 mb-0 text-dark letter-spacing-tight">Master Service Ledger</h5>
                             <p class="text-muted extra-small fw-bold mb-0 text-uppercase ls-widest">
-                                Master Ledger: <span id="recordCount" class="text-primary">{{ bookings|length }}</span> Total Entries
+                                <i class="fa-solid fa-database text-primary me-1 ani-heartbeat"></i>
+                                <span id="recordCount" class="text-primary">{{ records|length }}</span> Total Deployments for {{ session.get('location_name') }}
                             </p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-7">
                     <div class="d-flex gap-2 justify-content-md-end flex-wrap">
-                        <!-- Search Bar -->
-                        <div class="input-group rounded-3 overflow-hidden border bg-light" style="max-width: 350px;">
+                        <div class="input-group rounded-3 overflow-hidden border bg-light search-container" style="max-width: 350px;">
                             <span class="input-group-text border-0 bg-transparent ps-3">
-                                <i class="fa-solid fa-magnifying-glass text-muted small"></i>
+                                <i class="fa-solid fa-magnifying-glass text-muted small search-icon"></i>
                             </span>
-                            <input type="text" id="recordSearch" class="form-control border-0 bg-transparent py-2 fw-600 small" placeholder="Filter by Plate, Ref, or Company...">
+                            <input type="text" id="recordSearch" class="form-control border-0 bg-transparent py-2 fw-600 small" placeholder="Search Plate, Company, or Ticket...">
                         </div>
 
-                        <!-- Export Button -->
-                        <button onclick="exportTableToCSV('coolaire-records.csv')" class="btn btn-white border shadow-sm fw-bold px-3">
-                            <i class="fa-solid fa-file-csv me-2 text-success"></i> Export CSV
+                        <button onclick="exportTableToCSV('coolaire-{{ session.get('location_code') }}-ledger.csv')" class="btn btn-white border shadow-sm fw-bold px-3 btn-export">
+                            <i class="fa-solid fa-file-csv me-2 text-success icon-shake"></i> Export CSV
                         </button>
                     </div>
                 </div>
@@ -42,220 +44,245 @@
         </div>
 
         <!-- THE TABLE ENGINE -->
-        <div class="table-responsive" style="max-height: calc(100vh - 280px);">
+        <div class="table-responsive" style="max-height: calc(100vh - 250px);">
             <table class="table table-hover align-middle mb-0" id="masterTable">
                 <thead class="bg-light text-muted extra-small fw-800 text-uppercase sticky-top" style="z-index: 10; top: 0;">
                     <tr>
                         <th class="px-4 py-3 border-0">Reference</th>
-                        <th class="border-0">Entity / Operator</th>
+                        <th class="border-0">Client / Company</th>
                         <th class="border-0">Asset Details</th>
-                        <th class="border-0">Log Date</th>
-                        <th class="border-0">Service Manifest</th>
-                        <th class="text-center border-0">Workflow</th>
+                        <th class="border-0">Technical Team</th>
+                        <th class="border-0">Manifest</th>
+                        <th class="text-center border-0">Status</th>
                     </tr>
                 </thead>
                 <tbody class="small" id="recordsBody">
-                    {% for b in bookings %}
-                    <tr class="record-row border-bottom transition-all">
-                        <!-- REFERENCE ID -->
-                        <td class="px-4">
-                            <span class="badge bg-light text-primary fw-800 border">#{{ b.ref_id }}</span>
-                        </td>
+                    {% set current_date = [] %}
+                    {% for r in records %}
+                        {# DATE GROUPING LOGIC #}
+                        {% set record_date = r.created_at.strftime('%Y-%m-%d') %}
+                        {% if record_date not in current_date %}
+                            {% if current_date.append(record_date) %}{% endif %}
+                            <tr class="date-group-header bg-soft-blue">
+                                <td colspan="6" class="px-4 py-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa-solid fa-calendar-day me-2 text-primary"></i>
+                                        <span class="fw-900 text-uppercase ls-1" style="font-size: 0.75rem;">
+                                            {{ r.created_at.strftime('%A, %B %d, %Y') }}
+                                        </span>
+                                        <div class="flex-grow-1 ms-3 border-top opacity-25"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
 
-                        <!-- COMPANY INFO -->
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar-init">
-                                    {{ b.customer.company_name[:2] | upper }}
+                        <tr class="record-row border-bottom transition-all">
+                            <td class="px-4">
+                                <div class="d-flex flex-column">
+                                    {% if r.booking %}
+                                        <span class="badge bg-primary-soft text-primary fw-800 border ref-badge mb-1">#{{ r.booking.ref_id }}</span>
+                                    {% endif %}
+                                    <span class="badge bg-light text-muted fw-800 border" style="font-size: 0.6rem;">{{ r.ticket_number }}</span>
                                 </div>
-                                <div>
-                                    <div class="fw-800 text-dark lh-1 mb-1">{{ b.customer.company_name }}</div>
-                                    <div class="extra-small text-muted fw-600">{{ b.customer.full_name }}</div>
+                            </td>
+
+                            <td>
+                                <div class="d-flex align-items-center client-group">
+                                    <div class="avatar-flip">
+                                        <div class="avatar-inner">
+                                            <div class="avatar-front">
+                                                {% if r.booking and r.booking.customer %}
+                                                    {{ r.booking.customer.company_name[:2] | upper }}
+                                                {% else %}WK{% endif %}
+                                            </div>
+                                            <div class="avatar-back">
+                                                <i class="fa-solid fa-user-tie"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="fw-800 text-dark lh-1 mb-1">{{ r.booking.customer.company_name if r.booking and r.booking.customer else "Walk-in Guest" }}</div>
+                                        <div class="extra-small text-muted fw-600">
+                                            <i class="fa-solid fa-clock me-1"></i>{{ r.created_at.strftime('%I:%M %p') }}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
+                            </td>
 
-                        <!-- VEHICLE BADGE -->
-                        <td>
-                            <div class="plate-badge">
-                                <span class="plate-blue-tab"></span>
-                                <span class="plate-text">{{ b.vehicle.plate_number }}</span>
-                            </div>
-                            <div class="mt-1 extra-small text-muted fw-bold">{{ b.vehicle.model_description }}</div>
-                        </td>
+                            <td>
+                                <div class="plate-badge-animated">
+                                    <span class="plate-tab"></span>
+                                    <span class="plate-text">{% if r.booking %}{{ r.booking.plate_number }}{% else %}WALK-IN UNIT{% endif %}</span>
+                                </div>
+                            </td>
 
-                        <!-- DATE/TIME -->
-                        <td>
-                            <div class="fw-700 text-dark">{{ b.scheduled_time.strftime('%b %d, %Y') }}</div>
-                            <div class="extra-small text-primary fw-bold text-uppercase">{{ b.scheduled_time.strftime('%I:%M %p') }}</div>
-                        </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="tech-avatar-stack-mini d-flex me-2">
+                                        {% for tech in r.assigned_techs %}
+                                        <div class="avatar-tech-mini" title="{{ tech.name }}" style="margin-left: -8px; border: 2px solid white; z-index: {{ loop.revindex }};">
+                                            {{ tech.name[0] | upper }}
+                                        </div>
+                                        {% endfor %}
+                                        {% if not r.assigned_techs %}
+                                        <div class="avatar-tech-mini bg-light text-muted border">?</div>
+                                        {% endif %}
+                                    </div>
+                                    <span class="fw-700 text-dark extra-small text-truncate" style="max-width: 120px;">
+                                        {% if r.assigned_techs %}
+                                            {{ r.assigned_techs|map(attribute='name')|join(', ') }}
+                                        {% else %}
+                                            UNASSIGNED
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </td>
 
-                        <!-- SERVICE TYPE -->
-                        <td>
-                            <div class="service-pill">
-                                <i class="fa-solid fa-screwdriver-wrench me-1 opacity-50"></i> {{ b.service_type }}
-                            </div>
-                        </td>
+                            <td>
+                                <div class="service-pill-animated">
+                                    <i class="fa-solid fa-screwdriver-wrench me-1 gear-spin"></i>
+                                    {% if r.booking %}{{ r.booking.service_type }}{% else %}General Maintenance{% endif %}
+                                </div>
+                            </td>
 
-                        <!-- STATUS PILL -->
-                        <td class="text-center">
-                            {% if b.status == 'done' %}
-                                <span class="badge-status bg-success-soft text-success">
-                                    <i class="fa-solid fa-circle-check me-1"></i> COMPLETED
-                                </span>
-                            {% else %}
-                                <span class="badge-status bg-warning-soft text-warning animate-pulse">
-                                    <i class="fa-solid fa-clock-rotate-left me-1"></i> IN-PROGRESS
-                                </span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5">
-                            <div class="opacity-25 py-5">
-                                <i class="fa-solid fa-database fa-4x mb-3"></i>
-                                <h5 class="fw-800">Archive Empty</h5>
-                                <p>No historical records match your current database.</p>
-                            </div>
-                        </td>
-                    </tr>
+                            <td class="text-center">
+                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                    <span class="status-box status-{{ r.status }}">
+                                        {% if r.status == 'done' %}
+                                            <i class="fa-solid fa-circle-check ani-pop"></i> COMPLETED
+                                        {% elif r.status == 'serving' %}
+                                            <i class="fa-solid fa-gear ani-spin"></i> SERVING
+                                        {% elif r.status == 'expired' %}
+                                            <i class="fa-solid fa-user-slash"></i> NO-SHOW
+                                        {% else %}
+                                            <i class="fa-solid fa-clock ani-pendulum"></i> WAITING
+                                        {% endif %}
+                                    </span>
+
+                                    <!-- REVERT BUTTON: Only visible for Expired/No-Show tickets -->
+                                    {% if r.status == 'expired' %}
+                                    <a href="/staff/revert-ticket/{{ r.id }}"
+                                       class="btn btn-sm btn-outline-primary border-0 p-1 hover-lift"
+                                       title="Restore to Queue"
+                                       onclick="return confirm('Accidental Expiration? Click OK to restore this truck to the live queue.')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-
-        <!-- FOOTER SUMMARY -->
-        <div class="p-3 bg-white border-top d-flex justify-content-between align-items-center">
-            <span class="extra-small fw-bold text-muted text-uppercase tracking-widest px-2">
-                Coolaire QBMS Core Database v1.0
-            </span>
-            <div class="pagination-ui">
-                <button class="btn btn-sm btn-light border fw-800 me-1" disabled>PREV</button>
-                <button class="btn btn-sm btn-primary fw-800">NEXT</button>
-            </div>
         </div>
     </div>
 </div>
 
 <style>
-    /* Archive Specific Customizations */
+    :root { --coolaire-navy: #002d72; --coolaire-green: #76b82a; --soft-blue: #f0f4f8; }
+
+    .bg-soft-blue { background-color: var(--soft-blue); }
+
+    /* Mini Tech Avatars */
+    .tech-avatar-stack-mini { padding-left: 8px; }
+    .avatar-tech-mini {
+        width: 24px; height: 24px; border-radius: 50%;
+        background: var(--coolaire-navy); color: white;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.6rem; font-weight: 900;
+    }
+
+    /* Original Styles Retained */
+    .icon-scan-wrapper { position: relative; }
+    .radar-ping {
+        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        border: 2px solid var(--coolaire-navy); border-radius: 12px;
+        animation: radar-pulse 2s infinite; opacity: 0;
+    }
+    @keyframes radar-pulse {
+        0% { transform: scale(1); opacity: 0.5; }
+        100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .avatar-flip { width: 36px; height: 36px; perspective: 1000px; margin-right: 12px; }
+    .avatar-inner {
+        position: relative; width: 100%; height: 100%; text-align: center;
+        transition: transform 0.6s; transform-style: preserve-3d;
+    }
+    .client-group:hover .avatar-inner { transform: rotateY(180deg); }
+    .avatar-front, .avatar-back {
+        position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%; font-weight: 800; font-size: 0.7rem; border: 1px solid #e2e8f0;
+    }
+    .avatar-front { background: white; color: var(--coolaire-navy); }
+    .avatar-back { background: var(--coolaire-navy); color: white; transform: rotateY(180deg); }
+
+    .plate-badge-animated {
+        display: inline-flex; align-items: center; background: #1e293b;
+        color: white; border-radius: 6px; padding: 4px 10px 4px 4px;
+    }
+    .plate-tab { width: 4px; height: 16px; background: #3b82f6; border-radius: 3px; margin-right: 8px; }
+    .plate-text { font-family: 'Courier New', monospace; font-weight: 800; font-size: 0.8rem; }
+
+    .status-box { padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.65rem; display: inline-flex; align-items: center; gap: 6px; }
+    .status-done { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .status-serving { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+    .status-waiting { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .status-expired { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+    .ani-spin { animation: fa-spin 3s linear infinite; }
+    .ani-pendulum { animation: pendulum 2s ease-in-out infinite; transform-origin: top center; }
+    @keyframes pendulum { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
+
+    .bg-navy { background: var(--coolaire-navy); }
     .bg-primary-soft { background-color: rgba(0, 45, 114, 0.08); }
-    .bg-success-soft { background-color: #dcfce7; }
-    .bg-warning-soft { background-color: #fef9c3; }
-
-    .ls-widest { letter-spacing: 1.5px; }
-    .extra-small { font-size: 0.68rem; }
-    .fw-800 { font-weight: 800; }
-    .fw-600 { font-weight: 600; }
-
-    /* Record Row Interactions */
-    .record-row { cursor: default; }
     .record-row:hover { background-color: #f8fafc !important; }
-
-    /* Modern Plate Badge */
-    .plate-badge {
-        display: inline-flex;
-        align-items: center;
-        background: #1e293b;
-        color: white;
-        border-radius: 6px;
-        padding: 2px 8px 2px 2px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .plate-blue-tab {
-        width: 4px;
-        height: 14px;
-        background: #3b82f6;
-        border-radius: 3px;
-        margin-right: 8px;
-    }
-    .plate-text {
-        font-family: 'Monaco', monospace;
-        font-weight: 800;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
-    }
-
-    /* Avatar Logic */
-    .avatar-init {
-        width: 36px;
-        height: 36px;
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        color: var(--coolaire-blue);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        font-weight: 800;
-        font-size: 0.7rem;
-        margin-right: 12px;
-    }
-
-    /* Service Text Styling */
-    .service-pill {
-        font-weight: 700;
-        color: #475569;
-        background: #f1f5f9;
-        padding: 4px 10px;
-        border-radius: 6px;
-        display: inline-block;
-        max-width: 200px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    /* Status Pill Logic */
-    .badge-status {
-        padding: 6px 12px;
-        border-radius: 8px;
-        font-weight: 800;
-        font-size: 0.65rem;
-        display: inline-flex;
-        align-items: center;
-    }
-
-    .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
-
-    /* Table Scroll Customization */
-    .table-responsive::-webkit-scrollbar { width: 6px; }
-    .table-responsive::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .hover-lift:hover { transform: translateY(-2px); opacity: 1 !important; }
 </style>
 
 <script>
-    // LIVE SEARCH LOGIC
+    // Search logic remains the same
     document.getElementById('recordSearch').addEventListener('input', function() {
         const val = this.value.toLowerCase();
         const rows = document.querySelectorAll('.record-row');
-        let visibleCount = 0;
+        const headers = document.querySelectorAll('.date-group-header');
+        let count = 0;
 
         rows.forEach(row => {
-            const text = row.innerText.toLowerCase();
-            const isMatch = text.includes(val);
+            const isMatch = row.innerText.toLowerCase().includes(val);
             row.style.display = isMatch ? '' : 'none';
-            if (isMatch) visibleCount++;
+            if(isMatch) count++;
         });
 
-        document.getElementById('recordCount').innerText = visibleCount;
+        headers.forEach(header => {
+            let next = header.nextElementSibling;
+            let hasVisible = false;
+            while(next && !next.classList.contains('date-group-header')) {
+                if(next.style.display !== 'none') {
+                    hasVisible = true;
+                    break;
+                }
+                next = next.nextElementSibling;
+            }
+            header.style.display = hasVisible ? '' : 'none';
+        });
+        document.getElementById('recordCount').innerText = count;
     });
 
-    // CSV EXPORT LOGIC
+    // CSV Export logic remains the same
     function exportTableToCSV(filename) {
         let csv = [];
-        let rows = document.querySelectorAll("table tr");
+        let rows = document.querySelectorAll("table tr:not(.date-group-header)");
         for (let i = 0; i < rows.length; i++) {
             let row = [], cols = rows[i].querySelectorAll("td, th");
-            for (let j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.trim() + '"');
+            for (let j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/\n/g, " ").trim() + '"');
             csv.push(row.join(","));
         }
         let csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
         let downloadLink = document.createElement("a");
         downloadLink.download = filename;
         downloadLink.href = window.URL.createObjectURL(csvFile);
-        downloadLink.style.display = "none";
         document.body.appendChild(downloadLink);
         downloadLink.click();
     }

@@ -1,79 +1,73 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<div class="animate__animated animate__fadeIn">
+<div class="p-2 animate__animated animate__fadeIn">
 
-    <!-- PAGE HEADER -->
-    <div class="row mb-4 align-items-end">
-        <div class="col-md-8">
-            <h3 class="fw-800 mb-1 letter-spacing-tight">System Configuration</h3>
-            <p class="text-muted mb-0 text-uppercase extra-small fw-bold ls-1">Environment variables & communication protocols</p>
+    <!-- 1. HEADER: SYSTEM CONTROL -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-navy p-3 rounded-4 shadow-lg text-white icon-scan-wrapper">
+                    <div class="radar-ping"></div>
+                    <i class="fa-solid fa-gears fs-4 position-relative"></i>
+                </div>
+                <div>
+                    <h3 class="fw-900 mb-0 text-dark letter-spacing-tight">Global Configuration</h3>
+                    <p class="text-muted small mb-0 font-monospace text-uppercase">
+                        <span class="status-indicator-green"></span> SYSTEM_ROOT // PROTOCOL_LEVEL: 01
+                    </p>
+                </div>
+            </div>
         </div>
-        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <div class="col-md-6 text-md-end mt-3 mt-md-0">
             <div class="badge bg-primary-soft text-primary p-2 px-3 rounded-pill fw-800 border">
-                <i class="fa-solid fa-shield-halved me-1"></i> Admin Level Access
+                <i class="fa-solid fa-shield-halved me-1"></i> Root Administrator Access
             </div>
         </div>
     </div>
 
     <div class="row g-4">
 
-        <!-- 1. GATEWAY CONFIGURATION (LEFT) -->
+        <!-- 2. LEFT: COMMUNICATION GATEWAYS -->
         <div class="col-lg-7">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
-                <div class="card-header bg-white border-bottom p-4">
-                    <div class="d-flex align-items-center">
-                        <div class="bg-primary-soft p-3 rounded-4 me-3 text-primary">
-                            <i class="fa-solid fa-tower-broadcast fs-4"></i>
-                        </div>
-                        <div>
-                            <h6 class="fw-800 mb-0 text-dark">Communication Gateways</h6>
-                            <p class="extra-small text-muted fw-bold mb-0">SMTP & SMS API PROTOCOLS</p>
-                        </div>
-                    </div>
+                <div class="card-header bg-navy text-white p-4 border-0">
+                    <h6 class="mb-0 fw-800 text-uppercase small ls-1">
+                        <i class="fa-solid fa-tower-broadcast me-2"></i>Communication Gateways
+                    </h6>
+                    <p class="extra-small opacity-75 mb-0">Manage SMTP Relay and SMS API Authentication</p>
                 </div>
 
-                <div class="card-body p-4">
-                    <form action="/staff/settings/update" method="POST" id="settingsForm">
+                <div class="card-body p-4 p-md-5">
+                    <form action="/staff/settings" method="POST" id="settingsForm">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                         <!-- EMAIL SUB-SECTION -->
                         <div class="mb-5">
                             <div class="d-flex align-items-center mb-4">
-                                <span class="step-indicator me-2">01</span>
-                                <h6 class="extra-small fw-900 text-primary mb-0 text-uppercase ls-1">Mail Server (Host)</h6>
+                                <span class="step-num me-2">01</span>
+                                <h6 class="extra-small fw-900 text-primary mb-0 text-uppercase ls-1">Mail Server (SMTP)</h6>
                                 <div class="flex-grow-1 border-bottom ms-3 opacity-10"></div>
                             </div>
 
                             <div class="row g-3">
-                                <div class="col-md-8">
-                                    <label class="form-label extra-small fw-800 text-muted">HOST USER EMAIL</label>
-                                    <div class="input-group custom-input-group">
-                                        <span class="input-group-text bg-light border-0"><i class="fa-solid fa-at text-muted"></i></span>
-                                        <input type="email" name="MAIL_HOST_USER" class="form-control border-0 bg-light fw-700 py-2"
-                                               value="{{ settings['MAIL_HOST_USER'] }}" placeholder="e.g. system@coolaire.com">
-                                    </div>
+                                <div class="col-md-12">
+                                    <label class="biz-label">Host Auth User</label>
+                                    <input type="email" name="MAIL_HOST_USER" class="form-control biz-input"
+                                           value="{{ settings['MAIL_HOST_USER'] }}" placeholder="e.g. system@coolaire.com">
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label extra-small fw-800 text-muted">PROTOCOL</label>
-                                    <select class="form-select border-0 bg-light fw-700 py-2">
-                                        <option>465 (SSL)</option>
-                                        <option selected>587 (TLS)</option>
-                                    </select>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label extra-small fw-800 text-muted">SECURE APP PASSWORD</label>
-                                    <div class="input-group custom-input-group">
-                                        <span class="input-group-text bg-light border-0"><i class="fa-solid fa-key text-muted"></i></span>
-                                        <input type="password" name="MAIL_HOST_PASSWORD" id="mailPass" class="form-control border-0 bg-light fw-700 py-2"
+                                <div class="col-md-12">
+                                    <label class="biz-label">Secure App Password</label>
+                                    <div class="input-group">
+                                        <input type="password" name="MAIL_HOST_PASSWORD" id="mailPass" class="form-control biz-input border-end-0"
                                                value="{{ settings['MAIL_HOST_PASSWORD'] }}" placeholder="••••••••••••••••">
-                                        <button type="button" class="btn btn-light border-0 text-muted" onclick="togglePass('mailPass')">
-                                            <i class="fa-solid fa-eye-low-beam"></i>
+                                        <button type="button" class="btn border border-start-0 bg-light px-3" onclick="togglePass('mailPass')">
+                                            <i class="fa-solid fa-eye-low-beam text-muted" id="eyeIcon-mailPass"></i>
                                         </button>
                                     </div>
-                                    <div class="mt-3 p-3 rounded-3 bg-info-soft border border-info border-opacity-10 d-flex align-items-center">
-                                        <i class="fa-solid fa-circle-info text-info me-3"></i>
-                                        <span class="extra-small text-info fw-700">Dedicated App Passwords bypass 2FA restrictions for high deliverability.</span>
+                                    <div class="mt-3 p-3 rounded-3 bg-light d-flex align-items-center border-start border-primary border-4">
+                                        <i class="fa-solid fa-circle-info text-primary fs-5 me-3"></i>
+                                        <span class="extra-small text-secondary fw-600">Dedicated passwords bypass 2FA for system reliability.</span>
                                     </div>
                                 </div>
                             </div>
@@ -82,115 +76,101 @@
                         <!-- SMS SUB-SECTION -->
                         <div class="mb-4">
                             <div class="d-flex align-items-center mb-4">
-                                <span class="step-indicator me-2">02</span>
-                                <h6 class="extra-small fw-900 text-primary mb-0 text-uppercase ls-1">SMS Gateway (API)</h6>
+                                <span class="step-num me-2">02</span>
+                                <h6 class="extra-small fw-900 text-primary mb-0 text-uppercase ls-1">SMS Gateway (Semaphore)</h6>
                                 <div class="flex-grow-1 border-bottom ms-3 opacity-10"></div>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label extra-small fw-800 text-muted">API AUTHENTICATION KEY</label>
-                                <div class="input-group custom-input-group">
-                                    <span class="input-group-text bg-light border-0"><i class="fa-solid fa-satellite-dish text-muted"></i></span>
-                                    <input type="text" name="SMS_API_KEY" class="form-control border-0 bg-light fw-700 py-2"
-                                           value="{{ settings['SMS_API_KEY'] }}" placeholder="SK-PROD-XXXX-XXXX-XXXX">
-                                </div>
-                            </div>
-
-                            <div class="form-check form-switch custom-switch p-0">
-                                <div class="d-flex align-items-center justify-content-between p-3 rounded-3 bg-light bg-opacity-50">
-                                    <label class="form-check-label extra-small fw-800 text-muted mb-0">ENABLE AUTO-NOTIFICATIONS</label>
-                                    <input class="form-check-input ms-0" type="checkbox" checked>
-                                </div>
+                                <label class="biz-label">Production API Key</label>
+                                <input type="text" name="SMS_API_KEY" class="form-control biz-input font-monospace"
+                                       value="{{ settings['SMS_API_KEY'] }}" placeholder="SK-PROD-XXXXX">
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100 py-3 fw-800 rounded-3 mt-4 hover-lift shadow">
-                            <i class="fa-solid fa-cloud-arrow-up me-2"></i> DEPLOY SYSTEM CONFIGURATION
+                        <button type="submit" class="btn btn-navy w-100 py-3 fw-800 rounded-3 mt-4 hover-lift shadow">
+                            <i class="fa-solid fa-cloud-arrow-up me-2"></i> DEPLOY CORE UPDATES
                         </button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- 2. TELEMETRY & PREFERENCES (RIGHT) -->
+        <!-- 3. RIGHT: TELEMETRY & PREFERENCES -->
         <div class="col-lg-5">
 
-            <!-- THRESHOLDS -->
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
-                <h6 class="fw-800 text-dark mb-4 text-uppercase extra-small ls-1">Operational Thresholds</h6>
+            <!-- OPERATIONAL THRESHOLDS -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-top border-navy border-4">
+                <h6 class="fw-800 text-dark mb-4 text-uppercase extra-small ls-1">Operational Logic</h6>
 
                 <div class="mb-4">
                     <div class="d-flex justify-content-between mb-2">
-                        <label class="extra-small fw-800 text-muted">AUTO-PURGE EXPIRED BOOKINGS</label>
-                        <span class="badge bg-primary text-white fw-800" id="purgeVal">4 Hours</span>
+                        <label class="extra-small fw-800 text-muted">STALE DATA PURGE INTERVAL</label>
+                        <span class="badge bg-navy text-white fw-800" id="purgeVal">4 Hours</span>
                     </div>
                     <input type="range" class="form-range custom-range" min="1" max="24" step="1" value="4"
                            oninput="document.getElementById('purgeVal').innerText = this.value + ' Hours'">
-                    <div class="d-flex justify-content-between opacity-50 fw-bold mt-1" style="font-size: 0.6rem;">
-                        <span>1 HR</span>
-                        <span>12 HRS</span>
-                        <span>24 HRS</span>
-                    </div>
                 </div>
 
                 <div class="pt-3 border-top">
-                    <label class="extra-small fw-800 text-muted mb-3">SYSTEM STATUS CONTROLS</label>
-                    <div class="p-3 rounded-4 border bg-ice d-flex align-items-center justify-content-between mb-3">
+                    <div class="p-3 rounded-4 bg-light d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center">
-                            <div class="bg-white p-2 rounded-circle shadow-sm me-3">
-                                <i class="fa-solid fa-hammer text-muted small"></i>
+                            <div class="bg-white p-2 rounded-circle shadow-sm me-3 text-primary">
+                                <i class="fa-solid fa-shield-halved small"></i>
                             </div>
                             <div>
-                                <div class="extra-small fw-800 text-dark">Maintenance Mode</div>
-                                <div class="text-muted" style="font-size: 0.6rem;">Disables Public Kiosk Access</div>
+                                <div class="extra-small fw-800 text-dark">Lockdown Mode</div>
+                                <div class="text-muted extra-small">Freezes Terminal Operations</div>
                             </div>
                         </div>
-                        <div class="form-check form-switch">
+                        <div class="form-check form-switch custom-switch">
                             <input class="form-check-input" type="checkbox">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SYSTEM TELEMETRY -->
-            <div class="card border-0 shadow-sm rounded-4 p-4 text-white position-relative overflow-hidden"
-                 style="background: linear-gradient(135deg, var(--coolaire-blue-dark) 0%, #00378b 100%);">
+            <!-- SYSTEM TELEMETRY (THE GLASS CARD) -->
+            <div class="card border-0 shadow-lg rounded-4 p-4 text-white overflow-hidden position-relative"
+                 style="background: linear-gradient(135deg, #002d72 0%, #001d4a 100%);">
 
                 <div class="position-absolute top-0 end-0 p-3 opacity-10">
-                    <i class="fa-solid fa-microchip fa-5x"></i>
+                    <i class="fa-solid fa-microchip fa-6x"></i>
                 </div>
 
-                <div class="d-flex align-items-center mb-4">
-                    <div class="bg-white bg-opacity-20 p-2 rounded-3 me-3">
+                <div class="d-flex align-items-center mb-4 z-index-2">
+                    <div class="bg-white bg-opacity-20 p-2 rounded-3 me-3 ani-pulse-slow">
                         <i class="fa-solid fa-wave-square text-warning"></i>
                     </div>
-                    <h6 class="fw-800 mb-0 text-uppercase extra-small ls-1">Real-Time Integrity</h6>
+                    <h6 class="fw-800 mb-0 text-uppercase extra-small ls-1">Live Environment Integrity</h6>
                 </div>
 
-                <div class="space-y-4">
+                <div class="space-y-4 z-index-2">
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="extra-small fw-bold opacity-75">DATABASE LATENCY</span>
-                            <span class="extra-small fw-900 text-success">14ms / OPTIMAL</span>
+                            <span class="extra-small fw-bold opacity-75 font-monospace">DB_LATENCY</span>
+                            <span class="extra-small fw-900 text-success">12ms // OPTIMAL</span>
                         </div>
                         <div class="progress" style="height: 4px; background: rgba(255,255,255,0.1);">
-                            <div class="progress-bar bg-success" style="width: 15%"></div>
+                            <div class="progress-bar bg-success glow-green" style="width: 15%"></div>
                         </div>
                     </div>
 
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="extra-small fw-bold opacity-75">API POOL UTILIZATION</span>
-                            <span class="extra-small fw-900 text-warning">42% LOAD</span>
+                            <span class="extra-small fw-bold opacity-75 font-monospace">GATEWAY_LOAD</span>
+                            <span class="extra-small fw-900 text-warning">28% CAPACITY</span>
                         </div>
                         <div class="progress" style="height: 4px; background: rgba(255,255,255,0.1);">
-                            <div class="progress-bar bg-warning" style="width: 42%"></div>
+                            <div class="progress-bar bg-warning glow-yellow" style="width: 28%"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="text-center p-2 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-10 mt-2">
-                    <p class="extra-small fw-bold text-white mb-0">CORE SYNC: ACTIVE</p>
+                <div class="text-center p-3 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-10 mt-2 z-index-2">
+                    <p class="extra-small fw-bold text-white mb-0 ls-1">
+                        <i class="fa-solid fa-circle-check text-success me-2"></i>CORE SYSTEMS SYNCHRONIZED
+                    </p>
                 </div>
             </div>
         </div>
@@ -199,49 +179,42 @@
 </div>
 
 <style>
-    .bg-primary-soft { background-color: rgba(0, 45, 114, 0.08); }
-    .bg-info-soft { background-color: #e0f2fe; }
-    .ls-1 { letter-spacing: 1px; }
-    .extra-small { font-size: 0.68rem; }
+    :root { --coolaire-navy: #002d72; --coolaire-green: #22c55e; }
+    .bg-navy { background: var(--coolaire-navy); }
+    .btn-navy { background: var(--coolaire-navy); color: white; border: none; }
+    .btn-navy:hover { background: #001d4a; color: white; }
+    .fw-900 { font-weight: 900; }
     .fw-800 { font-weight: 800; }
+    .ls-1 { letter-spacing: 1px; }
+    .extra-small { font-size: 0.65rem; }
 
-    .step-indicator {
-        background: var(--coolaire-blue);
-        color: white;
-        font-size: 0.6rem;
-        font-weight: 900;
-        padding: 2px 6px;
-        border-radius: 4px;
-    }
+    /* Radar Ping Header */
+    .icon-scan-wrapper { position: relative; }
+    .radar-ping { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px solid var(--coolaire-navy); border-radius: inherit; animation: radar-expand 2s infinite; }
+    @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.8); opacity: 0; } }
 
-    .custom-input-group {
-        border-radius: 10px;
-        overflow: hidden;
-        border: 1px solid transparent;
-        transition: all 0.2s;
-    }
+    /* Inputs & Forms */
+    .biz-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 8px; display: block; }
+    .biz-input { border-radius: 8px; border: 1px solid #e2e8f0; padding: 12px 15px; font-weight: 600; font-size: 0.95rem; transition: 0.2s; }
+    .biz-input:focus { border-color: var(--coolaire-navy); box-shadow: 0 0 0 4px rgba(0,45,114,0.05); }
 
-    .custom-input-group:focus-within {
-        border-color: var(--coolaire-blue);
-        box-shadow: 0 0 0 4px rgba(0, 45, 114, 0.05);
-    }
+    .step-num { background: var(--coolaire-navy); color: white; font-size: 0.65rem; font-weight: 900; padding: 3px 8px; border-radius: 4px; }
 
-    .custom-range::-webkit-slider-thumb {
-        background: var(--coolaire-blue);
-        border: 3px solid white;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
+    /* Telemetry Effects */
+    .glow-green { box-shadow: 0 0 10px #22c55e; }
+    .glow-yellow { box-shadow: 0 0 10px #f59e0b; }
+    .ani-pulse-slow { animation: pulse 3s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-    .hover-lift { transition: transform 0.2s; }
-    .hover-lift:hover { transform: translateY(-2px); }
-
-    .bg-ice { background-color: #f8fafc; }
+    .status-indicator-green { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 8px #22c55e; }
+    .z-index-2 { position: relative; z-index: 2; }
+    .hover-lift:hover { transform: translateY(-3px); }
 </style>
 
 <script>
     function togglePass(id) {
         const input = document.getElementById(id);
-        const icon = event.currentTarget.querySelector('i');
+        const icon = document.getElementById('eyeIcon-' + id);
         if (input.type === 'password') {
             input.type = 'text';
             icon.classList.replace('fa-eye-low-beam', 'fa-eye');

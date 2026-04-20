@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Queue Ticket | {{ ticket.ticket_number }}</title>
+    <title>Coolaire {{ ticket.location.name }} | {{ ticket.ticket_number }}</title>
     <style>
         /* THERMAL PRINTER RESET */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -28,17 +28,28 @@
         }
 
         .header-brand {
-            font-size: 26px;
-            font-weight: 900;
+            font-size: 28px;
+            font-weight: 950;
             letter-spacing: -1px;
             margin-bottom: 2px;
-            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .header-branch {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: #000;
+            color: #fff;
+            padding: 4px 0;
+            margin-bottom: 10px;
         }
 
         .header-sub {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             margin-bottom: 15px;
             opacity: 0.8;
         }
@@ -51,23 +62,24 @@
 
         /* TICKET DATA BLOCK */
         .ticket-box {
-            border: 4px solid #000;
-            padding: 15px 0;
+            border: 5px solid #000;
+            padding: 10px 0;
             margin: 15px 0;
         }
 
         .label {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 800;
             text-transform: uppercase;
             margin-bottom: 5px;
         }
 
         .ticket-num {
-            font-size: 82px;
+            font-size: 60px; /* Adjusted size for location code prefix */
             font-weight: 900;
-            line-height: 0.9;
-            font-family: 'Arial Black', Gadget, sans-serif;
+            line-height: 1;
+            font-family: 'Arial Black', sans-serif;
+            word-wrap: break-word;
         }
 
         .timestamp {
@@ -77,16 +89,19 @@
         }
 
         .footer-note {
-            font-size: 10px;
+            font-size: 11px;
             margin-top: 20px;
             line-height: 1.4;
-            font-weight: bold;
+            font-weight: 900;
+            text-transform: uppercase;
         }
 
         .ref-id {
-            font-size: 9px;
-            margin-top: 10px;
-            opacity: 0.6;
+            font-size: 10px;
+            margin-top: 15px;
+            padding: 5px;
+            border: 1px solid #000;
+            display: inline-block;
         }
 
         /* PRINT MEDIA QUERIES */
@@ -98,7 +113,7 @@
             body { background: white; }
             .receipt-container {
                 box-shadow: none;
-                width: 72mm; /* Narrower to prevent edge cutting */
+                width: 74mm;
                 padding: 5mm;
             }
             .no-print { display: none !important; }
@@ -125,60 +140,69 @@
     <!-- VISIBLE ONLY ON KIOSK SCREEN -->
     <div class="status-overlay no-print">
         <div style="font-size: 80px; margin-bottom: 20px;">🖨️</div>
-        <h1 style="font-size: 40px; font-weight: 900; margin-bottom: 10px;">PRINTING TICKET</h1>
-        <p style="font-size: 20px; opacity: 0.8;">Number: <strong>{{ ticket.ticket_number }}</strong></p>
-        <div style="margin-top: 40px; border: 2px solid rgba(255,255,255,0.3); padding: 10px 30px; border-radius: 50px;">
-            Please take your receipt from the slot.
+        <h1 style="font-size: 40px; font-weight: 900; margin-bottom: 10px;">{{ ticket.location.name | upper }} HUB</h1>
+        <h2 style="font-size: 30px; margin-bottom: 10px;">PRINTING TICKET...</h2>
+        <p style="font-size: 24px; opacity: 0.8;">Number: <strong>{{ ticket.ticket_number }}</strong></p>
+
+        <div style="margin-top: 40px; border: 2px solid rgba(255,255,255,0.3); padding: 15px 40px; border-radius: 50px; font-size: 18px;">
+            Please wait for your receipt to finish printing.
         </div>
     </div>
 
     <!-- THE ACTUAL THERMAL RECEIPT -->
     <div class="receipt-container">
         <div class="header-brand">COOLAIRE</div>
-        <div class="header-sub">Consolidated Inc.</div>
+        <div class="header-branch">{{ ticket.location.name }} HUB</div>
+        <div class="header-sub">Cold Chain Solutions Specialist</div>
 
         <div class="divider"></div>
 
-        <div class="label">Queue Number</div>
+        <div class="label">Priority Number</div>
         <div class="ticket-box">
+            <!-- Ticket number now includes prefix like CEB-W-101 -->
             <div class="ticket-num">{{ ticket.ticket_number }}</div>
         </div>
 
         <div class="timestamp">
-            {{ ticket.created_at.strftime('%Y-%m-%d | %I:%M %p') }}
+            {{ ticket.created_at.strftime('%b %d, %Y | %I:%M %p') }}
         </div>
 
         <div class="divider"></div>
 
         <div class="footer-note">
-            PLEASE PROCEED TO THE LOUNGE<br>
-            AND WATCH THE TV DISPLAY.<br>
-            THANK YOU FOR CHOOSING COOLAIRE.
+            PLEASE PROCEED TO THE<br>
+            {{ ticket.location.name | upper }} SERVICE LOUNGE<br>
+            AND MONITOR THE TV DISPLAY.
         </div>
 
         <div class="ref-id">
-            REF: {{ ticket.booking_id + 5000 if ticket.booking_id else 'WALK-IN' }}
+            TYPE: {{ 'APPOINTMENT' if ticket.booking_id else 'WALK-IN' }}<br>
+            ID: {{ ticket.booking.ref_id if ticket.booking else ticket.id }}
+        </div>
+
+        <div style="font-size: 8px; margin-top: 20px; opacity: 0.5;">
+            Coolaire QBMS v1.0 &bull; {{ ticket.location.code }} Terminal
         </div>
     </div>
 
     <script>
         (function() {
-            // Trigger print dialog immediately
+            // Trigger print dialog
             window.onload = function() {
                 setTimeout(() => {
                     window.print();
                 }, 500);
             };
 
-            // Event listener for when the print dialog closes
+            // Return to kiosk after printing
             window.onafterprint = function() {
-                window.location.href = "/";
+                window.location.href = "/kiosk";
             };
 
-            // Safety redirect (if browser prevents onafterprint)
+            // Safety timeout for auto-redirect
             setTimeout(() => {
-                window.location.href = "/";
-            }, 8000);
+                window.location.href = "/kiosk";
+            }, 6000);
         })();
     </script>
 </body>

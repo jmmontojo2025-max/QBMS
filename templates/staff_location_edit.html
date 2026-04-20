@@ -1,0 +1,128 @@
+{% extends "base_staff.html" %}
+
+{% block content %}
+<div class="p-2 animate__animated animate__fadeIn">
+
+    <!-- 1. HEADER: CONFIGURATION CONTEXT -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-navy p-3 rounded-4 shadow-lg text-white icon-scan-wrapper">
+                    <div class="radar-ping"></div>
+                    <i class="fa-solid fa-sliders fs-4 position-relative"></i>
+                </div>
+                <div>
+                    <h3 class="fw-900 mb-0 text-dark letter-spacing-tight">Terminal Configuration</h3>
+                    <p class="text-muted small mb-0 font-monospace text-uppercase">
+                        <i class="fa-solid fa-microchip text-primary me-1"></i>
+                        Modifying Hub: <span class="text-primary fw-bold">{{ location.name }}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{{ url_for('staff_locations') }}" class="btn btn-white border shadow-sm fw-bold px-4 py-2 rounded-3 hover-lift">
+                <i class="fa-solid fa-arrow-left me-2 text-muted"></i> Return to Directory
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <!-- 2. EDIT CARD -->
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-white">
+                <div class="card-header bg-navy text-white p-4 border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0 fw-800 text-uppercase small ls-1">System Parameter Override</h6>
+                            <p class="extra-small opacity-75 mb-0">Update physical branch details and queue logic</p>
+                        </div>
+                        <div class="badge-code-lg">{{ location.code }}</div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <form action="{{ url_for('edit_location', loc_id=location.id) }}" method="POST">
+                        <!-- CSRF SECURITY -->
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <!-- BRANCH NAME -->
+                        <div class="mb-4">
+                            <label class="biz-label">Display Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-building"></i></span>
+                                <input type="text" class="form-control biz-input border-start-0" id="branchName" name="name"
+                                       value="{{ location.name }}" placeholder="e.g. Makati Operations Center" required>
+                            </div>
+                        </div>
+
+                        <!-- BRANCH CODE -->
+                        <div class="mb-5">
+                            <label class="biz-label">Terminal Identification Code</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted fw-bold">ID-</span>
+                                <input type="text" class="form-control biz-input border-start-0 font-monospace" id="branchCode" name="code"
+                                       value="{{ location.code }}" maxlength="10" placeholder="MKT" required>
+                            </div>
+                            <div class="alert alert-info border-0 bg-light mt-3 rounded-3 d-flex align-items-center">
+                                <i class="fa-solid fa-circle-info text-primary fs-4 me-3"></i>
+                                <span class="extra-small fw-600 text-secondary">
+                                    Changing this code will update the prefix for all future queue tickets generated at this hub.
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- ACTION BUTTONS -->
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-navy flex-grow-1 fw-800 py-3 rounded-3 shadow-sm hover-lift">
+                                SAVE PARAMETERS <i class="fa-solid fa-check-double ms-2"></i>
+                            </button>
+                            <a href="{{ url_for('staff_locations') }}" class="btn btn-light fw-800 py-3 px-4 rounded-3 border">
+                                CANCEL
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 3. METADATA FOOTER -->
+            <div class="text-center mt-4">
+                <div class="p-3 bg-light rounded-pill d-inline-block px-4">
+                    <span class="extra-small fw-bold text-muted text-uppercase ls-1">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Last Modified:
+                        <span class="text-dark">{{ location.id + 20 }} hours ago</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { --coolaire-navy: #002d72; --coolaire-green: #76b82a; }
+    .bg-navy { background: var(--coolaire-navy); }
+    .btn-navy { background: var(--coolaire-navy); color: white; border: none; }
+    .btn-navy:hover { background: #001d4a; color: white; }
+    .fw-900 { font-weight: 900; }
+    .fw-800 { font-weight: 800; }
+    .fw-600 { font-weight: 600; }
+    .ls-1 { letter-spacing: 1px; }
+    .letter-spacing-tight { letter-spacing: -1.5px; }
+    .extra-small { font-size: 0.65rem; }
+
+    /* Forms */
+    .biz-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 8px; display: block; }
+    .biz-input { border-radius: 8px; border: 1px solid #e2e8f0; padding: 12px 15px; font-weight: 600; font-size: 1rem; transition: 0.2s; }
+    .biz-input:focus { border-color: var(--coolaire-navy); box-shadow: 0 0 0 4px rgba(0,45,114,0.05); }
+
+    /* Radar Ping Icon */
+    .icon-scan-wrapper { position: relative; }
+    .radar-ping { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px solid var(--coolaire-navy); border-radius: inherit; animation: radar-expand 2s infinite; }
+    @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.8); opacity: 0; } }
+
+    /* UI Elements */
+    .badge-code-lg { background: rgba(255, 255, 255, 0.2); color: white; padding: 8px 16px; border-radius: 8px; font-family: 'Monaco', monospace; font-size: 1.2rem; font-weight: 900; border: 1px solid rgba(255,255,255,0.3); }
+    .hover-lift { transition: transform 0.2s; }
+    .hover-lift:hover { transform: translateY(-3px); }
+</style>
+{% endblock %}

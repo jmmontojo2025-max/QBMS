@@ -3,273 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#002d72">
-    <title>Coolaire | Enterprise Smart Queue</title>
+    <meta name="theme-color" content="#002D72">
+    <title>Coolaire | Partner Portal</title>
 
-    <!-- UI/UX Assets -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Professional Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
     <style>
         :root {
-            --coolaire-blue: #002d72;
-            --coolaire-blue-light: #0052cc;
-            --coolaire-yellow: #ffc107;
-            --coolaire-ice: #f8fafc;
-            --glass-bg: rgba(255, 255, 255, 0.9);
-            --bento-radius: 24px;
-            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.04);
-            --shadow-elevated: 0 20px 40px rgba(0, 45, 114, 0.12);
+            /* DARK ROYAL BLUE PALETTE */
+            --brand-royal: #002D72;
+            --brand-royal-light: #0040A1;
+            --brand-success: #76b82a;
+            --bg-main: #f1f5f9;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --border-color: #cbd5e1;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
         }
 
         body {
-            background-color: var(--coolaire-ice);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            color: #1e293b;
+            background-color: var(--bg-main);
+            font-family: 'Source Sans 3', sans-serif;
+            color: var(--text-dark);
             margin: 0;
-            padding-bottom: 120px; /* Space for the floating dock */
+            padding-bottom: 110px;
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Modern Navbar */
-        .navbar {
+        /* --- HEADER --- */
+        .app-header {
             background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-            padding: 16px 0;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            height: 70px;
+            display: flex;
+            align-items: center;
             position: sticky;
             top: 0;
             z-index: 1050;
         }
 
         .navbar-brand img {
-            height: 42px;
-            transition: var(--transition);
+            height: 30px;
+            transition: 0.3s;
         }
 
-        /* Bento Box Layout Utility */
-        .bento-grid {
-            display: grid;
-            gap: 1.5rem;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        }
-
-        .bento-card {
-            background: #ffffff;
-            border-radius: var(--bento-radius);
-            padding: 2rem;
-            border: 1px solid rgba(0, 0, 0, 0.03);
-            box-shadow: var(--shadow-subtle);
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .bento-card:hover {
-            transform: translateY(-8px);
-            box-shadow: var(--shadow-elevated);
-        }
-
-        /* Enhanced Floating Dock */
-        .mobile-dock {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.92);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 30px;
-            padding: 10px 20px;
+        /* Branch Identity */
+        .branch-tag {
+            background: #fff;
+            color: var(--brand-royal);
+            font-weight: 800;
+            font-size: 0.7rem;
+            padding: 6px 14px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            gap: 5px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            z-index: 2000;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .dock-item {
-            color: #94a3b8;
+        .status-pulse {
+            width: 8px; height: 8px;
+            background: var(--brand-success);
+            border-radius: 50%;
+            position: relative;
+        }
+        .status-pulse::after {
+            content: "";
+            position: absolute; inset: -4px;
+            border-radius: 50%;
+            border: 2px solid var(--brand-success);
+            animation: pulse-ring 2s infinite;
+        }
+        @keyframes pulse-ring { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+
+        /* --- NOTIFICATIONS --- */
+        .modern-toast {
+            background: white;
+            border-radius: 4px;
+            padding: 16px 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 320px;
+            border-left: 4px solid var(--brand-royal);
+        }
+
+        /* --- FLOATING APP DOCK (DARK ROYAL BLUE) --- */
+        .app-dock-wrapper {
+            position: fixed;
+            bottom: 24px; left: 0; right: 0;
+            display: flex; justify-content: center;
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        .app-dock {
+            background: var(--brand-royal);
+            background: linear-gradient(135deg, var(--brand-royal) 0%, #001a45 100%);
+            padding: 8px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 20px 40px rgba(0, 45, 114, 0.4);
+            pointer-events: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .dock-link {
+            color: rgba(255, 255, 255, 0.5);
             text-decoration: none;
-            font-size: 0.7rem;
-            font-weight: 700;
-            transition: var(--transition);
-            padding: 12px 18px;
-            border-radius: 22px;
+            height: 54px;
+            min-width: 68px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 75px;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0 10px;
         }
 
-        .dock-item i {
-            font-size: 1.3rem;
-            margin-bottom: 4px;
+        .dock-link i { font-size: 1.3rem; }
+        .dock-link span { font-size: 0.65rem; font-weight: 700; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .dock-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transform: translateY(-2px);
         }
 
-        .dock-item:hover {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateY(-5px);
+        .dock-link.active {
+            background: var(--brand-royal-light);
+            color: white;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.1);
+            position: relative;
         }
 
-        .dock-item.active {
-            color: var(--coolaire-yellow);
-            background: rgba(255, 255, 255, 0.12);
+        /* Active Dot Indicator */
+        .dock-link.active::after {
+            content: '';
+            position: absolute;
+            top: 4px; right: 4px;
+            width: 5px; height: 5px;
+            background: var(--brand-success);
+            border-radius: 50%;
         }
 
-        /* Modern Flash Alerts */
-        .flash-container {
-            position: fixed;
-            top: 90px;
-            right: 20px;
-            z-index: 3000;
-            width: 350px;
-            max-width: 90vw;
+        /* --- LOGOUT & UI BUTTONS --- */
+        .btn-logout {
+            background: #f1f5f9;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 6px 16px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: 0.2s;
         }
-
-        .alert-modern {
-            border: none;
-            background: white;
-            border-radius: 18px;
-            padding: 1rem;
-            box-shadow: var(--shadow-elevated);
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        .btn-modern {
-            border-radius: 14px;
-            padding: 12px 24px;
-            font-weight: 700;
-            transition: var(--transition);
-            letter-spacing: -0.2px;
-        }
+        .btn-logout:hover { background: #fee2e2; color: #ef4444; border-color: #fecaca; }
 
         @media (max-width: 768px) {
-            .mobile-dock { width: 95%; bottom: 15px; border-radius: 25px; padding: 5px; }
-            .dock-item { min-width: 60px; padding: 10px 5px; font-size: 0.6rem; }
-            .bento-card { padding: 1.5rem; }
+            .app-dock { width: 95%; justify-content: space-around; }
+            .dock-link span { display: none; }
+            .dock-link { min-width: 50px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Notification Engine -->
-    <div class="flash-container">
+    <!-- Modern Notifications -->
+    <div class="toast-container-custom">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="alert-modern alert-{{ 'primary' if category == 'message' else category }} fade show" role="alert">
-                    <div class="flex-grow-1">
-                        <small class="text-uppercase fw-bold d-block mb-1" style="font-size: 0.6rem; opacity: 0.7;">System Message</small>
-                        {{ message }}
+                <div class="modern-toast animate__animated animate__slideInRight" id="toast-{{ loop.index }}">
+                    <div class="{{ 'text-success' if category == 'success' else 'text-primary' }}">
+                        <i class="fa-solid fa-circle-check fa-lg"></i>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <div class="flex-grow-1">
+                        <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">System Update</div>
+                        <div style="font-size: 0.9rem; font-weight: 600;">{{ message }}</div>
+                    </div>
                 </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
     </div>
 
-    <!-- Navigation Header -->
-    <nav class="navbar navbar-expand-lg mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <img src="{{ url_for('static', filename='logo.png') }}" onerror="this.src='https://placehold.co/250x60/002d72/ffffff?text=COOLAIRE'" alt="Coolaire">
-            </a>
+    <!-- Top Navigation -->
+    <header class="app-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <a class="navbar-brand" href="/">
+                    <img src="{{ url_for('static', filename='logo.png') }}" onerror="this.src='https://placehold.co/200x60/002D72/ffffff?text=COOLAIRE'" alt="Coolaire">
+                </a>
 
-            <div class="d-none d-lg-flex align-items-center gap-3">
+                {% if session.get('location_name') and current_user.is_authenticated and current_user.role != 'customer' %}
+                <div class="branch-tag d-none d-lg-flex">
+                    <span class="status-pulse"></span>
+                    {{ session['location_name'] }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
                 {% if current_user.is_authenticated %}
-                    <span class="text-muted small fw-medium">Welcome, {{ current_user.full_name }}</span>
-                    <a href="/logout" class="btn btn-outline-danger btn-modern btn-sm">Logout</a>
+                    <div class="text-end d-none d-sm-block">
+                        <div style="font-size: 0.85rem; font-weight: 800; color: var(--brand-royal);">{{ current_user.full_name }}</div>
+                        <div style="font-size: 0.65rem; color: var(--brand-success); text-transform: uppercase; font-weight: 800;">{{ current_user.role }} Account</div>
+                    </div>
+                    <a href="/logout" class="btn-logout">Logout</a>
                 {% else %}
-                    <a href="/login" class="btn btn-primary btn-modern px-4">Operator Login</a>
+                    <a href="/login" class="btn btn-dark btn-sm px-4 rounded-1 fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Partner Login</a>
                 {% endif %}
             </div>
         </div>
-    </nav>
+    </header>
 
-    <!-- Main Content Area -->
-    <main class="container">
+    <!-- Main Content -->
+    <main class="container py-4">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Floating Command Center (Dock) -->
-    <div class="mobile-dock">
-        <a href="/kiosk" class="dock-item {{ 'active' if request.path == 'kiosk' }}">
-            <i class="fa-solid fa-house-chimney-window"></i>
-            <span>Kiosk</span>
-        </a>
-
-        {% if current_user.is_authenticated %}
-            <a href="/dashboard" class="dock-item {{ 'active' if 'dashboard' in request.path }}">
-                <i class="fa-solid fa-chart-pie"></i>
-                <span>Portal</span>
-            </a>
-            {% if current_user.role == 'staff' %}
-            <a href="/staff" class="dock-item {{ 'active' if 'staff' in request.path }}">
-                <i class="fa-solid fa-sliders"></i>
-                <span>Console</span>
+    <!-- Floating Navigation Dock (DARK ROYAL BLUE) -->
+    <div class="app-dock-wrapper">
+        <nav class="app-dock">
+            {% if current_user.is_authenticated and current_user.role != 'customer' %}
+            <a href="/" class="dock-link" data-bs-toggle="tooltip" title="System Hubs">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>Hubs</span>
             </a>
             {% endif %}
-        {% else %}
-            <a href="/register" class="dock-item {{ 'active' if 'register' in request.path }}">
-                <i class="fa-solid fa-user-plus"></i>
-                <span>Register</span>
-            </a>
-        {% endif %}
 
-        <a href="/tv" class="dock-item" target="_blank">
-            <i class="fa-solid fa-tv"></i>
-            <span>Live TV</span>
-        </a>
+            <a href="/kiosk" class="dock-link" data-bs-toggle="tooltip" title="Queue Ticket">
+                <i class="fa-solid fa-ticket-simple"></i>
+                <span>Kiosk</span>
+            </a>
+
+            {% if current_user.is_authenticated %}
+                <a href="/dashboard" class="dock-link" data-bs-toggle="tooltip" title="Client Dashboard">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Portal</span>
+                </a>
+
+                {% if current_user.role in ['staff', 'admin'] %}
+                <a href="/staff" class="dock-link" data-bs-toggle="tooltip" title="Operator Terminal">
+                    <i class="fa-solid fa-terminal"></i>
+                    <span>Console</span>
+                </a>
+                {% endif %}
+            {% else %}
+                <a href="/staff/login" class="dock-link" data-bs-toggle="tooltip" title="Internal Access">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Staff</span>
+                </a>
+            {% endif %}
+
+            <a href="/tv" class="dock-link" target="_blank" data-bs-toggle="tooltip" title="Monitor Display">
+                <i class="fa-solid fa-display"></i>
+                <span>TV</span>
+            </a>
+
+            <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.1); margin: 0 5px;"></div>
+
+            <a href="#" class="dock-link" data-bs-toggle="tooltip" title="Get Support">
+                <i class="fa-solid fa-circle-question"></i>
+                <span>Help</span>
+            </a>
+        </nav>
     </div>
 
-    <!-- Global Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
 
     <script>
-        // Start Progress Bar on load
-        NProgress.configure({ showSpinner: false, speed: 800 });
+        NProgress.configure({ showSpinner: false, speed: 400 });
         NProgress.start();
         window.addEventListener('load', () => NProgress.done());
 
-        // Toast Auto-Dismissal Logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const alerts = document.querySelectorAll('.alert-modern');
-            alerts.forEach(alert => {
-                setTimeout(() => {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }, 6000);
-            });
+        document.querySelectorAll('.modern-toast').forEach(toast => {
+            setTimeout(() => {
+                toast.classList.replace('animate__slideInRight', 'animate__slideOutRight');
+                setTimeout(() => toast.remove(), 1000);
+            }, 5000);
         });
 
-        // Prevention of double-submits on forms
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', () => {
-                const btn = form.querySelector('button[type="submit"]');
-                if(btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
-                }
-            });
+        const currentPath = window.location.pathname;
+        document.querySelectorAll('.dock-link').forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
+            }
         });
+
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
     </script>
 </body>
 </html>

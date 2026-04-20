@@ -1,0 +1,32 @@
+{% extends "base_staff.html" %}
+{% block content %}
+<div class="container py-4">
+    <h3 class="fw-900 text-primary mb-4">Technician Productivity ({{ session['location_name'] }})</h3>
+    <div class="table-responsive bg-white rounded-4 shadow-sm p-4">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr class="extra-small fw-bold text-muted">
+                    <th>TECHNICIAN NAME</th>
+                    <th>JOBS COMPLETED</th>
+                    <th>AVG. SERVICE TIME</th>
+                    <th>PERFORMANCE</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in stats %}
+                <tr>
+                    <td class="fw-bold">{{ row.name }}</td>
+                    <td><span class="badge bg-primary">{{ row.total_jobs }}</span></td>
+                    <td class="fw-bold text-dark">{{ row.avg_minutes | round(1) }} mins</td>
+                    <td>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" style="width: {{ 100 - row.avg_minutes }}%"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

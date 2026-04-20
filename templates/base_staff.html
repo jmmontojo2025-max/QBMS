@@ -5,317 +5,290 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coolaire Console | {{ title }}</title>
 
+    <!-- Source Sans 3 is the standard for ServiceNow -->
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
     <style>
         :root {
-            --coolaire-blue: #002d72;
-            --coolaire-blue-light: #0047b3;
-            --coolaire-blue-dark: #001d4a;
-            --coolaire-yellow: #ffc107;
-            --coolaire-ice: #f8fafc;
-            --sidebar-width: 280px;
-            --topbar-height: 70px;
-            --footer-height: 48px;
-            --transition-speed: 0.25s;
+            /* SERVICENOW NEXT EXPERIENCE COLORS */
+            --sn-midnight: #181d1e;
+            --sn-midnight-light: #2e3d3e;
+            --sn-teal: #76b82a;
+            --sn-bg-main: #f0f3f4;
+            --sn-border: #bdc3c7;
+            --topbar-height: 60px;
         }
 
-        body {
-            background-color: #f4f7fa;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            margin: 0;
-            color: var(--coolaire-blue-dark);
-            height: 100vh;
+        body, html {
+            margin: 0; padding: 0;
+            height: 100%; width: 100%;
+            font-family: 'Source Sans 3', sans-serif;
+            background-color: var(--sn-bg-main);
             overflow: hidden;
+            color: #181d1e;
         }
 
-        /* --- LAYOUT STRUCTURE --- */
-        .app-container {
+        .app-shell {
             display: flex;
             height: 100vh;
             width: 100vw;
         }
 
         /* --- SIDEBAR --- */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: linear-gradient(185deg, var(--coolaire-blue) 0%, var(--coolaire-blue-dark) 100%);
-            color: white;
-            padding: 1.5rem 1rem;
+        .sn-sidebar {
+            width: 260px;
+            background-color: var(--sn-midnight);
             display: flex;
             flex-direction: column;
-            z-index: 1100;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.05);
+            z-index: 1050;
         }
 
-        .brand-section {
-            padding: 0.5rem 1rem 2rem 1rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 1.5rem;
-        }
-
-        .white-logo {
-            filter: brightness(0) invert(1);
-            max-width: 160px;
-            height: auto;
-        }
-
-        .nav-label {
-            font-size: 0.65rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: rgba(255,255,255,0.4);
-            margin: 1.5rem 0 0.5rem 1rem;
-        }
-
-        .nav-link {
-            color: rgba(255,255,255,0.7);
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-bottom: 4px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all var(--transition-speed) ease;
+        .sn-brand-area {
+            height: 80px;
             display: flex;
             align-items: center;
+            justify-content: flex-start;
+            padding: 0 20px;
+            background-color: rgba(0,0,0,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .sn-logo-main {
+            height: 32px;
+            width: auto;
+            filter: brightness(0) invert(1);
+        }
+
+        /* Hub Context Box */
+        .sn-context-box {
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.05);
+            margin: 15px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sn-nav-group {
+            padding: 8px 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .sn-nav-label {
+            color: #656e71;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 16px 20px 8px;
+            letter-spacing: 0.8px;
+        }
+
+        .sn-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            color: #acb2b3;
             text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 400;
+            transition: all 0.1s;
+            gap: 14px;
+            position: relative;
         }
 
-        .nav-link i {
+        .sn-nav-link i {
+            width: 20px;
             font-size: 1.1rem;
-            width: 30px;
-            transition: transform 0.3s ease;
+            opacity: 0.7;
         }
 
-        .nav-link:hover {
-            background: rgba(255,255,255,0.1);
-            color: white;
-            transform: translateX(5px);
+        .sn-nav-link:hover {
+            background-color: var(--sn-midnight-light);
+            color: #fff;
         }
 
-        .nav-link:hover i {
-            transform: scale(1.2);
+        .sn-nav-link.active {
+            background-color: var(--sn-midnight-light);
+            color: #fff;
+            font-weight: 600;
         }
 
-        .nav-link.active {
-            background: var(--coolaire-yellow);
-            color: var(--coolaire-blue-dark);
-            font-weight: 800;
-            box-shadow: 0 8px 20px rgba(255, 193, 7, 0.25);
+        .sn-nav-link.active::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: var(--sn-teal);
         }
-
-        .nav-link.active i { color: var(--coolaire-blue-dark); }
 
         /* --- MAIN CONTENT AREA --- */
-        .main-wrapper {
+        .sn-main {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            position: relative;
-            overflow: hidden;
+            min-width: 0;
         }
 
-        .top-bar {
+        .sn-header {
             height: var(--topbar-height);
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 0 2rem;
-            border-bottom: 1px solid #e2e8f0;
+            background: white;
+            border-bottom: 1px solid var(--sn-border);
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            z-index: 1000;
+            justify-content: space-between;
+            padding: 0 32px;
         }
 
-        .content-scroll {
+        .sn-breadcrumb {
+            font-size: 0.8rem;
+            color: #656e71;
+            margin-bottom: 0;
+            font-weight: 400;
+        }
+
+        .sn-page-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #181d1e;
+            margin: 0;
+        }
+
+        /* User Profile */
+        .sn-user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sn-avatar {
+            width: 32px; height: 32px;
+            background: #e6e8ea;
+            color: #181d1e;
+            border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.8rem;
+            border: 1px solid var(--sn-border);
+        }
+
+        .sn-content {
             flex-grow: 1;
             overflow-y: auto;
-            padding: 2rem;
+            padding: 25px;
+            background-color: var(--sn-bg-main);
         }
 
-        /* --- TELEMETRY FOOTER --- */
-        .telemetry-footer {
-            height: var(--footer-height);
-            background: white;
-            color: #64748b;
-            padding: 0 2rem;
-            font-size: 0.75rem;
+        .sn-footer {
+            height: 35px;
+            background: #fff;
+            border-top: 1px solid var(--sn-border);
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid #e2e8f0;
-            z-index: 1200;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.02);
+            padding: 0 25px;
+            font-size: 0.75rem;
+            color: #656e71;
         }
 
-        .status-pill {
-            display: flex;
-            align-items: center;
-            background: #f1f5f9;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: 700;
-            border: 1px solid #e2e8f0;
-        }
-
-        .status-dot {
-            height: 8px;
-            width: 8px;
-            background-color: #10b981;
+        .pulse-dot {
+            width: 8px; height: 8px;
+            background: var(--sn-teal);
             border-radius: 50%;
+            display: inline-block;
             margin-right: 8px;
-            box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
-            animation: pulse-dot 2s infinite;
         }
-
-        @keyframes pulse-dot {
-            0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; }
-        }
-
-        #footerClock {
-            color: var(--coolaire-blue);
-            font-weight: 800;
-            font-family: 'Monaco', 'Consolas', monospace;
-            background: var(--coolaire-blue-dark);
-            color: var(--coolaire-yellow);
-            padding: 4px 12px;
-            border-radius: 6px;
-            letter-spacing: 0.5px;
-        }
-
-        /* SCROLLBAR */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-
-        .fw-900 { font-weight: 900; }
-        .letter-spacing-tight { letter-spacing: -0.5px; }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <!-- 1. SIDEBAR -->
-        <aside class="sidebar">
-            <div class="brand-section text-center text-lg-start">
-                <img src="{{ url_for('static', filename='logo.png') }}" class="white-logo" alt="Coolaire" onerror="this.src='https://placehold.co/200x60/002d72/ffffff?text=COOLAIRE'">
-                <div class="mt-2 small opacity-50 fw-bold text-uppercase" style="font-size: 0.55rem; letter-spacing: 2px;">Core Console v1.0</div>
+    <div class="app-shell">
+        <!-- SIDEBAR -->
+        <aside class="sn-sidebar">
+            <div class="sn-brand-area">
+                <img src="{{ url_for('static', filename='logo.png') }}" class="sn-logo-main" alt="Coolaire">
             </div>
 
-            <!-- Replace your <nav> section in base_staff.html with this -->
-<nav class="nav flex-column">
-    <!-- 1. OPERATIONS SECTION -->
-    <div class="nav-label">Operations</div>
-    <a href="/staff" class="nav-link {{ 'active' if request.path == '/staff' }}">
-        <i class="fa-solid fa-tower-broadcast"></i> Live Console
-    </a>
-    <a href="/staff/analytics" class="nav-link {{ 'active' if 'analytics' in request.path }}">
-        <i class="fa-solid fa-chart-line"></i> Analytics Dash
-    </a>
-    <a href="/staff/records" class="nav-link {{ 'active' if 'records' in request.path }}">
-        <i class="fa-solid fa-database"></i> Service Records
-    </a>
+            <div class="sn-context-box">
+                <div style="font-size: 0.65rem; font-weight: 700; color: var(--sn-teal); text-transform: uppercase; letter-spacing: 0.5px;">Workspace Hub</div>
+                <div class="text-white fw-bold" style="font-size: 1rem;">{{ session.get('location_name', 'Main Terminal') }}</div>
+            </div>
 
-    <!-- 2. MONITORING (The missing code) -->
-    <div class="nav-label">Monitoring</div>
-    <a href="/display" target="_blank" class="nav-link">
-        <div class="d-flex align-items-center w-100">
-            <i class="fa-solid fa-tv"></i>
-            <span>Queue TV Display</span>
-            <i class="fa-solid fa-arrow-up-right-from-square ms-auto opacity-50" style="font-size: 0.7rem;"></i>
-        </div>
-    </a>
+            <nav class="sn-nav-group">
+                <div class="sn-nav-label">Favorites</div>
+                <a href="/staff" class="sn-nav-link {{ 'active' if request.path == '/staff' }}">
+                    <i class="fa-solid fa-terminal"></i> Workfloor Console
+                </a>
 
-    <!-- 3. RESOURCES SECTION -->
-    <div class="nav-label">Resources</div>
-    <a href="/staff/categories" class="nav-link {{ 'active' if 'categories' in request.path }}">
-        <i class="fa-solid fa-tags"></i> Service Types
-    </a>
+                <div class="sn-nav-label">Operations</div>
+                <a href="/staff/analytics" class="sn-nav-link {{ 'active' if 'analytics' in request.path }}">
+                    <i class="fa-solid fa-chart-simple"></i> Site Analytics
+                </a>
+                <a href="/staff/records" class="sn-nav-link {{ 'active' if 'records' in request.path }}">
+                    <i class="fa-solid fa-book"></i> Service History
+                </a>
+                <a href="/staff/categories" class="sn-nav-link {{ 'active' if 'categories' in request.path }}">
+                    <i class="fa-solid fa-tags"></i> Service Portfolio
+                </a>
 
-    <!-- 4. SYSTEM SECTION -->
-    <div class="nav-label">System</div>
-    <a href="/staff/users" class="nav-link {{ 'active' if 'users' in request.path }}">
-        <i class="fa-solid fa-user-shield"></i> User Control
-    </a>
-    <a href="/staff/settings" class="nav-link {{ 'active' if 'settings' in request.path }}">
-        <i class="fa-solid fa-sliders"></i> System Config
-    </a>
-</nav>
+                {% if current_user.role in ['admin', 'staff'] %}
+                <div class="sn-nav-label">Branch Management</div>
+                <a href="{{ url_for('staff_locations') }}" class="sn-nav-link {{ 'active' if 'locations' in request.path }}">
+                    <i class="fa-solid fa-building-user"></i> Manage Branches
+                </a>
+                <a href="/staff/technicians" class="sn-nav-link {{ 'active' if 'technicians' in request.path }}">
+                    <i class="fa-solid fa-screwdriver-wrench"></i> Manage Technicians
+                </a>
+                {% endif %}
+
+                <div class="sn-nav-label">System Admin</div>
+                <a href="/staff/users" class="sn-nav-link {{ 'active' if 'users' in request.path }}">
+                    <i class="fa-solid fa-user-gear"></i> User Management
+                </a>
+                <a href="/staff/settings" class="sn-nav-link {{ 'active' if 'settings' in request.path }}">
+                    <i class="fa-solid fa-sliders"></i> System Settings
+                </a>
+            </nav>
 
             <div class="mt-auto">
-                <a href="/logout" class="nav-link text-warning opacity-75">
-                    <i class="fa-solid fa-power-off"></i> Sign Out
+                <a href="/logout" class="sn-nav-link" style="color: #ef4444; padding-bottom: 20px;">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> End Session
                 </a>
             </div>
         </aside>
 
-        <!-- 2. MAIN WRAPPER -->
-        <div class="main-wrapper">
-            <!-- Top Bar -->
-            <header class="top-bar">
-                <div class="d-flex align-items-center">
-                    <h5 class="fw-900 mb-0 letter-spacing-tight text-uppercase" style="color: var(--coolaire-blue);">{{ title }}</h5>
+        <!-- MAIN CONTENT AREA -->
+        <div class="sn-main">
+            <!-- HEADER -->
+            <header class="sn-header">
+                <div>
+                    <div class="sn-breadcrumb">All > {{ title }}</div>
+                    <h1 class="sn-page-title">{{ title }}</h1>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                    <div class="text-end d-none d-md-block">
-                        <div class="small fw-800 leading-none" style="font-size: 0.8rem; color: var(--coolaire-blue-dark);">{{ current_user.full_name }}</div>
-                        <div class="text-muted fw-bold" style="font-size: 0.65rem; text-transform: uppercase;">Console Administrator</div>
+
+                <div class="sn-user-profile">
+                    <div class="text-end d-none d-sm-block">
+                        <div style="font-size: 0.85rem; font-weight: 600;">{{ current_user.full_name }}</div>
+                        <div style="font-size: 0.7rem; color: #656e71;">{{ current_user.role | upper }} Node</div>
                     </div>
-                    <div class="rounded-circle border p-1 bg-light shadow-sm" style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fa-solid fa-user-shield text-primary"></i>
-                    </div>
+                    <div class="sn-avatar">{{ current_user.full_name[0]|upper if current_user.full_name else 'A' }}</div>
                 </div>
             </header>
 
-            <!-- Page Content -->
-            <main class="content-scroll">
-                {% block content %}
-                {% endblock %}
+            <!-- WORKSPACE CONTENT -->
+            <main class="sn-content">
+                {% block content %}{% endblock %}
             </main>
 
-            <!-- Always On Top Footer -->
-            <footer class="telemetry-footer">
-                <div class="d-flex align-items-center gap-4">
-                    <div class="status-pill">
-                        <span class="status-dot"></span>
-                        <span class="text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Gateway Online</span>
-                    </div>
-                    <div class="d-none d-lg-flex align-items-center text-muted">
-                        <i class="fa-solid fa-network-wired me-2 opacity-50"></i>
-                        <span class="fw-bold" style="font-size: 0.7rem;">NODE: {{ request.remote_addr }}</span>
-                    </div>
-                </div>
-
-                <div class="d-flex align-items-center gap-3">
-                    <div class="d-none d-sm-block text-muted fw-bold" style="font-size: 0.7rem;">
-                        <i class="fa-solid fa-id-badge me-1 opacity-50"></i> {{ current_user.username }}
-                    </div>
-                    <div id="footerClock">00:00:00 AM</div>
-                </div>
+            <!-- FOOTER -->
+            <footer class="sn-footer">
+                <div><span class="pulse-dot"></span> Hub Secure & Connected</div>
+                <div style="font-weight: 600;">CCI Node v2.4</div>
             </footer>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function updateClock() {
-            const el = document.getElementById('footerClock');
-            if(el) {
-                const now = new Date();
-                el.innerText = now.toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true
-                });
-            }
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-    </script>
 </body>
 </html>

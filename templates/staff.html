@@ -1,199 +1,316 @@
 {% extends "base_staff.html" %}
 {% block content %}
+<!-- Google Font: Inter & Source Sans -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-<!-- MAIN CONSOLE WRAPPER -->
-<div class="container-fluid py-3 animate__animated animate__fadeIn" style="background: #f1f5f9;">
+<div class="biz-console-wrapper animate__animated animate__fadeIn">
 
-    <!-- TOP ROW: QUICK STATS STRIP -->
-    <div class="row g-3 mb-3">
-        <div class="col-12">
-            <div class="bento-card p-3 border-0 shadow-sm d-flex flex-row justify-content-between align-items-center bg-white rounded-4">
+    <!-- 1. COMMAND STRIP: Branch Info & Live KPIs -->
+    <div class="biz-stats-strip mb-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-5">
                 <div class="d-flex align-items-center">
-                    <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
-                        <i class="fa-solid fa-display text-primary"></i>
+                    <div class="hub-icon-container me-3">
+                        <div class="radar-ping"></div>
+                        <div class="hub-icon shadow-sm">
+                            <i class="fa-solid fa-tower-broadcast"></i>
+                        </div>
                     </div>
                     <div>
-                        <h6 class="fw-900 mb-0">Engagement Console</h6>
-                        <span class="text-muted extra-small fw-bold text-uppercase">System Mode: Dispatcher</span>
+                        <h4 class="fw-800 mb-0 text-dark letter-spacing-tight">
+                            {{ session.get('location_name', 'Terminal') }} Command
+                        </h4>
+                        <span class="text-muted extra-small fw-bold text-uppercase ls-widest">
+                            <i class="fa-solid fa-microchip text-primary me-1"></i>
+                            Node ID: {{ session.get('location_code', '---') }} // System Online
+                        </span>
                     </div>
                 </div>
-
-                <div class="d-flex gap-2">
-                    <div class="bg-light px-3 py-1 rounded-3 text-center border">
-                        <div class="extra-small opacity-50 fw-900">WAITING</div>
-                        <div class="fw-900 text-primary lh-1">{{ waiting_tickets|length }}</div>
+            </div>
+            <div class="col-md-7">
+                <div class="d-flex justify-content-md-end gap-3 flex-wrap align-items-center">
+                    <div class="stat-pill">
+                        <label>QUEUE</label>
+                        <div class="value text-warning">{{ waiting_tickets|length }}</div>
                     </div>
-                    <a href="/tv" target="_blank" class="btn btn-dark btn-sm rounded-3 px-3 fw-bold d-flex align-items-center">
-                        <i class="fa-solid fa-desktop me-2"></i> PUBLIC TV
+                    <div class="stat-pill">
+                        <label>ACTIVE</label>
+                        <div class="value text-success">{{ serving_list|length }}</div>
+                    </div>
+                    <div class="divider-v"></div>
+                    <a href="/tv" target="_blank" class="btn-monitor hover-lift">
+                        <i class="fa-solid fa-display me-2"></i> PUBLIC MONITOR
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- WORKSPACE GRID -->
-    <div class="row g-3">
+    <!-- 2. PRODUCTION WORKSPACE -->
+    <div class="row g-4">
 
-        <!-- MAIN CONTROL CONSOLE (LEFT) -->
+        <!-- LEFT: ACTIVE PRODUCTION (MAIN STAGE) -->
         <div class="col-lg-8">
-            <div class="bento-card p-4 border-0 shadow-sm bg-white d-flex flex-column rounded-4" style="min-height: 75vh;">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="section-tag text-primary mb-0">Live Interaction</h6>
-                    {% if now_serving %}
-                        <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-900">
-                            <i class="fa-solid fa-circle-play me-1 animate-flicker"></i> SERVING LIVE
-                        </div>
-                    {% endif %}
+            <div class="biz-card h-100 shadow-sm border-0">
+                <div class="biz-card-header d-flex justify-content-between align-items-center bg-white border-bottom">
+                    <span class="small-caps"><i class="fa-solid fa-gears me-2 text-primary"></i>Active Workfloor</span>
+                    <div class="live-status-tag"><span class="pulse-dot"></span> LIVE OPERATIONS</div>
                 </div>
 
-                <!-- CURRENT TICKET DISPLAY -->
-                <div class="flex-grow-1 d-flex flex-column justify-content-center rounded-4 mb-4 text-center position-relative overflow-hidden"
-                     style="background: #f8fafc; border: 2px solid #edf2f7; min-height: 400px;">
-
-                    {% if now_serving %}
-                        <div class="animate__animated animate__fadeIn">
-                            <p class="text-muted fw-800 small text-uppercase ls-widest mb-0">Active Ticket</p>
-                            <h1 class="fw-900 text-primary mb-2 lh-1" style="font-size: 8rem; letter-spacing: -5px;">
-                                {{ now_serving.ticket_number }}
-                            </h1>
-
-                            <!-- CLIENT INFO STRIP -->
-                            <div class="mx-auto shadow-sm border rounded-4 bg-white d-inline-flex align-items-center p-3 px-4 gap-4 mb-4">
-                                <div class="text-start">
-                                    <small class="text-muted fw-bold d-block text-uppercase" style="font-size: 0.6rem;">Customer</small>
-                                    <div class="fw-900 text-dark">{{ now_serving.booking.customer.company_name if now_serving.booking else 'WALK-IN CLIENT' }}</div>
+                <div class="biz-card-body p-4">
+                    <div class="row g-4">
+                        {% for s in serving_list %}
+                        <div class="col-md-6 animate__animated animate__zoomIn">
+                            <div class="production-unit-card">
+                                <!-- CLICKABLE HEADER FOR MODAL -->
+                                <div class="unit-header clickable-trigger"
+                                     data-bs-toggle="modal"
+                                     data-bs-target="#jobDetails-{{ s.id }}"
+                                     title="Click for full job diagnostics">
+                                    <div class="unit-info">
+                                        <h1 class="ticket-no">{{ s.ticket_number }}</h1>
+                                        <div class="plate-badge-sm">
+                                            <span class="plate-tab"></span>
+                                            <span class="plate-text">{% if s.booking %}{{ s.booking.plate_number }}{% else %}WALK-IN{% endif %}</span>
+                                        </div>
+                                    </div>
+                                    <div class="unit-timer">
+                                        <i class="fa-solid fa-stopwatch me-1 ani-heartbeat"></i>
+                                        <span class="stopwatch" data-start="{{ s.start_time.isoformat() if s.start_time else '' }}">00:00</span>
+                                    </div>
                                 </div>
-                                <div class="vr opacity-25" style="height: 30px;"></div>
-                                <div class="text-start">
-                                    <small class="text-muted fw-bold d-block text-uppercase" style="font-size: 0.6rem;">Unit</small>
-                                    <div class="fw-900 text-primary">{{ now_serving.booking.vehicle.plate_number if now_serving.booking else 'GENERAL' }}</div>
-                                </div>
-                            </div>
 
-                            <div class="d-block mb-4">
-                                <span class="bg-dark text-white px-4 py-2 rounded-pill fw-900 shadow-sm">
-                                    <i class="fa-solid fa-stopwatch me-2 text-warning"></i><span id="serviceStopwatch">00:00</span>
-                                </span>
-                            </div>
+                                <div class="unit-body">
+                                    <div class="client-label">
+                                        <i class="fa-solid fa-building-user me-2"></i>
+                                        {% if s.booking and s.booking.customer %}{{ s.booking.customer.company_name }}{% else %}GUEST CLIENT{% endif %}
+                                    </div>
 
-                            <!-- INTERACTION BUTTONS -->
-                            <div class="row g-2 justify-content-center px-4">
-                                <div class="col-md-5">
-                                    <form action="/call-next" method="POST">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="hidden" name="specific_id" value="{{ now_serving.id }}">
-                                        <button type="submit" class="btn btn-warning w-100 py-3 fw-900 rounded-4 shadow-sm border-0">
-                                            <i class="fa-solid fa-bell me-2"></i> RE-CALL TICKET
-                                        </button>
-                                    </form>
+                                    <div class="tech-assignment mt-3">
+                                        <div class="tech-avatar-stack">
+                                            {% for tech in s.assigned_techs %}
+                                            <div class="tech-avatar-circle" title="{{ tech.name }}">
+                                                {{ tech.name[0] | upper }}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="tech-name">
+                                            <span class="label">Assigned Team</span>
+                                            <span class="name text-truncate">
+                                                {% for tech in s.assigned_techs %}
+                                                    {{ tech.name }}{% if not loop.last %}, {% endif %}
+                                                {% endfor %}
+                                            </span>
+                                        </div>
+                                        <div class="spinning-gear ms-auto">
+                                            <i class="fa-solid fa-cog fa-spin"></i>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-5">
-                                    <form action="/call-next" method="POST">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-outline-danger w-100 py-3 fw-900 rounded-4 border-2">
-                                            MARK AS NO-SHOW
-                                        </button>
-                                    </form>
+
+                                <div class="unit-footer">
+                                    <a href="/staff/complete-work/{{ s.id }}" class="btn-complete-job">
+                                        COMPLETE WORK ORDER <i class="fa-solid fa-circle-check ms-2"></i>
+                                    </a>
                                 </div>
                             </div>
                         </div>
-                    {% else %}
-                        <div class="animate__animated animate__pulse animate__infinite text-muted opacity-50">
-                            <i class="fa-solid fa-headset fa-5x mb-3"></i>
-                            <h4 class="fw-900">SYSTEM IDLE: READY FOR NEXT CALL</h4>
+
+                        <!-- MODAL FOR JOB DETAILS -->
+                        <div class="modal fade" id="jobDetails-{{ s.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                                    <div class="modal-header bg-navy text-white p-4">
+                                        <div>
+                                            <h5 class="modal-title fw-800">Job Diagnostics: {{ s.ticket_number }}</h5>
+                                            <p class="extra-small opacity-75 mb-0 text-uppercase font-monospace">Operational Node // {{ session.get('location_code') }}</p>
+                                        </div>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-0">
+                                        <div class="row g-0">
+                                            <!-- LEFT COL: CLIENT & ASSET -->
+                                            <div class="col-md-6 p-4 border-end bg-light bg-opacity-50">
+                                                <label class="detail-label">Client Association</label>
+                                                <div class="p-3 bg-white border rounded-3 mb-4 shadow-sm">
+                                                    <h5 class="fw-800 text-dark mb-1">{{ s.booking.customer.company_name if s.booking else "Walk-in Guest" }}</h5>
+                                                    <p class="small text-muted mb-0"><i class="fa-solid fa-phone me-2"></i>{{ s.booking.customer.phone if s.booking else "N/A" }}</p>
+                                                </div>
+
+                                                <label class="detail-label">Asset Identity</label>
+                                                <div class="p-3 bg-white border rounded-3 shadow-sm">
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span class="small fw-bold text-muted">Plate:</span>
+                                                        <span class="small fw-900 text-primary">{{ s.booking.plate_number if s.booking else "WALK-IN" }}</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between">
+                                                        <span class="small fw-bold text-muted">Service Type:</span>
+                                                        <span class="small fw-800 text-dark">{{ s.booking.service_type if s.booking else "General" }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- RIGHT COL: TEAM ROSTER -->
+                                            <div class="col-md-6 p-4">
+                                                <label class="detail-label">Technical Team Roster</label>
+                                                <div class="list-group list-group-flush mb-4">
+                                                    {% for tech in s.assigned_techs %}
+                                                    <div class="list-group-item px-0 py-2 border-0 d-flex align-items-center">
+                                                        <div class="tech-avatar-circle me-3" style="margin-left: 0; width: 35px; height: 35px; border: none;">{{ tech.name[0] }}</div>
+                                                        <div class="fw-700 small">{{ tech.name }}</div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+
+                                                <div class="alert alert-info border-0 rounded-3">
+                                                    <div class="d-flex gap-3">
+                                                        <i class="fa-solid fa-clock-rotate-left fs-4"></i>
+                                                        <div>
+                                                            <div class="extra-small fw-800 text-uppercase">Time Since Dispatch</div>
+                                                            <div class="fw-900 stopwatch" data-start="{{ s.start_time.isoformat() }}">00:00</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer bg-light">
+                                        <button type="button" class="btn btn-white border fw-800" data-bs-dismiss="modal">DISMISS VIEW</button>
+                                        <a href="/staff/complete-work/{{ s.id }}" class="btn btn-navy fw-800">COMPLETE JOB <i class="fa-solid fa-check-double ms-2"></i></a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    {% endif %}
+                        {% else %}
+                        <div class="col-12 py-5 text-center text-muted opacity-50">
+                            <div class="idle-state-icon mb-3">
+                                <i class="fa-solid fa-couch fa-3x"></i>
+                            </div>
+                            <h5 class="fw-800">Workfloor is currently idle</h5>
+                            <p class="small">Assign a team from the queue to start a session.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
-
-                <!-- MASTER CALL BUTTON -->
-                <form action="/call-next" method="POST" class="mt-auto">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-primary w-100 py-4 shadow-lg fs-4 fw-900 border-0 rounded-4" style="background: #002d72;">
-                        DISPATCH NEXT IN LINE <i class="fa-solid fa-forward-step ms-2"></i>
-                    </button>
-                </form>
             </div>
         </div>
 
-        <!-- WAITING LIST FEED (RIGHT) -->
+        <!-- RIGHT: QUEUE FEED -->
         <div class="col-lg-4">
-            <div class="bento-card h-100 p-4 border-0 shadow-sm bg-white d-flex flex-column rounded-4" style="min-height: 75vh;">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h6 class="fw-900 text-dark mb-0">Upcoming Feed</h6>
-                    <span class="badge bg-light text-muted border fw-bold">{{ waiting_tickets|length }} Pending</span>
+            <div class="biz-card h-100 shadow-sm border-0">
+                <div class="biz-card-header bg-navy text-white d-flex justify-content-between">
+                    <span class="small-caps text-white-50">Incoming Queue</span>
+                    <span class="badge rounded-pill bg-success text-white px-3">{{ waiting_tickets|length }} PENDING</span>
                 </div>
-
-                <div class="queue-feed flex-grow-1 overflow-auto" style="max-height: 60vh;">
+                <div class="queue-scroll-area">
                     {% for t in waiting_tickets %}
-                    <div class="queue-strip d-flex justify-content-between align-items-center p-3 mb-2 rounded-4 border-start border-5 shadow-sm
-                                {{ 'priority-strip' if 'A-' in t.ticket_number else 'standard-strip' }}">
-                        <div class="d-flex align-items-center overflow-hidden">
-                            <div class="ticket-tag me-3 {{ 'tag-priority' if 'A-' in t.ticket_number }}">
-                                {{ t.ticket_number }}
-                            </div>
-                            <div class="overflow-hidden">
-                                <div class="fw-900 text-dark text-truncate small">
-                                    {{ t.booking.customer.company_name if t.booking else 'WALK-IN' }}
-                                </div>
-                                <div class="text-muted extra-small fw-bold text-uppercase">
-                                    {{ t.booking.vehicle.plate_number if t.booking else 'Standard' }}
-                                </div>
+                    <div class="queue-item animate__animated animate__fadeInRight">
+                        <div class="q-top d-flex justify-content-between align-items-center">
+                            <span class="q-ticket">{{ t.ticket_number }}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="q-timestamp"><i class="fa-regular fa-clock me-1"></i> {{ t.created_at.strftime('%I:%M %p') }}</span>
+                                <a href="/staff/expire-ticket/{{ t.id }}"
+                                   class="text-danger opacity-50 hover-opacity-100"
+                                   onclick="return confirm('Mark this ticket as Expired/No-Show?')"
+                                   title="Expire Ticket">
+                                    <i class="fa-solid fa-circle-xmark fs-5"></i>
+                                </a>
                             </div>
                         </div>
-                        <form action="/call-next" method="POST">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="specific_id" value="{{ t.id }}">
-                            <button type="submit" class="btn btn-primary btn-sm rounded-3 fw-900 border-0">CALL</button>
-                        </form>
+                        <div class="q-middle mt-2">
+                            <div class="q-client">{{ t.booking.customer.company_name if t.booking and t.booking.customer else "WALK-IN CLIENT" }}</div>
+                            <div class="q-asset text-primary fw-800">{% if t.booking %}{{ t.booking.plate_number }}{% else %}Standard Unit{% endif %}</div>
+                        </div>
+                        <div class="q-actions mt-3">
+                            <form action="/staff/start-work/{{ t.id }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="mb-2">
+                                    <label class="extra-small fw-800 text-muted text-uppercase mb-1">Select Technical Team</label>
+                                    <select name="technician_ids" class="form-select q-select-multi" multiple required>
+                                        {% for tech in technicians %}
+                                        <option value="{{ tech.id }}">{{ tech.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="extra-small text-muted mt-1">Hold Ctrl (Cmd) to select multiple</div>
+                                </div>
+                                <button type="submit" class="btn btn-navy w-100 btn-sm fw-800 py-2">
+                                    DISPATCH TEAM <i class="fa-solid fa-bolt-lightning ms-1"></i>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                     {% else %}
-                    <div class="text-center py-5 opacity-25">
-                        <i class="fa-solid fa-clipboard-check fa-4x mb-3"></i>
-                        <p class="fw-900">Queue is Clear</p>
+                    <div class="p-5 text-center text-muted opacity-25">
+                        <i class="fa-solid fa-clipboard-check fa-4x mb-2"></i>
+                        <p class="fw-800 text-uppercase">Queue Clear</p>
                     </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
 <style>
-    .fw-900 { font-weight: 900; }
-    .ls-widest { letter-spacing: 2px; }
-    .extra-small { font-size: 0.65rem; }
-    .section-tag { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 900; }
-
-    .ticket-tag {
-        background: #f1f5f9; color: #475569; width: 50px; height: 50px;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: 12px; font-weight: 900; border: 1px solid #e2e8f0;
+    :root {
+        --coolaire-navy: #002d72;
+        --coolaire-green: #76b82a;
+        --soft-bg: #f8fafc;
+        --border-color: #e2e8f0;
     }
-    .tag-priority { background: #002d72; color: #fff; border-color: #001d4a; }
 
-    .priority-strip { background: #f8fbff; border-left-color: #002d72 !important; }
-    .standard-strip { background: #fff; border-left-color: #cbd5e1 !important; border: 1px solid #f1f5f9; }
+    .biz-console-wrapper { font-family: 'Inter', sans-serif; }
+    .extra-small { font-size: 0.65rem; }
+    .fw-800 { font-weight: 800; }
+    .ls-widest { letter-spacing: 1.5px; }
+    .small-caps { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
 
-    .animate-flicker { animation: flicker 1.5s infinite; }
-    @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    /* Production Cards */
+    .production-unit-card { background: white; border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; transition: all 0.3s; }
+    .clickable-trigger:hover { background-color: #f1f5f9 !important; cursor: pointer; }
 
-    .queue-feed::-webkit-scrollbar { width: 5px; }
-    .queue-feed::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .unit-header { padding: 20px; display: flex; justify-content: space-between; align-items: flex-start; background: #fafafa; border-bottom: 1px solid #f1f5f9; }
+    .ticket-no { font-size: 2.5rem; font-weight: 900; margin: 0; color: var(--coolaire-navy); letter-spacing: -2px; }
+    .unit-timer { font-family: 'Monaco', monospace; background: #000; color: var(--coolaire-green); padding: 5px 12px; border-radius: 6px; font-weight: 800; font-size: 1rem; }
+
+    /* Detail Label for Modal */
+    .detail-label { font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
+
+    /* Avatar Stack Styling */
+    .tech-avatar-stack { display: flex; align-items: center; padding-left: 8px; }
+    .tech-avatar-circle {
+        width: 32px; height: 32px; background: var(--coolaire-navy); color: white;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.75rem; border: 2px solid white; margin-left: -8px;
+    }
+    .tech-name { display: flex; flex-direction: column; overflow: hidden; margin-left: 10px; }
+    .tech-name .label { font-size: 0.6rem; color: #94a3b8; font-weight: 800; text-transform: uppercase; }
+    .tech-name .name { font-size: 0.8rem; font-weight: 700; color: var(--coolaire-navy); }
+
+    .btn-complete-job { background: #000; color: white; display: flex; justify-content: center; align-items: center; padding: 15px; text-decoration: none; font-weight: 800; font-size: 0.75rem; transition: 0.3s; }
+    .btn-complete-job:hover { background: var(--coolaire-green); }
+
+    .bg-navy { background: var(--coolaire-navy) !important; }
+    .btn-navy { background: var(--coolaire-navy); color: white; border: none; }
+
+    .hover-lift:hover { transform: translateY(-2px); }
 </style>
 
 <script>
-    let elapsedSeconds = 0;
-    {% if now_serving %}
-    setInterval(() => {
-        elapsedSeconds++;
-        let m = Math.floor(elapsedSeconds / 60);
-        let s = elapsedSeconds % 60;
-        const watch = document.getElementById('serviceStopwatch');
-        if(watch) {
-            watch.textContent = (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s);
-        }
-    }, 1000);
-    {% endif %}
+    function updateTimers() {
+        const now = new Date();
+        document.querySelectorAll('.stopwatch').forEach(timer => {
+            if (!timer.dataset.start) return;
+            const startTime = new Date(timer.dataset.start);
+            const diff = Math.floor((now - startTime) / 1000);
+            const h = Math.floor(diff / 3600);
+            const m = Math.floor((diff % 3600) / 60);
+            const s = diff % 60;
+            let display = (h > 0 ? (h < 10 ? "0"+h : h) + ":" : "") + (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s);
+            timer.textContent = display;
+        });
+    }
+    setInterval(updateTimers, 1000);
+    updateTimers();
 </script>
 {% endblock %}

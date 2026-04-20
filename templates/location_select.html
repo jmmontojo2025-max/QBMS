@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- GOOGLE FONTS: Source Sans 3 -->
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<div class="sn-portal-wrapper">
+    <div class="container py-5 min-vh-100 d-flex flex-column justify-content-center animate__animated animate__fadeIn">
+
+        <!-- 1. GATEWAY HEADER -->
+        <div class="text-center mb-5">
+            <div class="mb-4">
+                <img src="{{ url_for('static', filename='logo.png') }}" style="height: 60px;" onerror="this.src='https://placehold.co/300x80/002d72/ffffff?text=COOLAIRE'">
+            </div>
+
+            <div class="d-inline-flex align-items-center gap-2 mb-2 px-3 py-1 sn-status-badge">
+                <span class="status-pulse-blue"></span>
+                <span class="sn-badge-text">SYSTEM INITIALIZATION REQUIRED</span>
+            </div>
+
+            <h1 class="sn-page-title">Select Hub Terminal</h1>
+            <p class="sn-page-subtitle">Identify your physical service branch to begin session.</p>
+        </div>
+
+        <!-- 2. TERMINAL GRID -->
+        <div class="row g-4 justify-content-center">
+            <!-- location_select.html -->
+
+<!-- location_select.html -->
+
+{% for l in locs %}
+<div class="col-sm-6 col-md-4 col-lg-3 animate__animated animate__fadeInUp" style="animation-delay: {{ loop.index * 50 }}ms;">
+    <!-- ENSURE THIS href IS CORRECT -->
+    <a href="{{ url_for('set_branch', loc_id=l.id) }}" class="text-decoration-none">
+        <div class="sn-terminal-card">
+            <div class="sn-card-accent"></div>
+            <div class="sn-terminal-body">
+                <div class="d-flex align-items-start justify-content-between mb-3">
+                    <div class="sn-icon-circle">
+                        <i class="fa-solid fa-building-shield"></i>
+                    </div>
+                    <span class="sn-hub-code">{{ l.code }}</span>
+                </div>
+
+                <h3 class="sn-branch-name">{{ l.name }}</h3>
+
+                <div class="sn-card-footer mt-4">
+                    <span class="sn-action-text">Initialize Terminal</span>
+                    <i class="fa-solid fa-arrow-right sn-arrow"></i>
+                </div>
+            </div>
+        </div>
+    </a>
+</div>
+{% endfor %}
+        </div>
+
+        <!-- BACK TO GLOBAL -->
+        <div class="text-center mt-5">
+            <a href="/login" class="sn-admin-link text-decoration-none">
+                <i class="fa-solid fa-circle-left me-1"></i> Return to Client Portal
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    :root {
+        --sn-primary: #002d72;      /* Coolaire Navy */
+        --sn-accent: #76b82a;       /* Coolaire Green */
+        --sn-bg: #f0f3f4;
+        --sn-card-bg: #ffffff;
+        --sn-text-main: #181d1e;
+        --sn-text-muted: #656e71;
+        --sn-border: #bdc3c7;
+    }
+
+    body, html {
+        background-color: var(--sn-bg) !important;
+        font-family: 'Source Sans 3', sans-serif !important;
+    }
+
+    /* HEADER STYLING */
+    .sn-page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--sn-primary);
+        letter-spacing: -0.5px;
+        margin-top: 15px;
+    }
+
+    .sn-page-subtitle {
+        color: var(--sn-text-muted);
+        font-size: 1rem;
+        font-weight: 400;
+    }
+
+    .sn-status-badge {
+        background: rgba(0, 45, 114, 0.08);
+        border: 1px solid rgba(0, 45, 114, 0.1);
+        border-radius: 4px;
+    }
+
+    .sn-badge-text {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: var(--sn-primary);
+    }
+
+    /* TERMINAL CARD DESIGN */
+    .sn-terminal-card {
+        background: var(--sn-card-bg);
+        border: 1px solid var(--sn-border);
+        border-radius: 4px; /* Professional sharp-rounded look */
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .sn-card-accent {
+        height: 4px;
+        background: var(--sn-border);
+        width: 100%;
+        transition: background 0.3s;
+    }
+
+    .sn-terminal-body {
+        padding: 25px;
+    }
+
+    .sn-icon-circle {
+        width: 42px;
+        height: 42px;
+        background: #f8fafb;
+        border: 1px solid var(--sn-border);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--sn-text-muted);
+        transition: all 0.3s;
+    }
+
+    .sn-hub-code {
+        font-family: 'Courier New', monospace;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--sn-text-muted);
+        background: #f1f5f9;
+        padding: 2px 8px;
+        border-radius: 3px;
+    }
+
+    .sn-branch-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--sn-text-main);
+        margin: 0;
+    }
+
+    .sn-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 15px;
+    }
+
+    .sn-action-text {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--sn-text-muted);
+        transition: color 0.3s;
+    }
+
+    .sn-arrow {
+        font-size: 0.8rem;
+        color: var(--sn-border);
+        transition: transform 0.3s, color 0.3s;
+    }
+
+    /* HOVER EFFECTS */
+    .sn-terminal-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 20px -10px rgba(0, 0, 0, 0.15);
+        border-color: var(--sn-primary);
+    }
+
+    .sn-terminal-card:hover .sn-card-accent {
+        background: var(--sn-primary);
+    }
+
+    .sn-terminal-card:hover .sn-icon-circle {
+        background: var(--sn-primary);
+        color: white;
+        border-color: var(--sn-primary);
+    }
+
+    .sn-terminal-card:hover .sn-action-text {
+        color: var(--sn-primary);
+    }
+
+    .sn-terminal-card:hover .sn-arrow {
+        transform: translateX(5px);
+        color: var(--sn-primary);
+    }
+
+    /* STATUS PULSE (Small and professional) */
+    .status-pulse-blue {
+        width: 6px; height: 6px;
+        background: var(--sn-primary);
+        border-radius: 50%;
+        position: relative;
+    }
+    .status-pulse-blue::after {
+        content: "";
+        position: absolute; inset: -3px;
+        border-radius: 50%;
+        border: 1.5px solid var(--sn-primary);
+        animation: pulse-ring 2s infinite;
+    }
+    @keyframes pulse-ring { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+
+    .sn-admin-link {
+        font-size: 0.9rem;
+        color: var(--sn-text-muted);
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+    .sn-admin-link:hover { color: var(--sn-primary); }
+
+</style>
+{% endblock %}
