@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restricted Access | Coolaire Security</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { background-color: #f1f5f9; font-family: sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .error-card { background: white; border-radius: 20px; padding: 50px; text-align: center; max-width: 500px; border-bottom: 8px solid #002d72; }
+        .icon-box { width: 100px; height: 100px; background: #fee2e2; color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 30px; font-size: 40px; border: 4px solid #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        h1 { color: #0f172a; font-weight: 900; font-size: 1.8rem; margin-bottom: 15px; }
+        p { color: #64748b; font-weight: 500; line-height: 1.6; }
+        .btn-back { background: #002d72; color: white; border-radius: 10px; padding: 12px 30px; font-weight: 800; text-decoration: none; display: inline-block; margin-top: 25px; transition: 0.3s; }
+        .btn-back:hover { background: #001a45; transform: translateY(-3px); color: white; }
+    </style>
+</head>
+<body>
+    <div class="error-card shadow-2xl">
+        <div class="icon-box">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h1>RESTRICTED ACCESS</h1>
+        <p>Your current node credentials do not have the required authorization levels to view this environment.</p>
+        <p class="small text-muted">Required Clearance: <strong>ADMIN_OR_HIGHER</strong></p>
+
+        <a href="javascript:history.back()" class="btn-back">
+            <i class="fa-solid fa-arrow-left me-2"></i> RETURN TO TERMINAL
+        </a>
+
+        <div class="mt-4 pt-4 border-top">
+            <img src="/static/logo.png" style="height: 25px; opacity: 0.5;">
+        </div>
+    </div>
+</body>
+</html>
