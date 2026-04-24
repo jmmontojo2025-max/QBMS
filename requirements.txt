@@ -30,3 +30,6 @@ urllib3==2.6.3
 Werkzeug==3.0.1
 wrapt==2.1.2
 WTForms==3.2.1
+Flask-SQLAlchemy
+Flask-Login
+requests-oauthlib
