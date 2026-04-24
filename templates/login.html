@@ -1,279 +1,231 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- GOOGLE FONTS: Source Sans 3 -->
-<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-<div class="sn-portal-wrapper">
-
-    <!-- MAIN CONTENT -->
-    <div class="container d-flex flex-column align-items-center justify-content-center" style="flex: 1; padding-bottom: 100px;">
-
-        <div class="sn-card col-12 col-sm-8 col-md-6 col-lg-4">
-            <!-- WIDGET HEADER -->
-            <div class="sn-card-header">
-                <h1 class="sn-card-title">Partner Portal Login</h1>
-                <p class="sn-card-subtitle">Access your fleet management dashboard.</p>
-            </div>
-
-            <div class="sn-card-body">
-                <form action="/login" method="POST" id="loginForm" autocomplete="off">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                    <!-- INPUT GROUP -->
-                    <div class="sn-form-group">
-                        <label class="sn-label">User Name</label>
-                        <input type="text" name="username" class="sn-input" placeholder="Enter username" required autofocus>
-                    </div>
-
-                    <!-- INPUT GROUP -->
-                    <div class="sn-form-group">
-                        <div class="d-flex justify-content-between">
-                            <label class="sn-label">Password</label>
-                            <a href="#" class="sn-link-sm">Forgot Password?</a>
-                        </div>
-                        <div class="sn-input-container">
-                            <input type="password" name="password" id="loginPassword" class="sn-input" placeholder="••••••••" required>
-                            <button type="button" class="sn-eye-btn" onclick="togglePass()">
-                                <i class="fa-solid fa-eye-slash" id="eyeIcon"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn-sn-primary" id="submitBtn">
-                        Log in
-                    </button>
-
-                    <div class="sn-divider">
-                        <span>OR</span>
-                    </div>
-
-                    <a href="/register" class="btn-sn-secondary text-center">
-                        Request Portal Access
-                    </a>
-                </form>
-            </div>
-        </div>
-
-        <!-- DISCREET ADMIN LINK -->
-        <div class="mt-4">
-            <a href="/staff/login" class="sn-admin-link">
-                <i class="fa-solid fa-lock me-1"></i> Internal Staff Access
-            </a>
-        </div>
-    </div>
-
-    <!-- FOOTER -->
-    <footer class="sn-footer">
-        <div>&copy; 2024 Coolaire Fleet Management</div>
-        <div class="d-none d-md-block">Secured by Service Management Framework</div>
-    </footer>
-</div>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
+    /* MODERN CORE VARIABLES */
     :root {
-        /* DARK NAVY BLUE PALETTE */
-        --sn-primary: #002d72;      /* Coolaire Navy */
-        --sn-primary-hover: #001f4d;
-        --sn-bg: #f0f3f4;
-        --sn-card-bg: #ffffff;
-        --sn-text-main: #1e293b;
-        --sn-text-muted: #64748b;
-        --sn-border: #cbd5e1;
-        --sn-input-focus: #002d72;
+        --saas-navy: #002d72;
+        --saas-accent: #3b82f6;
+        --saas-text: #1e293b;
+        --saas-light-text: #64748b;
+        --saas-bg: #f8fafc;
+        --saas-border: #e2e8f0;
+        --saas-radius: 1.25rem;
     }
 
-    body, html {
-        height: 100%;
-        margin: 0;
-        background-color: var(--sn-bg);
-        font-family: 'Source Sans 3', sans-serif;
-        color: var(--sn-text-main);
-    }
+    /* 1. LOGIN CANVAS (MESH BACKGROUND) */
+    body, html { height: 100%; margin: 0; font-family: 'Inter', sans-serif; }
 
-    .sn-portal-wrapper {
+    .login-canvas {
         min-height: 100vh;
         display: flex;
         flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--saas-bg);
+        background-image:
+            radial-gradient(at 0% 0%, rgba(0, 45, 114, 0.05) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
+        padding: 2rem;
     }
 
-    /* THE CARD */
-    .sn-card {
-        background: var(--sn-card-bg);
-        border: 1px solid var(--sn-border);
-        border-radius: 4px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        margin-top: 50px;
-    }
-
-    .sn-card-header {
-        padding: 30px 30px 10px 30px;
-    }
-
-    .sn-card-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--sn-primary); /* Navy Title */
-        margin-bottom: 8px;
-    }
-
-    .sn-card-subtitle {
-        font-size: 0.9rem;
-        color: var(--sn-text-muted);
-    }
-
-    .sn-card-body {
-        padding: 0 30px 30px 30px;
-    }
-
-    /* FORM ELEMENTS */
-    .sn-form-group {
-        margin-bottom: 20px;
-    }
-
-    .sn-label {
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin-bottom: 6px;
-        color: var(--sn-text-main);
-    }
-
-    .sn-input-container {
-        display: flex;
+    /* 2. THE LOGIN CARD */
+    .login-card {
+        background: #ffffff;
+        width: 100%;
+        max-width: 440px;
+        padding: 3rem 2.5rem;
+        border-radius: var(--saas-radius);
+        border: 1px solid #fff;
+        box-shadow:
+            0 20px 25px -5px rgba(0, 0, 0, 0.05),
+            0 10px 10px -5px rgba(0, 0, 0, 0.02),
+            0 0 0 1px rgba(0, 0, 0, 0.02);
         position: relative;
     }
 
-    .sn-input {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid var(--sn-border);
-        border-radius: 4px;
-        font-size: 0.95rem;
-        transition: border-color 0.2s;
-    }
-
-    .sn-input:focus {
-        outline: none;
-        border-color: var(--sn-input-focus);
-        box-shadow: 0 0 0 1px var(--sn-input-focus);
-    }
-
-    .sn-eye-btn {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        border: none;
-        background: none;
-        color: var(--sn-text-muted);
-        cursor: pointer;
-    }
-
-    /* BUTTONS - DARK NAVY BLUE APPLICATION */
-    .btn-sn-primary {
-        width: 100%;
-        background-color: var(--sn-primary);
+    .brand-mark {
+        width: 48px; height: 48px;
+        background: var(--saas-navy);
         color: white;
-        border: none;
-        padding: 12px;
-        border-radius: 4px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 45, 114, 0.3);
+    }
+
+    .login-title { font-weight: 900; color: var(--saas-text); font-size: 1.75rem; letter-spacing: -1px; margin-bottom: 0.5rem; }
+    .login-subtitle { color: var(--saas-light-text); font-size: 0.95rem; font-weight: 500; margin-bottom: 2.5rem; }
+
+    /* 3. FORM ELEMENTS */
+    .form-label-custom { font-size: 0.75rem; font-weight: 800; color: var(--saas-text); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 0.5rem; }
+
+    .modern-input {
+        width: 100%;
+        background: #f8fafc;
+        border: 2px solid transparent;
+        padding: 0.85rem 1rem;
+        border-radius: 12px;
         font-weight: 600;
         font-size: 1rem;
-        cursor: pointer;
-        transition: background 0.2s;
+        transition: all 0.2s;
+        color: var(--saas-text);
     }
-
-    .btn-sn-primary:hover {
-        background-color: var(--sn-primary-hover);
-    }
-
-    .btn-sn-secondary {
-        display: block;
-        width: 100%;
-        background-color: transparent;
-        color: var(--sn-primary);
-        border: 1px solid var(--sn-primary);
-        padding: 10px;
-        border-radius: 4px;
-        font-weight: 600;
-        text-decoration: none;
-        font-size: 0.95rem;
-        transition: 0.2s;
-    }
-
-    .btn-sn-secondary:hover {
-        background-color: #f0f4f8; /* Very light navy hint */
-        color: var(--sn-primary-hover);
-        border-color: var(--sn-primary-hover);
-    }
-
-    .sn-divider {
-        text-align: center;
-        margin: 20px 0;
-        position: relative;
-    }
-
-    .sn-divider::before {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 0;
-        width: 100%;
-        height: 1px;
-        background: var(--sn-border);
-        z-index: 1;
-    }
-
-    .sn-divider span {
-        background: white;
-        padding: 0 15px;
-        position: relative;
-        z-index: 2;
-        color: var(--sn-text-muted);
-        font-size: 0.8rem;
-    }
-
-    .sn-link-sm {
-        font-size: 0.8rem;
-        color: var(--sn-primary);
-        text-decoration: none;
-        font-weight: 600;
-    }
-
-    .sn-link-sm:hover {
-        text-decoration: underline;
-    }
-
-    /* FOOTER */
-    .sn-footer {
-        height: 60px;
-        border-top: 1px solid var(--sn-border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 40px;
-        font-size: 0.8rem;
-        color: var(--sn-text-muted);
+    .modern-input::placeholder { color: #cbd5e1; font-weight: 400; }
+    .modern-input:focus {
         background: #fff;
+        border-color: var(--saas-navy);
+        box-shadow: 0 0 0 4px rgba(0, 45, 114, 0.05);
+        outline: none;
     }
 
-    .sn-admin-link {
-        font-size: 0.85rem;
-        color: var(--sn-text-muted);
+    /* PASS EYE TOGGLE */
+    .pass-container { position: relative; }
+    .eye-btn {
+        position: absolute; right: 10px; top: 0; h-100;
+        background: none; border: none; color: #94a3b8;
+        padding: 0 1rem; font-size: 1.1rem;
+        display: flex; align-items: center; height: 100%;
+        cursor: pointer; transition: color 0.2s;
+    }
+    .eye-btn:hover { color: var(--saas-navy); }
+
+    /* 4. ACTIONS */
+    .btn-login-primary {
+        width: 100%;
+        background: var(--saas-navy);
+        color: white;
+        border: none;
+        padding: 1rem;
+        border-radius: 12px;
+        font-weight: 900;
+        font-size: 1rem;
+        margin-top: 1rem;
+        transition: all 0.3s;
+        box-shadow: 0 10px 15px -3px rgba(0, 45, 114, 0.2);
+    }
+    .btn-login-primary:hover { transform: translateY(-2px); background: #001a45; box-shadow: 0 20px 25px -5px rgba(0, 45, 114, 0.3); }
+    .btn-login-primary:active { transform: translateY(0); }
+
+    .btn-login-secondary {
+        width: 100%;
+        background: #fff;
+        color: var(--saas-navy);
+        border: 2px solid var(--saas-navy);
+        padding: 0.85rem;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 0.95rem;
         text-decoration: none;
-        opacity: 0.8;
-        font-weight: 600;
-        transition: 0.2s;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s;
+    }
+    .btn-login-secondary:hover { background: #f8fafc; border-color: var(--saas-accent); color: var(--saas-accent); }
+
+    .modern-divider {
+        display: flex; align-items: center; text-align: center;
+        margin: 2rem 0; color: #cbd5e1; font-size: 0.75rem; font-weight: 800;
+    }
+    .modern-divider::before, .modern-divider::after { content: ""; flex: 1; border-bottom: 1px solid var(--saas-border); }
+    .modern-divider span { padding: 0 1rem; letter-spacing: 1px; }
+
+    /* FOOTER & EXTRA LINKS */
+    .login-footer {
+        flex: 0 0 auto;
+        padding: 2rem;
+        text-align: center;
+        width: 100%;
+        color: var(--saas-light-text);
+        font-size: 0.8rem;
+        font-weight: 500;
     }
 
-    .sn-admin-link:hover { opacity: 1; color: var(--sn-primary); }
+    .admin-link {
+        font-weight: 700;
+        color: var(--saas-light-text);
+        text-decoration: none;
+        display: flex; align-items: center; gap: 0.5rem;
+        transition: all 0.2s;
+    }
+    .admin-link:hover { color: var(--saas-navy); }
 
+    /* ANIMATIONS */
+    .loading-spinner { display: none; }
 </style>
+
+<div class="login-canvas">
+
+    <div class="login-card animate__animated animate__zoomIn">
+
+        <!-- BRAND MARK -->
+        <div class="brand-mark">
+            <i class="fa-solid fa-bolt-lightning"></i>
+        </div>
+
+        <h1 class="login-title">Partner Portal</h1>
+        <p class="login-subtitle">Secure gateway for fleet management.</p>
+
+        <form action="/login" method="POST" id="loginForm" autocomplete="off">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- USERNAME -->
+            <div class="mb-4">
+                <label class="form-label-custom">Credential ID</label>
+                <input type="text" name="username" class="modern-input" placeholder="e.g. j.doe@company" required autofocus>
+            </div>
+
+            <!-- PASSWORD -->
+            <div class="mb-2">
+                <div class="d-flex justify-content-between">
+                    <label class="form-label-custom">Access Key</label>
+                    <a href="#" class="text-primary text-decoration-none fw-bold" style="font-size: 0.7rem;">Recovery Mode</a>
+                </div>
+                <div class="pass-container">
+                    <input type="password" name="password" id="loginPassword" class="modern-input" placeholder="••••••••" required>
+                    <button type="button" class="eye-btn" onclick="togglePass()">
+                        <i class="fa-solid fa-eye-low-beam" id="eyeIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login-primary" id="submitBtn">
+                LOG IN TO DASHBOARD
+            </button>
+
+            <div class="modern-divider">
+                <span>NEW CLIENTS</span>
+            </div>
+
+            <a href="/register" class="btn-login-secondary">
+                <i class="fa-solid fa-user-plus me-2"></i> Request Portal Access
+            </a>
+        </form>
+    </div>
+
+    <!-- DISCREET ADMIN ACCESS -->
+    <div class="mt-5 animate__animated animate__fadeInUp animate__delay-1s">
+        <a href="/staff/login" class="admin-link">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Internal Staff Access Only</span>
+        </a>
+    </div>
+
+</div>
+
+<footer class="login-footer">
+    <div>&copy; 2024 Coolaire Fleet Systems. Global Operations Terminal.</div>
+    <div class="extra-small font-monospace opacity-50 mt-1">PROTOCOL_AUTH_V4 // SECURE_SOCKET_ENABLED</div>
+</footer>
 
 <script>
     document.getElementById('loginForm').addEventListener('submit', function() {
         const btn = document.getElementById('submitBtn');
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> LOGGING IN...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> AUTHENTICATING...';
+        btn.style.opacity = "0.8";
         btn.disabled = true;
     });
 
@@ -282,10 +234,10 @@
         const eyeIcon = document.getElementById('eyeIcon');
         if (passInput.type === "password") {
             passInput.type = "text";
-            eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+            eyeIcon.classList.replace('fa-eye-low-beam', 'fa-eye');
         } else {
             passInput.type = "password";
-            eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+            eyeIcon.classList.replace('fa-eye', 'fa-eye-low-beam');
         }
     }
 </script>

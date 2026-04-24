@@ -1,0 +1,202 @@
+{% extends "base_staff.html" %}
+
+{% block content %}
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+    /* VARIABLES */
+    :root {
+        --saas-primary: #002d72;
+        --saas-accent: #3b82f6;
+        --saas-success: #10b981;
+        --saas-danger: #ef4444;
+        --saas-text: #1f2937;
+        --saas-light-text: #6b7280;
+        --saas-border: #e5e7eb;
+        --saas-bg: #f3f4f6;
+        --saas-bg-white: #ffffff;
+        --saas-radius: 0.75rem;
+        --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+    }
+
+    /* 1. APP LAYOUT */
+    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); }
+
+    .audit-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        font-family: 'Inter', sans-serif;
+        color: var(--saas-text);
+    }
+
+    /* 2. HEADER (Fixed) */
+    .audit-header {
+        flex: 0 0 auto;
+        padding: 1.5rem 2rem;
+        background-color: var(--saas-bg-white);
+        border-bottom: 1px solid var(--saas-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: var(--saas-shadow);
+        z-index: 10;
+    }
+    .fw-900 { font-weight: 900; }
+    .letter-spacing-tight { letter-spacing: -1px; }
+
+    /* 3. CONTENT AREA (Scrollable) */
+    .audit-content {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 2rem;
+    }
+
+    .audit-card {
+        background-color: var(--saas-bg-white);
+        border: 1px solid var(--saas-border);
+        border-radius: var(--saas-radius);
+        box-shadow: var(--saas-shadow);
+        overflow: hidden;
+    }
+
+    /* Modern Table Styling */
+    .audit-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .audit-table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f9fafb;
+        padding: 1rem 1.5rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--saas-light-text);
+        border-bottom: 1px solid var(--saas-border);
+        z-index: 5;
+    }
+    .audit-table tbody tr { transition: background-color 0.15s ease; }
+    .audit-table tbody tr:hover { background-color: #f8fafc; }
+    .audit-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
+
+    .channel-pill {
+        font-size: 0.7rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .channel-email { color: var(--saas-accent); }
+    .channel-sms { color: var(--saas-success); }
+
+    .status-pill {
+        padding: 0.4rem 0.8rem;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .status-success { background: #dcfce7; color: #166534; }
+    .status-failed { background: #fee2e2; color: #991b1b; }
+
+    .live-dot { width: 8px; height: 8px; background: var(--saas-success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
+</style>
+
+<div class="audit-container animate__animated animate__fadeIn">
+
+    <!-- HEADER -->
+    <header class="audit-header">
+        <div>
+            <h2 class="fw-900 mb-1 letter-spacing-tight">Messaging & Alerts Audit</h2>
+            <p class="text-muted small mb-0">Transmission logs for BAS-Node {{ session.get('location_name') }}</p>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="badge bg-light border text-dark px-3 py-2 rounded-pill d-flex align-items-center gap-2">
+                <span class="live-dot"></span>
+                <span class="small fw-800">SYSTEM LIVE</span>
+            </div>
+            <button onclick="window.location.reload()" class="btn btn-sm btn-light border fw-bold px-3 py-2 rounded-pill">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <main class="audit-content">
+        <div class="audit-card">
+            <div class="table-responsive">
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 200px;">Timestamp</th>
+                            <th>Channel</th>
+                            <th>Recipient Address</th>
+                            <th>Delivery Status</th>
+                            <th class="text-end">Diagnostics</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>
+                                <div class="fw-700 text-dark" style="font-size: 0.9rem;">{{ log.created_at.strftime('%b %d, %Y') }}</div>
+                                <div class="text-muted" style="font-size: 0.75rem; font-family: 'JetBrains Mono';">{{ log.created_at.strftime('%I:%M:%S %p') }}</div>
+                            </td>
+                            <td>
+                                {% if log.channel == 'email' %}
+                                    <div class="channel-pill channel-email">
+                                        <i class="fa-solid fa-envelope fs-6"></i> EMAIL
+                                    </div>
+                                {% else %}
+                                    <div class="channel-pill channel-sms">
+                                        <i class="fa-solid fa-comment-sms fs-6"></i> SMS
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-600 text-dark" style="font-size: 0.85rem;">{{ log.recipient }}</div>
+                            </td>
+                            <td>
+                                {% if log.status == 'success' %}
+                                    <span class="status-pill status-success">
+                                        <i class="fa-solid fa-check-circle"></i> DELIVERED
+                                    </span>
+                                {% else %}
+                                    <span class="status-pill status-failed">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> FAILED
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if log.status == 'failed' %}
+                                    <button class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3"
+                                            onclick="alert('Diagnostic Error: {{ log.error_message }}')">
+                                        <i class="fa-solid fa-bug me-1"></i> Debug
+                                    </button>
+                                {% else %}
+                                    <span class="small text-muted fw-bold" style="font-size: 0.7rem;">HANDSHAKE OK</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="opacity-25 mb-3">
+                                    <i class="fa-solid fa-envelopes-bulk fa-4x"></i>
+                                </div>
+                                <h5 class="fw-800 text-muted">No transmissions found</h5>
+                                <p class="small text-muted">Technical alert logs will appear here as they are triggered.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+{% endblock %}

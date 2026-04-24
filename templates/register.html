@@ -8,7 +8,7 @@
     <div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
 
         <!-- CENTERED ENROLLMENT CARD -->
-        <div class="sn-enroll-card col-12 col-md-8 col-lg-6 col-xl-5 bg-white shadow-sm overflow-hidden">
+        <div class="sn-enroll-card col-12 col-md-10 col-lg-8 col-xl-6 bg-white shadow-sm overflow-hidden">
 
             <!-- HEADER INDICATOR -->
             <div class="sn-card-top-bar"></div>
@@ -17,7 +17,7 @@
                 <div class="text-center mb-5">
                     <img src="{{ url_for('static', filename='logo.png') }}" style="height: 35px;" class="mb-4">
                     <h2 class="sn-page-title">Identity Enrollment</h2>
-                    <p class="sn-page-subtitle">Please provide your official business credentials.</p>
+                    <p class="sn-page-subtitle">Please provide official business credentials for verification.</p>
                 </div>
 
                 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -33,43 +33,56 @@
                 <form action="/register" method="POST" id="registerForm" autocomplete="off">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                    <!-- SECTION 1: BUSINESS -->
+                    <!-- SECTION 1: BUSINESS VALIDATION -->
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h3 class="sn-section-title">Business Details</h3>
+                        <h3 class="sn-section-title">Business Validation</h3>
                         <span class="sn-step-pill">Step 01</span>
                     </div>
 
                     <div class="row g-3 mb-5">
                         <div class="col-12">
-                            <label class="sn-label">Contact Full Name</label>
-                            <input type="text" name="full_name" class="sn-input" placeholder="Authorized Personnel" required autofocus>
+                            <label class="sn-label">Organization Name</label>
+                            <input type="text" name="company_name" class="sn-input" placeholder="Registered Legal Entity Name" required>
                         </div>
+
+                        <!-- NEW: TIN NUMBER -->
+                        <div class="col-md-6">
+                            <label class="sn-label">Business TIN</label>
+                            <input type="text" name="tin_number" class="sn-input" placeholder="000-000-000-000" required>
+                        </div>
+
+                        <!-- NEW: BUSINESS PERMIT / ACCREDITATION -->
+                        <div class="col-md-6">
+                            <label class="sn-label">Permit / Accreditation No.</label>
+                            <input type="text" name="business_permit" class="sn-input" placeholder="Legal ID Number" required>
+                        </div>
+
                         <div class="col-12">
+                            <label class="sn-label">Contact Full Name</label>
+                            <input type="text" name="full_name" class="sn-input" placeholder="Authorized Personnel" required>
+                        </div>
+                        <div class="col-md-6">
                             <label class="sn-label">Mobile Number</label>
                             <input type="tel" name="phone" class="sn-input" placeholder="09XX XXX XXXX" required>
                         </div>
-                        <div class="col-12">
-                            <label class="sn-label">Official Email</label>
+                        <div class="col-md-6">
+                            <label class="sn-label">Official Work Email</label>
                             <input type="email" name="email" class="sn-input" placeholder="name@company.com" required>
-                        </div>
-                        <div class="col-12">
-                            <label class="sn-label">Organization Name</label>
-                            <input type="text" name="company_name" class="sn-input" placeholder="Registered Legal Entity" required>
                         </div>
                     </div>
 
                     <!-- SECTION 2: AUTHENTICATION -->
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h3 class="sn-section-title">Portal Access</h3>
+                        <h3 class="sn-section-title">Portal Credentials</h3>
                         <span class="sn-step-pill">Step 02</span>
                     </div>
 
                     <div class="row g-3">
-                        <div class="col-12">
+                        <div class="col-md-6">
                             <label class="sn-label">Username</label>
                             <input type="text" name="username" class="sn-input" placeholder="Choose a username" required>
                         </div>
-                        <div class="col-12">
+                        <div class="col-md-6">
                             <label class="sn-label">Security Password</label>
                             <div class="position-relative">
                                 <input type="password" name="password" id="regPassword" class="sn-input" placeholder="••••••••" required>
@@ -82,11 +95,11 @@
 
                     <div class="mt-5">
                         <button type="submit" class="btn-sn-primary w-100 py-3 mb-4" id="regSubmitBtn">
-                            COMPLETE ENROLLMENT
+                            REQUEST PORTAL ACCESS
                         </button>
                         <div class="text-center">
-                            <span class="sn-text-muted small fw-600">Already registered?</span>
-                            <a href="/login" class="sn-link-sm ms-2">Sign In to Portal</a>
+                            <span class="sn-text-muted small fw-600">Already have an account?</span>
+                            <a href="/login" class="sn-link-sm ms-2">Sign In</a>
                         </div>
                     </div>
                 </form>
@@ -247,7 +260,7 @@
 
     document.getElementById('registerForm').addEventListener('submit', function() {
         const btn = document.getElementById('regSubmitBtn');
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> INITIALIZING...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> SUBMITTING REQUEST...';
         btn.disabled = true;
     });
 </script>

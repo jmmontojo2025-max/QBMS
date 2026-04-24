@@ -1,238 +1,193 @@
 {% extends "base.html" %}
 {% block content %}
-<!-- GOOGLE FONTS: Source Sans 3 -->
-<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
-<div class="sn-portal-wrapper">
-    <div class="container py-5 min-vh-100 d-flex flex-column justify-content-center animate__animated animate__fadeIn">
+<style>
+    /* MODERN CORE VARIABLES */
+    :root {
+        --saas-navy: #002d72;
+        --saas-accent: #3b82f6;
+        --saas-text: #1e293b;
+        --saas-light-text: #64748b;
+        --saas-bg: #f8fafc;
+        --saas-border: #e2e8f0;
+        --saas-radius: 1.25rem;
+    }
 
-        <!-- 1. GATEWAY HEADER -->
+    /* 1. SELECTION CANVAS */
+    body, html { height: 100%; margin: 0; font-family: 'Inter', sans-serif; }
+
+    .gateway-canvas {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        background-color: var(--saas-bg);
+        background-image:
+            radial-gradient(at 0% 0%, rgba(0, 45, 114, 0.03) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.03) 0px, transparent 50%);
+        padding: 4rem 2rem;
+    }
+
+    /* 2. HEADER HUD */
+    .initialization-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: #fff;
+        padding: 0.5rem 1.25rem;
+        border-radius: 999px;
+        border: 1px solid var(--saas-border);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+    }
+    .pulse-indicator {
+        width: 8px; height: 8px;
+        background: var(--saas-accent);
+        border-radius: 50%;
+        box-shadow: 0 0 10px var(--saas-accent);
+        animation: pulse-ring 2s infinite;
+    }
+    @keyframes pulse-ring { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+
+    .page-title { font-weight: 900; color: var(--saas-navy); letter-spacing: -1.5px; margin-bottom: 0.5rem; }
+    .page-subtitle { color: var(--saas-light-text); font-size: 1.1rem; max-width: 600px; margin: 0 auto 4rem auto; }
+
+    /* 3. TERMINAL MODULE CARDS */
+    .terminal-card {
+        background: #ffffff;
+        border: 1px solid var(--saas-border);
+        border-radius: var(--saas-radius);
+        padding: 2.5rem 2rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+    }
+
+    /* Card Interaction States */
+    .terminal-card:hover {
+        transform: translateY(-10px);
+        border-color: var(--saas-accent);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    /* Top Hover Accent */
+    .terminal-card::after {
+        content: ""; position: absolute; top: 0; left: 0; right: 0; height: 0;
+        background: var(--saas-navy); transition: height 0.3s ease;
+    }
+    .terminal-card:hover::after { height: 6px; }
+
+    /* Card Components */
+    .hub-icon-wrapper {
+        width: 64px; height: 64px;
+        background: #f8fafc;
+        border: 1px solid var(--saas-border);
+        border-radius: 18px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.75rem; color: var(--saas-light-text);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s;
+    }
+    .terminal-card:hover .hub-icon-wrapper {
+        background: var(--saas-navy);
+        color: white;
+        transform: scale(1.1) rotate(-5deg);
+    }
+
+    .node-id {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--saas-accent);
+        background: #eff6ff;
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+
+    .branch-name { font-weight: 800; color: var(--saas-text); font-size: 1.25rem; margin-bottom: 1.5rem; }
+
+    .btn-init {
+        margin-top: auto;
+        font-size: 0.75rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--saas-light-text);
+        display: flex; align-items: center; gap: 0.5rem;
+        transition: color 0.3s;
+    }
+    .terminal-card:hover .btn-init { color: var(--saas-accent); }
+    .terminal-card:hover .fa-arrow-right { transform: translateX(5px); }
+
+    /* 4. UTILITIES & TYPE */
+    .return-link {
+        font-weight: 700; color: var(--saas-light-text);
+        text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
+        transition: all 0.2s; margin-top: 4rem;
+    }
+    .return-link:hover { color: var(--saas-navy); }
+
+    /* RESPONSIVE TYPE */
+    html { font-size: clamp(14px, 0.4vw + 0.5rem, 18px); }
+    .page-title { font-size: clamp(1.8rem, 3vw, 2.5rem); }
+</style>
+
+<div class="gateway-canvas">
+    <div class="container animate__animated animate__fadeIn">
+
+        <!-- HEADER -->
         <div class="text-center mb-5">
-            <div class="mb-4">
-                <img src="{{ url_for('static', filename='logo.png') }}" style="height: 60px;" onerror="this.src='https://placehold.co/300x80/002d72/ffffff?text=COOLAIRE'">
+            <div class="mb-4 animate__animated animate__zoomIn">
+                <img src="{{ url_for('static', filename='logo.png') }}" style="height: 64px;" onerror="this.src='https://placehold.co/300x80/002d72/ffffff?text=COOLAIRE'">
             </div>
 
-            <div class="d-inline-flex align-items-center gap-2 mb-2 px-3 py-1 sn-status-badge">
-                <span class="status-pulse-blue"></span>
-                <span class="sn-badge-text">SYSTEM INITIALIZATION REQUIRED</span>
+            <div class="initialization-pill mx-auto">
+                <span class="pulse-indicator"></span>
+                <span class="small fw-900 text-dark" style="letter-spacing: 1px;">NODE SELECTION REQUIRED</span>
             </div>
 
-            <h1 class="sn-page-title">Select Hub Terminal</h1>
-            <p class="sn-page-subtitle">Identify your physical service branch to begin session.</p>
+            <h1 class="page-title">Identify Terminal Node</h1>
+            <p class="page-subtitle">Select your designated physical service hub to synchronize the broadcast environment.</p>
         </div>
 
-        <!-- 2. TERMINAL GRID -->
+        <!-- GRID -->
         <div class="row g-4 justify-content-center">
-            <!-- location_select.html -->
+            {% for l in locs %}
+            <div class="col-sm-6 col-md-4 col-lg-3 animate__animated animate__fadeInUp" style="animation-delay: {{ loop.index * 100 }}ms;">
+                <a href="{{ url_for('set_branch', loc_id=l.id) }}" class="terminal-card">
+                    <span class="node-id">HUB_{{ l.code }}</span>
 
-<!-- location_select.html -->
-
-{% for l in locs %}
-<div class="col-sm-6 col-md-4 col-lg-3 animate__animated animate__fadeInUp" style="animation-delay: {{ loop.index * 50 }}ms;">
-    <!-- ENSURE THIS href IS CORRECT -->
-    <a href="{{ url_for('set_branch', loc_id=l.id) }}" class="text-decoration-none">
-        <div class="sn-terminal-card">
-            <div class="sn-card-accent"></div>
-            <div class="sn-terminal-body">
-                <div class="d-flex align-items-start justify-content-between mb-3">
-                    <div class="sn-icon-circle">
-                        <i class="fa-solid fa-building-shield"></i>
+                    <div class="hub-icon-wrapper shadow-sm">
+                        <i class="fa-solid fa-tower-observation"></i>
                     </div>
-                    <span class="sn-hub-code">{{ l.code }}</span>
-                </div>
 
-                <h3 class="sn-branch-name">{{ l.name }}</h3>
+                    <h3 class="branch-name">{{ l.name }}</h3>
 
-                <div class="sn-card-footer mt-4">
-                    <span class="sn-action-text">Initialize Terminal</span>
-                    <i class="fa-solid fa-arrow-right sn-arrow"></i>
-                </div>
+                    <div class="btn-init">
+                        Initialize Session <i class="fa-solid fa-arrow-right transition-all"></i>
+                    </div>
+                </a>
             </div>
-        </div>
-    </a>
-</div>
-{% endfor %}
+            {% endfor %}
         </div>
 
-        <!-- BACK TO GLOBAL -->
-        <div class="text-center mt-5">
-            <a href="/login" class="sn-admin-link text-decoration-none">
-                <i class="fa-solid fa-circle-left me-1"></i> Return to Client Portal
+        <!-- FOOTER -->
+        <div class="text-center">
+            <a href="/login" class="return-link">
+                <i class="fa-solid fa-circle-left"></i>
+                <span>Return to Client Portal</span>
             </a>
         </div>
 
     </div>
 </div>
-
-<style>
-    :root {
-        --sn-primary: #002d72;      /* Coolaire Navy */
-        --sn-accent: #76b82a;       /* Coolaire Green */
-        --sn-bg: #f0f3f4;
-        --sn-card-bg: #ffffff;
-        --sn-text-main: #181d1e;
-        --sn-text-muted: #656e71;
-        --sn-border: #bdc3c7;
-    }
-
-    body, html {
-        background-color: var(--sn-bg) !important;
-        font-family: 'Source Sans 3', sans-serif !important;
-    }
-
-    /* HEADER STYLING */
-    .sn-page-title {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--sn-primary);
-        letter-spacing: -0.5px;
-        margin-top: 15px;
-    }
-
-    .sn-page-subtitle {
-        color: var(--sn-text-muted);
-        font-size: 1rem;
-        font-weight: 400;
-    }
-
-    .sn-status-badge {
-        background: rgba(0, 45, 114, 0.08);
-        border: 1px solid rgba(0, 45, 114, 0.1);
-        border-radius: 4px;
-    }
-
-    .sn-badge-text {
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 1px;
-        color: var(--sn-primary);
-    }
-
-    /* TERMINAL CARD DESIGN */
-    .sn-terminal-card {
-        background: var(--sn-card-bg);
-        border: 1px solid var(--sn-border);
-        border-radius: 4px; /* Professional sharp-rounded look */
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        position: relative;
-        overflow: hidden;
-        height: 100%;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    .sn-card-accent {
-        height: 4px;
-        background: var(--sn-border);
-        width: 100%;
-        transition: background 0.3s;
-    }
-
-    .sn-terminal-body {
-        padding: 25px;
-    }
-
-    .sn-icon-circle {
-        width: 42px;
-        height: 42px;
-        background: #f8fafb;
-        border: 1px solid var(--sn-border);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--sn-text-muted);
-        transition: all 0.3s;
-    }
-
-    .sn-hub-code {
-        font-family: 'Courier New', monospace;
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: var(--sn-text-muted);
-        background: #f1f5f9;
-        padding: 2px 8px;
-        border-radius: 3px;
-    }
-
-    .sn-branch-name {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--sn-text-main);
-        margin: 0;
-    }
-
-    .sn-card-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-top: 1px solid #f1f5f9;
-        padding-top: 15px;
-    }
-
-    .sn-action-text {
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--sn-text-muted);
-        transition: color 0.3s;
-    }
-
-    .sn-arrow {
-        font-size: 0.8rem;
-        color: var(--sn-border);
-        transition: transform 0.3s, color 0.3s;
-    }
-
-    /* HOVER EFFECTS */
-    .sn-terminal-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 20px -10px rgba(0, 0, 0, 0.15);
-        border-color: var(--sn-primary);
-    }
-
-    .sn-terminal-card:hover .sn-card-accent {
-        background: var(--sn-primary);
-    }
-
-    .sn-terminal-card:hover .sn-icon-circle {
-        background: var(--sn-primary);
-        color: white;
-        border-color: var(--sn-primary);
-    }
-
-    .sn-terminal-card:hover .sn-action-text {
-        color: var(--sn-primary);
-    }
-
-    .sn-terminal-card:hover .sn-arrow {
-        transform: translateX(5px);
-        color: var(--sn-primary);
-    }
-
-    /* STATUS PULSE (Small and professional) */
-    .status-pulse-blue {
-        width: 6px; height: 6px;
-        background: var(--sn-primary);
-        border-radius: 50%;
-        position: relative;
-    }
-    .status-pulse-blue::after {
-        content: "";
-        position: absolute; inset: -3px;
-        border-radius: 50%;
-        border: 1.5px solid var(--sn-primary);
-        animation: pulse-ring 2s infinite;
-    }
-    @keyframes pulse-ring { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
-
-    .sn-admin-link {
-        font-size: 0.9rem;
-        color: var(--sn-text-muted);
-        font-weight: 600;
-        transition: color 0.2s;
-    }
-    .sn-admin-link:hover { color: var(--sn-primary); }
-
-</style>
 {% endblock %}

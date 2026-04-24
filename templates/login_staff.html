@@ -1,291 +1,239 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- GOOGLE FONTS: Source Sans 3 -->
-<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-<div class="sn-portal-wrapper">
-
-    <!-- MAIN CONTENT -->
-    <div class="container d-flex flex-column align-items-center justify-content-center" style="flex: 1; padding-bottom: 100px;">
-
-        <div class="sn-card col-12 col-sm-8 col-md-6 col-lg-4">
-            <!-- WIDGET HEADER -->
-            <div class="sn-card-header">
-                <h1 class="sn-card-title">Staff Terminal</h1>
-                <p class="sn-card-subtitle">Internal Access: Operator Credentials Required</p>
-            </div>
-
-            <div class="sn-card-body">
-                <form action="/staff/login" method="POST" id="staffLoginForm" autocomplete="off">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                    <!-- INPUT GROUP -->
-                    <div class="sn-form-group">
-                        <label class="sn-label">Operator ID / Username</label>
-                        <input type="text" name="username" class="sn-input" placeholder="Enter ID" required autofocus>
-                    </div>
-
-                    <!-- INPUT GROUP -->
-                    <div class="sn-form-group">
-                        <div class="d-flex justify-content-between">
-                            <label class="sn-label">Password</label>
-                            <a href="#" class="sn-link-sm">Reset Credentials</a>
-                        </div>
-                        <div class="sn-input-container">
-                            <input type="password" name="password" id="staffPassword" class="sn-input" placeholder="••••••••" required>
-                            <button type="button" class="sn-eye-btn" onclick="toggleStaffPass()">
-                                <i class="fa-solid fa-eye-slash" id="staffEyeIcon"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn-sn-primary" id="staffSubmitBtn">
-                        Initialize Terminal
-                    </button>
-
-                    <div class="sn-divider">
-                        <span>OR</span>
-                    </div>
-
-                    <a href="/login" class="btn-sn-secondary text-center">
-                        Exit to Client Portal
-                    </a>
-                </form>
-            </div>
-        </div>
-
-        <!-- DISCREET INFO -->
-        <div class="mt-4">
-            <div class="sn-admin-badge">
-                <i class="fa-solid fa-shield-halved me-1"></i> Secure Staff Environment
-            </div>
-        </div>
-    </div>
-
-    <!-- FOOTER -->
-    <footer class="sn-footer">
-        <div>&copy; 2024 Coolaire Fleet Management</div>
-        <div class="d-none d-md-block">System Node: STAFF-01-NAVY</div>
-    </footer>
-</div>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
+    /* MODERN INTERNAL VARIABLES */
     :root {
-        /* DARK NAVY BLUE INTERNAL THEME */
-        --sn-primary: #002d72;      /* Coolaire Navy */
-        --sn-primary-hover: #001f4d;
-        --sn-bg: #f0f3f4;
-        --sn-card-bg: #ffffff;
-        --sn-text-main: #1e293b;
-        --sn-text-muted: #64748b;
-        --sn-border: #cbd5e1;
-        --sn-input-focus: #002d72;
+        --saas-navy: #002d72;
+        --saas-accent: #3b82f6;
+        --saas-text: #1e293b;
+        --saas-light-text: #64748b;
+        --saas-bg: #f1f5f9;
+        --saas-border: #e2e8f0;
+        --saas-radius: 1rem;
     }
 
-    body, html {
-        height: 100%;
-        margin: 0;
-        background-color: var(--sn-bg) !important;
-        font-family: 'Source Sans 3', sans-serif !important;
-        color: var(--sn-text-main);
-    }
+    /* 1. INTERNAL CANVAS (DARKER MESH) */
+    body, html { height: 100%; margin: 0; font-family: 'Inter', sans-serif; }
 
-    .sn-portal-wrapper {
+    .login-canvas {
         min-height: 100vh;
         display: flex;
         flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: #e2e8f0;
+        background-image:
+            radial-gradient(at 0% 100%, rgba(0, 45, 114, 0.08) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, rgba(15, 23, 42, 0.08) 0px, transparent 50%);
+        padding: 2rem;
     }
 
-    /* THE CARD */
-    .sn-card {
-        background: var(--sn-card-bg);
-        border: 1px solid var(--sn-border);
-        border-radius: 2px; /* Sharper edges for "Internal" feel */
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        margin-top: 50px;
-    }
-
-    .sn-card-header {
-        padding: 30px 30px 10px 30px;
-        border-top: 4px solid var(--sn-primary); /* Navy Indicator */
-    }
-
-    .sn-card-title {
-        font-size: 1.4rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        color: var(--sn-primary); /* Navy Title */
-        margin-bottom: 8px;
-    }
-
-    .sn-card-subtitle {
-        font-size: 0.85rem;
-        color: var(--sn-text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .sn-card-body {
-        padding: 0 30px 30px 30px;
-    }
-
-    /* FORM ELEMENTS */
-    .sn-form-group {
-        margin-bottom: 20px;
-    }
-
-    .sn-label {
-        font-size: 0.85rem;
-        font-weight: 700;
-        margin-bottom: 6px;
-        color: var(--sn-text-main);
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-    }
-
-    .sn-input-container {
-        display: flex;
+    /* 2. THE TERMINAL CARD */
+    .terminal-card {
+        background: #ffffff;
+        width: 100%;
+        max-width: 420px;
+        border-radius: var(--saas-radius);
+        border: 1px solid #fff;
+        box-shadow:
+            0 25px 50px -12px rgba(0, 0, 0, 0.1),
+            0 0 0 1px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
         position: relative;
     }
 
-    .sn-input {
+    /* Internal Branding Bar */
+    .protocol-bar {
+        background: var(--saas-navy);
+        padding: 1.5rem 2.5rem;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .terminal-id { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 700; opacity: 0.7; letter-spacing: 1px; }
+
+    .login-body { padding: 2.5rem; }
+    .login-title { font-weight: 900; color: var(--saas-text); font-size: 1.5rem; letter-spacing: -1px; margin-bottom: 0.25rem; }
+    .login-subtitle { color: var(--saas-light-text); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2rem; }
+
+    /* 3. FORM ELEMENTS */
+    .form-label-custom { font-size: 0.7rem; font-weight: 800; color: var(--saas-text); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 0.5rem; }
+
+    .modern-input {
         width: 100%;
-        padding: 10px 12px;
-        border: 1px solid var(--sn-border);
-        border-radius: 3px;
+        background: #f8fafc;
+        border: 2px solid transparent;
+        padding: 0.85rem 1rem;
+        border-radius: 10px;
+        font-weight: 600;
         font-size: 0.95rem;
         transition: all 0.2s;
-        background-color: #fafafa;
+        color: var(--saas-text);
     }
+    /* Technical ID Input use monospace */
+    .id-input { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px; }
 
-    .sn-input:focus {
+    .modern-input:focus {
+        background: #fff;
+        border-color: var(--saas-navy);
+        box-shadow: 0 0 0 4px rgba(0, 45, 114, 0.05);
         outline: none;
-        border-color: var(--sn-input-focus);
-        box-shadow: 0 0 0 1px var(--sn-input-focus);
-        background-color: #fff;
     }
 
-    .sn-eye-btn {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        border: none;
-        background: none;
-        color: var(--sn-text-muted);
-        cursor: pointer;
+    .pass-container { position: relative; }
+    .eye-btn {
+        position: absolute; right: 0; top: 0; height: 100%;
+        background: none; border: none; color: #94a3b8;
+        padding: 0 1.25rem; font-size: 1.1rem;
+        display: flex; align-items: center;
+        cursor: pointer; transition: color 0.2s;
     }
+    .eye-btn:hover { color: var(--saas-navy); }
 
-    /* BUTTONS - DARK NAVY BLUE */
-    .btn-sn-primary {
+    /* 4. ACTIONS */
+    .btn-terminal-primary {
         width: 100%;
-        background-color: var(--sn-primary) !important;
-        color: white !important;
+        background: var(--saas-navy);
+        color: white;
         border: none;
-        padding: 12px;
-        border-radius: 3px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        padding: 1.1rem;
+        border-radius: 10px;
+        font-weight: 900;
         font-size: 0.9rem;
-        cursor: pointer;
-        transition: background 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 1.5rem;
+        transition: all 0.3s;
+        box-shadow: 0 10px 15px -3px rgba(0, 45, 114, 0.2);
     }
+    .btn-terminal-primary:hover { transform: translateY(-2px); background: #001a45; box-shadow: 0 20px 25px -5px rgba(0, 45, 114, 0.3); }
 
-    .btn-sn-primary:hover {
-        background-color: var(--sn-primary-hover) !important;
-    }
-
-    .btn-sn-secondary {
+    .btn-terminal-secondary {
         display: block;
         width: 100%;
-        background-color: transparent;
-        color: var(--sn-primary) !important;
-        border: 1px solid var(--sn-primary) !important;
-        padding: 10px;
-        border-radius: 3px;
-        font-weight: 700;
-        text-decoration: none;
+        background: #fff;
+        color: var(--saas-light-text);
+        border: 2px solid var(--saas-border);
+        padding: 0.85rem;
+        border-radius: 10px;
+        font-weight: 800;
         font-size: 0.85rem;
-        text-transform: uppercase;
-        transition: 0.2s;
-    }
-
-    .btn-sn-secondary:hover {
-        background-color: #f0f4f8;
-        color: var(--sn-primary-hover) !important;
-        border-color: var(--sn-primary-hover) !important;
-    }
-
-    .sn-divider {
-        text-align: center;
-        margin: 20px 0;
-        position: relative;
-    }
-
-    .sn-divider::before {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 0;
-        width: 100%;
-        height: 1px;
-        background: var(--sn-border);
-        z-index: 1;
-    }
-
-    .sn-divider span {
-        background: white;
-        padding: 0 15px;
-        position: relative;
-        z-index: 2;
-        color: var(--sn-text-muted);
-        font-size: 0.75rem;
-        font-weight: 700;
-    }
-
-    .sn-link-sm {
-        font-size: 0.8rem;
-        color: var(--sn-primary);
         text-decoration: none;
-        font-weight: 700;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.2s;
     }
+    .btn-terminal-secondary:hover { background: #f8fafc; border-color: var(--saas-navy); color: var(--saas-navy); }
 
-    .sn-link-sm:hover {
-        text-decoration: underline;
+    .modern-divider {
+        display: flex; align-items: center; text-align: center;
+        margin: 2rem 0; color: #cbd5e1; font-size: 0.65rem; font-weight: 800;
     }
+    .modern-divider::before, .modern-divider::after { content: ""; flex: 1; border-bottom: 1px solid var(--saas-border); }
+    .modern-divider span { padding: 0 1rem; letter-spacing: 2px; }
 
     /* FOOTER */
-    .sn-footer {
-        height: 60px;
-        border-top: 1px solid var(--sn-border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 40px;
-        font-size: 0.75rem;
-        color: var(--sn-text-muted);
-        background: #fff;
+    .login-footer {
+        flex: 0 0 auto;
+        padding: 2rem;
+        text-align: center;
+        width: 100%;
+        color: var(--saas-light-text);
+        font-size: 0.8rem;
     }
 
-    .sn-admin-badge {
-        font-size: 0.75rem;
-        color: var(--sn-primary);
-        background: #e2e8f0;
-        padding: 4px 12px;
-        border-radius: 4px;
+    .security-badge {
         font-weight: 800;
-        text-transform: uppercase;
-        border: 1px solid var(--sn-border);
+        color: var(--saas-navy);
+        background: #fff;
+        padding: 0.5rem 1.25rem;
+        border-radius: 999px;
+        border: 1px solid var(--saas-border);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: var(--saas-shadow);
     }
-
 </style>
+
+<div class="login-canvas">
+
+    <div class="terminal-card animate__animated animate__zoomIn">
+
+        <!-- PROTOCOL BAR -->
+        <div class="protocol-bar">
+            <i class="fa-solid fa-tower-broadcast"></i>
+            <span class="terminal-id">STAFF_AUTH // NODE_V4</span>
+        </div>
+
+        <div class="login-body">
+            <h1 class="login-title">Staff Terminal</h1>
+            <p class="login-subtitle">Internal Operator Access</p>
+
+            <form action="/staff/login" method="POST" id="staffLoginForm" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <!-- OPERATOR ID -->
+                <div class="mb-4">
+                    <label class="form-label-custom">Operator ID</label>
+                    <input type="text" name="username" class="modern-input id-input" placeholder="SYS_XXXXX" required autofocus>
+                </div>
+
+                <!-- PASSWORD -->
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <label class="form-label-custom">Security Key</label>
+                        <a href="#" class="text-decoration-none fw-bold" style="font-size: 0.65rem; color: var(--saas-navy);">Reset Key</a>
+                    </div>
+                    <div class="pass-container">
+                        <input type="password" name="password" id="staffPassword" class="modern-input" placeholder="••••••••" required>
+                        <button type="button" class="eye-btn" onclick="toggleStaffPass()">
+                            <i class="fa-solid fa-eye-low-beam" id="staffEyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-terminal-primary" id="staffSubmitBtn">
+                    Initialize Terminal
+                </button>
+
+                <div class="modern-divider">
+                    <span>REDIRECT</span>
+                </div>
+
+                <a href="/login" class="btn-terminal-secondary">
+                    Exit to Client Portal
+                </a>
+            </form>
+        </div>
+    </div>
+
+    <!-- SECURITY CONTEXT -->
+    <div class="mt-5 animate__animated animate__fadeInUp animate__delay-1s">
+        <div class="security-badge">
+            <i class="fa-solid fa-user-shield text-accent"></i>
+            <span class="small">SECURE OPERATIONAL ENVIRONMENT</span>
+        </div>
+    </div>
+
+</div>
+
+<footer class="login-footer">
+    <div class="fw-700">&copy; 2024 Coolaire Fleet Management</div>
+    <div class="extra-small font-monospace opacity-50 mt-1">ENCRYPTION_LAYER: RSA_4096 // SOCKET_ID: STAFF-01-NAVY</div>
+</footer>
 
 <script>
     document.getElementById('staffLoginForm').addEventListener('submit', function() {
         const btn = document.getElementById('staffSubmitBtn');
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> INITIALIZING...';
+        btn.style.opacity = "0.8";
         btn.disabled = true;
     });
 
@@ -294,10 +242,10 @@
         const eyeIcon = document.getElementById('staffEyeIcon');
         if (passInput.type === "password") {
             passInput.type = "text";
-            eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+            eyeIcon.classList.replace('fa-eye-low-beam', 'fa-eye');
         } else {
             passInput.type = "password";
-            eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+            eyeIcon.classList.replace('fa-eye', 'fa-eye-low-beam');
         }
     }
 </script>

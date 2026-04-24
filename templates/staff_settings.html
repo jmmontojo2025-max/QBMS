@@ -1,215 +1,351 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<div class="p-2 animate__animated animate__fadeIn">
-
-    <!-- 1. HEADER: SYSTEM CONTROL -->
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-6">
-            <div class="d-flex align-items-center gap-3">
-                <div class="bg-navy p-3 rounded-4 shadow-lg text-white icon-scan-wrapper">
-                    <div class="radar-ping"></div>
-                    <i class="fa-solid fa-gears fs-4 position-relative"></i>
-                </div>
-                <div>
-                    <h3 class="fw-900 mb-0 text-dark letter-spacing-tight">Global Configuration</h3>
-                    <p class="text-muted small mb-0 font-monospace text-uppercase">
-                        <span class="status-indicator-green"></span> SYSTEM_ROOT // PROTOCOL_LEVEL: 01
-                    </p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 text-md-end mt-3 mt-md-0">
-            <div class="badge bg-primary-soft text-primary p-2 px-3 rounded-pill fw-800 border">
-                <i class="fa-solid fa-shield-halved me-1"></i> Root Administrator Access
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4">
-
-        <!-- 2. LEFT: COMMUNICATION GATEWAYS -->
-        <div class="col-lg-7">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
-                <div class="card-header bg-navy text-white p-4 border-0">
-                    <h6 class="mb-0 fw-800 text-uppercase small ls-1">
-                        <i class="fa-solid fa-tower-broadcast me-2"></i>Communication Gateways
-                    </h6>
-                    <p class="extra-small opacity-75 mb-0">Manage SMTP Relay and SMS API Authentication</p>
-                </div>
-
-                <div class="card-body p-4 p-md-5">
-                    <form action="/staff/settings" method="POST" id="settingsForm">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                        <!-- EMAIL SUB-SECTION -->
-                        <div class="mb-5">
-                            <div class="d-flex align-items-center mb-4">
-                                <span class="step-num me-2">01</span>
-                                <h6 class="extra-small fw-900 text-primary mb-0 text-uppercase ls-1">Mail Server (SMTP)</h6>
-                                <div class="flex-grow-1 border-bottom ms-3 opacity-10"></div>
-                            </div>
-
-                            <div class="row g-3">
-                                <div class="col-md-12">
-                                    <label class="biz-label">Host Auth User</label>
-                                    <input type="email" name="MAIL_HOST_USER" class="form-control biz-input"
-                                           value="{{ settings['MAIL_HOST_USER'] }}" placeholder="e.g. system@coolaire.com">
-                                </div>
-                                <div class="col-md-12">
-                                    <label class="biz-label">Secure App Password</label>
-                                    <div class="input-group">
-                                        <input type="password" name="MAIL_HOST_PASSWORD" id="mailPass" class="form-control biz-input border-end-0"
-                                               value="{{ settings['MAIL_HOST_PASSWORD'] }}" placeholder="••••••••••••••••">
-                                        <button type="button" class="btn border border-start-0 bg-light px-3" onclick="togglePass('mailPass')">
-                                            <i class="fa-solid fa-eye-low-beam text-muted" id="eyeIcon-mailPass"></i>
-                                        </button>
-                                    </div>
-                                    <div class="mt-3 p-3 rounded-3 bg-light d-flex align-items-center border-start border-primary border-4">
-                                        <i class="fa-solid fa-circle-info text-primary fs-5 me-3"></i>
-                                        <span class="extra-small text-secondary fw-600">Dedicated passwords bypass 2FA for system reliability.</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SMS SUB-SECTION -->
-                        <div class="mb-4">
-                            <div class="d-flex align-items-center mb-4">
-                                <span class="step-num me-2">02</span>
-                                <h6 class="extra-small fw-900 text-primary mb-0 text-uppercase ls-1">SMS Gateway (Semaphore)</h6>
-                                <div class="flex-grow-1 border-bottom ms-3 opacity-10"></div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="biz-label">Production API Key</label>
-                                <input type="text" name="SMS_API_KEY" class="form-control biz-input font-monospace"
-                                       value="{{ settings['SMS_API_KEY'] }}" placeholder="SK-PROD-XXXXX">
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-navy w-100 py-3 fw-800 rounded-3 mt-4 hover-lift shadow">
-                            <i class="fa-solid fa-cloud-arrow-up me-2"></i> DEPLOY CORE UPDATES
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. RIGHT: TELEMETRY & PREFERENCES -->
-        <div class="col-lg-5">
-
-            <!-- OPERATIONAL THRESHOLDS -->
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-top border-navy border-4">
-                <h6 class="fw-800 text-dark mb-4 text-uppercase extra-small ls-1">Operational Logic</h6>
-
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between mb-2">
-                        <label class="extra-small fw-800 text-muted">STALE DATA PURGE INTERVAL</label>
-                        <span class="badge bg-navy text-white fw-800" id="purgeVal">4 Hours</span>
-                    </div>
-                    <input type="range" class="form-range custom-range" min="1" max="24" step="1" value="4"
-                           oninput="document.getElementById('purgeVal').innerText = this.value + ' Hours'">
-                </div>
-
-                <div class="pt-3 border-top">
-                    <div class="p-3 rounded-4 bg-light d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-white p-2 rounded-circle shadow-sm me-3 text-primary">
-                                <i class="fa-solid fa-shield-halved small"></i>
-                            </div>
-                            <div>
-                                <div class="extra-small fw-800 text-dark">Lockdown Mode</div>
-                                <div class="text-muted extra-small">Freezes Terminal Operations</div>
-                            </div>
-                        </div>
-                        <div class="form-check form-switch custom-switch">
-                            <input class="form-check-input" type="checkbox">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SYSTEM TELEMETRY (THE GLASS CARD) -->
-            <div class="card border-0 shadow-lg rounded-4 p-4 text-white overflow-hidden position-relative"
-                 style="background: linear-gradient(135deg, #002d72 0%, #001d4a 100%);">
-
-                <div class="position-absolute top-0 end-0 p-3 opacity-10">
-                    <i class="fa-solid fa-microchip fa-6x"></i>
-                </div>
-
-                <div class="d-flex align-items-center mb-4 z-index-2">
-                    <div class="bg-white bg-opacity-20 p-2 rounded-3 me-3 ani-pulse-slow">
-                        <i class="fa-solid fa-wave-square text-warning"></i>
-                    </div>
-                    <h6 class="fw-800 mb-0 text-uppercase extra-small ls-1">Live Environment Integrity</h6>
-                </div>
-
-                <div class="space-y-4 z-index-2">
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="extra-small fw-bold opacity-75 font-monospace">DB_LATENCY</span>
-                            <span class="extra-small fw-900 text-success">12ms // OPTIMAL</span>
-                        </div>
-                        <div class="progress" style="height: 4px; background: rgba(255,255,255,0.1);">
-                            <div class="progress-bar bg-success glow-green" style="width: 15%"></div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="extra-small fw-bold opacity-75 font-monospace">GATEWAY_LOAD</span>
-                            <span class="extra-small fw-900 text-warning">28% CAPACITY</span>
-                        </div>
-                        <div class="progress" style="height: 4px; background: rgba(255,255,255,0.1);">
-                            <div class="progress-bar bg-warning glow-yellow" style="width: 28%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="text-center p-3 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-10 mt-2 z-index-2">
-                    <p class="extra-small fw-bold text-white mb-0 ls-1">
-                        <i class="fa-solid fa-circle-check text-success me-2"></i>CORE SYSTEMS SYNCHRONIZED
-                    </p>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
-    :root { --coolaire-navy: #002d72; --coolaire-green: #22c55e; }
-    .bg-navy { background: var(--coolaire-navy); }
-    .btn-navy { background: var(--coolaire-navy); color: white; border: none; }
-    .btn-navy:hover { background: #001d4a; color: white; }
-    .fw-900 { font-weight: 900; }
-    .fw-800 { font-weight: 800; }
-    .ls-1 { letter-spacing: 1px; }
-    .extra-small { font-size: 0.65rem; }
+    /* MODERN CORE VARIABLES */
+    :root {
+        --saas-navy: #002d72;
+        --saas-accent: #3b82f6;
+        --saas-success: #10b981;
+        --saas-danger: #ef4444;
+        --saas-warning: #f59e0b;
+        --saas-text: #1e293b;
+        --saas-light-text: #64748b;
+        --saas-border: #f1f5f9;
+        --saas-bg: #f8fafc;
+        --saas-radius: 1.25rem;
+        --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    }
 
-    /* Radar Ping Header */
-    .icon-scan-wrapper { position: relative; }
-    .radar-ping { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px solid var(--coolaire-navy); border-radius: inherit; animation: radar-expand 2s infinite; }
+    /* 1. LAYOUT ENGINE (AUTO-SIZE) */
+    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; }
+
+    .dashboard-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 2rem;
+        gap: 1.5rem;
+    }
+
+    /* 2. HEADER SECTION */
+    .header-section {
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff;
+        padding: 1.25rem 2rem;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+    }
+    .page-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; }
+
+    /* 3. DUAL COLUMN GRID */
+    .main-grid {
+        flex: 1 1 auto;
+        display: grid;
+        grid-template-columns: 1fr 450px;
+        gap: 1.5rem;
+        min-height: 0;
+    }
+
+    /* 4. LEFT: CONFIGURATION FORM (SCROLLABLE) */
+    .config-container {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        background: #ffffff;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+        padding: 2.5rem;
+    }
+
+    .protocol-step {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .step-badge {
+        background: var(--saas-navy);
+        color: #fff;
+        font-family: 'JetBrains Mono';
+        font-weight: 800;
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+    .protocol-title { font-size: 0.75rem; font-weight: 800; color: var(--saas-light-text); text-transform: uppercase; letter-spacing: 1.5px; }
+
+    .custom-label { font-size: 0.7rem; font-weight: 800; color: var(--saas-light-text); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 0.5rem; }
+
+    .modern-input {
+        background: #f8fafc;
+        border: 2px solid transparent;
+        padding: 0.85rem 1rem;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.2s;
+        width: 100%;
+        font-size: 0.9rem;
+    }
+    .modern-input:focus {
+        background: #fff;
+        border-color: var(--saas-accent);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+
+    /* 5. RIGHT: TELEMETRY & OPERATIONS */
+    .sidebar-col { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    .control-card {
+        background: #fff;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        padding: 2rem;
+        box-shadow: var(--saas-shadow);
+    }
+
+    .telemetry-card {
+        background: linear-gradient(135deg, var(--saas-navy) 0%, #001d4a 100%);
+        color: white;
+        border-radius: var(--saas-radius);
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 25px -5px rgba(0, 45, 114, 0.3);
+    }
+
+    .telemetry-icon-bg { position: absolute; top: -10px; right: -10px; opacity: 0.05; font-size: 8rem; }
+
+    .progress-custom { height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
+    .progress-bar-glow { box-shadow: 0 0 10px var(--saas-success); }
+
+    /* COMPONENTS */
+    .btn-deploy {
+        background: var(--saas-navy);
+        color: white;
+        border: none;
+        padding: 1.25rem;
+        border-radius: 14px;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        transition: all 0.3s;
+        box-shadow: 0 10px 15px -3px rgba(0, 45, 114, 0.2);
+    }
+    .btn-deploy:hover { background: var(--saas-accent); transform: translateY(-3px); }
+
+    /* ICON ANIMATIONS */
+    .radar-wrapper { position: relative; width: 44px; height: 44px; background: var(--saas-navy); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .radar-ping { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px solid var(--saas-navy); border-radius: 12px; animation: radar-expand 2.5s infinite; }
     @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.8); opacity: 0; } }
 
-    /* Inputs & Forms */
-    .biz-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 8px; display: block; }
-    .biz-input { border-radius: 8px; border: 1px solid #e2e8f0; padding: 12px 15px; font-weight: 600; font-size: 0.95rem; transition: 0.2s; }
-    .biz-input:focus { border-color: var(--coolaire-navy); box-shadow: 0 0 0 4px rgba(0,45,114,0.05); }
+    /* FLUID TYPE */
+    html { font-size: clamp(14px, 0.4vw + 0.5rem, 18px); }
+    .page-title { font-size: clamp(1.4rem, 2vw, 1.8rem); }
 
-    .step-num { background: var(--coolaire-navy); color: white; font-size: 0.65rem; font-weight: 900; padding: 3px 8px; border-radius: 4px; }
-
-    /* Telemetry Effects */
-    .glow-green { box-shadow: 0 0 10px #22c55e; }
-    .glow-yellow { box-shadow: 0 0 10px #f59e0b; }
-    .ani-pulse-slow { animation: pulse 3s infinite; }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-    .status-indicator-green { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 8px #22c55e; }
-    .z-index-2 { position: relative; z-index: 2; }
-    .hover-lift:hover { transform: translateY(-3px); }
+    /* SCROLLBAR */
+    .config-container::-webkit-scrollbar { width: 6px; }
+    .config-container::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
 </style>
+
+<div class="dashboard-container animate__animated animate__fadeIn">
+
+    <!-- HEADER SECTION -->
+    <header class="header-section">
+        <div class="d-flex align-items-center gap-3">
+            <div class="radar-wrapper">
+                <div class="radar-ping"></div>
+                <i class="fa-solid fa-gears position-relative"></i>
+            </div>
+            <div>
+                <h3 class="page-title">Global Configuration</h3>
+                <p class="small text-muted mb-0 font-monospace">SYSTEM_ROOT // ENCRYPTED_PROTOCOL_V1</p>
+            </div>
+        </div>
+
+        <div class="badge bg-light border text-primary fw-900 rounded-pill px-4 py-2">
+            <i class="fa-solid fa-shield-halved me-2"></i> Root Admin Authorized
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT GRID -->
+    <main class="main-grid">
+
+        <!-- LEFT: CONFIGURATION FORM -->
+        <section class="config-container">
+            <form action="/staff/settings" method="POST" id="settingsForm" class="d-flex flex-column gap-5">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <!-- PROTOCOL 01: SMTP -->
+                <div>
+                    <div class="protocol-step">
+                        <span class="step-badge">P_01</span>
+                        <span class="protocol-title">Mail Infrastructure (SMTP)</span>
+                        <div class="flex-grow-1 border-bottom opacity-10"></div>
+                    </div>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="custom-label">Host Auth User</label>
+                            <input type="email" name="MAIL_HOST_USER" class="modern-input"
+                                   value="{{ settings['MAIL_HOST_USER'] }}" placeholder="e.g. auth@company.com">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="custom-label">Secure App Password</label>
+                            <div class="position-relative">
+                                <input type="password" name="MAIL_HOST_PASSWORD" id="mailPass" class="modern-input"
+                                       value="{{ settings['MAIL_HOST_PASSWORD'] }}">
+                                <button type="button" class="btn position-absolute end-0 top-0 h-100 px-3 border-0" onclick="togglePass('mailPass')">
+                                    <i class="fa-solid fa-eye-low-beam text-muted" id="eyeIcon-mailPass"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PROTOCOL 02: SMS -->
+                <div>
+                    <div class="protocol-step">
+                        <span class="step-badge">P_02</span>
+                        <span class="protocol-title">SMS Gateway Integration</span>
+                        <div class="flex-grow-1 border-bottom opacity-10"></div>
+                    </div>
+                    <label class="custom-label">Production API Key (Semaphore)</label>
+                    <input type="text" name="SMS_API_KEY" class="modern-input font-monospace"
+                           value="{{ settings['SMS_API_KEY'] }}" placeholder="SK-PROD-XXXXX">
+                </div>
+
+                <!-- PROTOCOL 03: ERP -->
+                <div>
+                    <div class="protocol-step">
+                        <span class="step-badge">P_03</span>
+                        <span class="protocol-title">NetSuite ERP Connector</span>
+                        <div class="flex-grow-1 border-bottom opacity-10"></div>
+                    </div>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="custom-label">Account ID</label>
+                            <input type="text" name="NS_ACCOUNT_ID" class="modern-input font-monospace"
+                                   value="{{ settings.get('NS_ACCOUNT_ID', '') }}" placeholder="1234567_SB1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="custom-label">Consumer Key</label>
+                            <input type="text" name="NS_CONSUMER_KEY" class="modern-input font-monospace"
+                                   value="{{ settings.get('NS_CONSUMER_KEY', '') }}">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="custom-label">Consumer Secret</label>
+                            <div class="position-relative">
+                                <input type="password" name="NS_CONSUMER_SECRET" id="nsCS" class="modern-input"
+                                       value="{{ settings.get('NS_CONSUMER_SECRET', '') }}">
+                                <button type="button" class="btn position-absolute end-0 top-0 h-100 px-3 border-0" onclick="togglePass('nsCS')">
+                                    <i class="fa-solid fa-eye-low-beam text-muted" id="eyeIcon-nsCS"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="custom-label">Token ID</label>
+                            <input type="text" name="NS_TOKEN_ID" class="modern-input font-monospace"
+                                   value="{{ settings.get('NS_TOKEN_ID', '') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="custom-label">Token Secret</label>
+                            <div class="position-relative">
+                                <input type="password" name="NS_TOKEN_SECRET" id="nsTS" class="modern-input"
+                                       value="{{ settings.get('NS_TOKEN_SECRET', '') }}">
+                                <button type="button" class="btn position-absolute end-0 top-0 h-100 px-3 border-0" onclick="togglePass('nsTS')">
+                                    <i class="fa-solid fa-eye-low-beam text-muted" id="eyeIcon-nsTS"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-deploy mt-4">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> DEPLOY CORE UPDATES
+                </button>
+            </form>
+        </section>
+
+        <!-- RIGHT: SIDEBAR -->
+        <aside class="sidebar-col">
+
+            <!-- Operational Thresholds -->
+            <div class="control-card">
+                <h6 class="custom-label mb-4">Operational Logic</h6>
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <label class="extra-small fw-800 text-muted">STALE DATA PURGE</label>
+                        <span class="badge bg-primary text-white fw-900" id="purgeVal">4h</span>
+                    </div>
+                    <input type="range" class="form-range" min="1" max="24" step="1" value="4"
+                           oninput="document.getElementById('purgeVal').innerText = this.value + 'h'">
+                </div>
+
+                <div class="p-3 rounded-4 bg-light d-flex align-items-center justify-content-between border">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-white p-2 rounded-3 shadow-sm text-primary"><i class="fa-solid fa-snowflake"></i></div>
+                        <div>
+                            <div class="small fw-900 text-dark">Lockdown</div>
+                            <div class="extra-small text-muted">Freeze Hubs</div>
+                        </div>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" style="width: 3em; height: 1.5em;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Telemetry -->
+            <div class="telemetry-card">
+                <i class="fa-solid fa-microchip telemetry-icon-bg"></i>
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="bg-white bg-opacity-20 p-2 rounded-3">
+                        <i class="fa-solid fa-satellite-dish text-warning"></i>
+                    </div>
+                    <h6 class="m-0 fw-900 text-uppercase small ls-1">Environment Integrity</h6>
+                </div>
+
+                <div class="d-flex flex-column gap-4">
+                    <div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="extra-small fw-bold font-monospace opacity-75">DB_LATENCY</span>
+                            <span class="extra-small fw-900 text-success">12ms // OPTIMAL</span>
+                        </div>
+                        <div class="progress-custom">
+                            <div class="progress-bar bg-success progress-bar-glow" style="width: 15%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="extra-small fw-bold font-monospace opacity-75">GATEWAY_LOAD</span>
+                            <span class="extra-small fw-900 text-warning">28% CAPACITY</span>
+                        </div>
+                        <div class="progress-custom">
+                            <div class="progress-bar bg-warning progress-bar-glow" style="width: 28%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5 p-3 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-10 text-center">
+                    <p class="extra-small fw-900 text-white mb-0 ls-1">
+                        <i class="fa-solid fa-circle-check text-success me-2"></i>ALL SYSTEMS NOMINAL
+                    </p>
+                </div>
+            </div>
+        </aside>
+
+    </main>
+</div>
 
 <script>
     function togglePass(id) {

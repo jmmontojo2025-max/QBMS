@@ -1,0 +1,243 @@
+{% extends "base_staff.html" %}
+
+{% block content %}
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+    /* MODERN CORE VARIABLES */
+    :root {
+        --saas-navy: #002d72;
+        --saas-accent: #3b82f6;
+        --saas-success: #10b981;
+        --saas-danger: #ef4444;
+        --saas-warning: #f59e0b;
+        --saas-text: #1e293b;
+        --saas-light-text: #64748b;
+        --saas-border: #f1f5f9;
+        --saas-bg: #f8fafc;
+        --saas-radius: 1.25rem;
+        --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    }
+
+    /* 1. LAYOUT ENGINE (AUTO-SIZE) */
+    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; }
+
+    .dashboard-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 2rem;
+        gap: 1.5rem;
+    }
+
+    /* 2. HEADER SECTION */
+    .header-section {
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff;
+        padding: 1.25rem 2rem;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+    }
+    .page-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; }
+
+    /* 3. MAIN ACTION AREA (SCROLLABLE TABLE) */
+    .queue-container {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        background: #ffffff;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .list-header {
+        position: sticky; top: 0; background: #fff; z-index: 10;
+        padding: 1.5rem 2rem;
+        border-bottom: 2px solid var(--saas-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .verification-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .verification-table th { padding: 1rem 2rem; background: #f9fafb; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--saas-light-text); border-bottom: 1px solid var(--saas-border); }
+    .verification-table td { padding: 1.25rem 2rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
+    .request-row:hover { background-color: #fcfdfe; }
+
+    /* MODERN COMPONENTS */
+    .client-profile { display: flex; align-items: center; gap: 1rem; }
+    .client-avatar {
+        width: 44px; height: 44px;
+        background: #f1f5f9; color: var(--saas-navy);
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 1.1rem;
+        border: 1px solid var(--saas-border);
+    }
+
+    .doc-badge {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.7rem; font-weight: 700;
+        padding: 0.3rem 0.6rem; border-radius: 6px;
+        background: #f1f5f9; color: var(--saas-text);
+        border: 1px solid var(--saas-border);
+    }
+    .doc-label { color: var(--saas-light-text); font-size: 0.6rem; text-transform: uppercase; margin-right: 4px; }
+
+    /* ACTION BUTTONS */
+    .btn-authorize {
+        background: var(--saas-success); color: white; border: none;
+        padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem;
+        display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s;
+    }
+    .btn-authorize:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+
+    .btn-reject {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: #fff; color: var(--saas-danger); border: 1px solid #fee2e2;
+        display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .btn-reject:hover { background: var(--saas-danger); color: white; border-color: var(--saas-danger); }
+
+    /* 4. RECENT HISTORY STRIP (FOOTER) */
+    .history-section {
+        flex: 0 0 auto;
+        background: transparent;
+        padding: 0.5rem 0;
+    }
+    .history-card {
+        background: #fff; border: 1px solid var(--saas-border); border-radius: 14px;
+        padding: 1rem; display: flex; align-items: center; gap: 1rem;
+        min-width: 250px; transition: all 0.2s;
+    }
+    .history-card:hover { transform: translateY(-3px); box-shadow: var(--saas-shadow); }
+    .history-avatar { width: 32px; height: 32px; border-radius: 50%; background: #e0e7ff; color: var(--saas-accent); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; }
+
+    /* FLUID TYPE */
+    html { font-size: clamp(14px, 0.4vw + 0.5rem, 18px); }
+    .page-title { font-size: clamp(1.4rem, 2vw, 1.8rem); }
+
+    /* SCROLLBAR */
+    .queue-container::-webkit-scrollbar, .history-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+    .queue-container::-webkit-scrollbar-thumb, .history-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+</style>
+
+<div class="dashboard-container animate__animated animate__fadeIn">
+
+    <!-- HEADER -->
+    <header class="header-section">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-dark text-warning p-2 rounded-3 shadow-sm border border-warning">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h3 class="page-title">Identity Verification Center</h3>
+                <p class="small text-muted mb-0">Vetting client nodes and authorization requests.</p>
+            </div>
+        </div>
+
+        <div class="badge bg-light border text-navy fw-900 rounded-pill px-4 py-2">
+            {{ pending|length }} Pending Reviews
+        </div>
+    </header>
+
+    <!-- MAIN QUEUE -->
+    <main class="queue-container">
+        <div class="list-header">
+            <h6 class="fw-900 m-0">Vetting Queue</h6>
+            <div class="small text-muted fw-bold font-monospace">AUTO_FILTER: OFF</div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="verification-table">
+                <thead>
+                    <tr>
+                        <th>Prospective Client</th>
+                        <th>Organizational Documents</th>
+                        <th>Contact Access</th>
+                        <th>Request Date</th>
+                        <th class="text-end">Verification Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in pending %}
+                    <tr class="request-row animate__animated animate__fadeIn">
+                        <td>
+                            <div class="client-profile">
+                                <div class="client-avatar">{{ u.full_name[0] | upper }}</div>
+                                <div>
+                                    <div class="fw-800 text-dark" style="font-size: 1rem;">{{ u.full_name }}</div>
+                                    <div class="extra-small text-muted font-monospace">@{{ u.username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-900 text-navy mb-2">{{ u.company_name }}</div>
+                            <div class="d-flex gap-2">
+                                <div class="doc-badge"><span class="doc-label">TIN</span>{{ u.tin_number or '---' }}</div>
+                                <div class="doc-badge"><span class="doc-label">Permit</span>{{ u.business_permit or '---' }}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-700 text-dark small">{{ u.email }}</div>
+                            <div class="extra-small text-muted fw-bold">{{ u.phone }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-800 text-dark small">{{ u.created_at.strftime('%b %d, %Y') if u.created_at else 'NEW' }}</div>
+                            <div class="extra-small text-muted fw-bold font-monospace">100% VISIBILITY</div>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="/staff/verify-action/{{ u.id }}/approve" class="btn-authorize">
+                                    <i class="fa-solid fa-check-double"></i> AUTHORIZE
+                                </a>
+                                <a href="/staff/verify-action/{{ u.id }}/reject"
+                                   class="btn-reject" title="Reject Request"
+                                   onclick="return confirm('PURGE IDENTITY: Rejecting will permanently remove this registration. Proceed?')">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="opacity-25 mb-3">
+                                <i class="fa-solid fa-user-shield fa-4x"></i>
+                            </div>
+                            <h5 class="fw-900 text-muted">Clear Skies</h5>
+                            <p class="small text-muted">All prospective identities have been vetted.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- HISTORY FOOTER -->
+    <section class="history-section">
+        <h6 class="extra-small fw-900 text-muted text-uppercase ls-1 mb-3">Recently Authorized Personnel</h6>
+        <div class="history-scroll d-flex gap-3 overflow-auto pb-2">
+            {% for h in history %}
+            <div class="history-card">
+                <div class="history-avatar">{{ h.full_name[0] }}</div>
+                <div class="overflow-hidden">
+                    <div class="fw-800 text-dark text-truncate small" style="max-width: 140px;">{{ h.full_name }}</div>
+                    <div class="extra-small text-muted text-truncate">{{ h.company_name }}</div>
+                    <div class="extra-small text-success fw-bold font-monospace mt-1">VERIFIED_SECURE</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+
+{% endblock %}

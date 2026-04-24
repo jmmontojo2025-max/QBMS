@@ -1,316 +1,374 @@
 {% extends "base_staff.html" %}
 {% block content %}
-<!-- Google Font: Inter & Source Sans -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<!-- Google Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
-<div class="biz-console-wrapper animate__animated animate__fadeIn">
+<style>
+    /* VARIABLES */
+    :root {
+        --saas-primary: #3b82f6;
+        --saas-text: #1f2937;
+        --saas-light-text: #6b7280;
+        --saas-border: #e5e7eb;
+        --saas-bg-light: #f9fafb;
+        --saas-bg-white: #ffffff;
+        --saas-success: #10b981;
+        --saas-radius: 12px;
+        --saas-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    }
 
-    <!-- 1. COMMAND STRIP: Branch Info & Live KPIs -->
-    <div class="biz-stats-strip mb-4">
-        <div class="row g-3 align-items-center">
-            <div class="col-md-5">
-                <div class="d-flex align-items-center">
-                    <div class="hub-icon-container me-3">
-                        <div class="radar-ping"></div>
-                        <div class="hub-icon shadow-sm">
-                            <i class="fa-solid fa-tower-broadcast"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="fw-800 mb-0 text-dark letter-spacing-tight">
-                            {{ session.get('location_name', 'Terminal') }} Command
-                        </h4>
-                        <span class="text-muted extra-small fw-bold text-uppercase ls-widest">
-                            <i class="fa-solid fa-microchip text-primary me-1"></i>
-                            Node ID: {{ session.get('location_code', '---') }} // System Online
-                        </span>
-                    </div>
-                </div>
+    /* 1. AUTO-SIZE LAYOUT (Full Screen) */
+    html, body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden; /* Prevent global scrollbar */
+        background-color: var(--saas-bg-light);
+        font-family: 'Inter', sans-serif;
+    }
+
+    .dashboard-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem;
+        gap: 1.5rem;
+    }
+
+    /* 2. HUB STRIP (Top, Non-scrolling) */
+    .hub-command-strip {
+        flex: 0 0 auto; /* Don't grow or shrink */
+        background-color: var(--saas-bg-white);
+        border: 1px solid var(--saas-border);
+        border-radius: var(--saas-radius);
+        padding: 1.5rem;
+        box-shadow: var(--saas-shadow);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .hub-title { font-weight: 900; letter-spacing: -0.05em; margin-bottom: 0.25rem; }
+    .hub-status-badge { background-color: var(--saas-bg-light); color: var(--saas-light-text); padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--saas-border); white-space: nowrap; }
+    .stat-pill { display: flex; flex-direction: column; align-items: center; padding: 0.75rem 1.25rem; background-color: var(--saas-bg-light); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); min-width: 100px; }
+    .stat-pill .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--saas-light-text); margin-bottom: 0.25rem; }
+    .stat-pill .value { font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1; }
+    .action-button-group .btn { font-weight: 600; border-radius: var(--saas-radius); }
+
+    /* 3. THREE COLUMN GRID (Main Content) */
+    .main-grid {
+        flex: 1 1 auto; /* Fill all remaining vertical space */
+        display: grid;
+        grid-template-columns: 2fr 1.25fr 1.25fr; /* Workfloor is larger */
+        gap: 1.5rem;
+        min-height: 0; /* CRITICAL for allowing inner elements to scroll */
+    }
+
+    .column { display: flex; flex-direction: column; min-height: 0; }
+    .column-header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+    .column-title { font-weight: 800; margin-bottom: 0; }
+    .column-content { flex: 1 1 auto; overflow-y: auto; padding-right: 8px; }
+    .column-content::-webkit-scrollbar { width: 6px; }
+    .column-content::-webkit-scrollbar-track { background: transparent; }
+    .column-content::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+
+    /* CARD STYLING */
+    .work-card { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); overflow: hidden; height: 100%; display: flex; flex-direction: column; }
+    .work-card-header { padding: 1rem; border-bottom: 1px solid var(--saas-border); display: flex; justify-content: space-between; align-items: flex-start; background-color: var(--saas-bg-light); }
+    .ticket-number { font-weight: 900; line-height: 1; letter-spacing: -0.05em; color: var(--saas-primary); }
+    .plate-number-badge { background-color: var(--saas-text); color: white; padding: 0.3rem 0.7rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; margin-top: 0.5rem; display: inline-block; }
+    .timer-display { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; font-weight: 700; background-color: var(--saas-bg-white); color: var(--saas-text); padding: 0.5rem 1rem; border-radius: var(--saas-radius); border: 1px solid var(--saas-border); }
+    .assigned-tech-avatar { width: 36px; height: 36px; border-radius: 50%; background-color: var(--saas-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; border: 2px solid white; margin-left: -10px; box-shadow: var(--saas-shadow); }
+    .assigned-tech-stack { display: flex; align-items: center; padding-left: 10px; }
+    .work-card-actions { display: grid; grid-template-columns: 60px 1fr; gap: 1px; background-color: var(--saas-border); border-radius: 0 0 var(--saas-radius) var(--saas-radius); overflow: hidden; margin-top: auto; }
+    .work-card-actions .btn { padding: 1rem; font-weight: 700; text-decoration: none; transition: background-color 0.2s ease-in-out; border-radius: 0; }
+
+    /* Enhanced Pending Queue Cards */
+    .queue-card-large { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); margin-bottom: 1.25rem; padding: 1.5rem; display: flex; flex-direction: column; }
+    .queue-card-large .ticket-num-large { font-weight: 900; line-height: 1; letter-spacing: -0.05em; color: var(--saas-text); }
+    .queue-card-large .plate-badge { background-color: var(--saas-bg-light); border: 1px solid var(--saas-border); color: var(--saas-light-text); padding: 0.25rem 0.6rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; }
+    .queue-card-large .form-select { border: 1px solid var(--saas-border); border-radius: var(--saas-radius); min-height: 120px; font-size: 0.9rem; font-weight: 600; }
+    .queue-card-large .btn-dispatch { background-color: var(--saas-primary); border-color: var(--saas-primary); color: white; font-weight: 700; border-radius: var(--saas-radius); padding: 0.75rem 1.5rem; transition: background-color 0.2s ease-in-out; }
+    .queue-card-large .btn-dispatch:hover { background-color: #2563eb; }
+
+    /* Roster Styling */
+    .roster-card { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); height: 100%; display: flex; flex-direction: column; }
+    .roster-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--saas-border); display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto; }
+    .roster-list { flex: 1 1 auto; overflow-y: auto; padding-right: 8px; }
+    .roster-list-item { padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--saas-border); display: flex; justify-content: space-between; align-items: center; transition: background-color 0.15s ease-in-out; }
+    .roster-list-item:last-child { border-bottom: none; }
+    .roster-list-item:hover { background-color: var(--saas-bg-light); }
+    .roster-list-item.off-duty-item { opacity: 0.6; }
+    .tech-status-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 0.75rem; }
+    .dot-online { background-color: var(--saas-success); } .dot-busy { background-color: #f59e0b; } .dot-offline { background-color: var(--saas-light-text); }
+
+    /* Modal Styling */
+    .modal-content { border-radius: var(--saas-radius); border: none; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); overflow: hidden; }
+    .modal-header { background-color: var(--saas-primary); color: white; padding: 1.5rem; }
+    .modal-title { color: white; font-weight: 800; }
+    .modal-body label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--saas-light-text); margin-bottom: 0.5rem; display: block; }
+    .modal-body .form-control { border: 1px solid var(--saas-border); border-radius: var(--saas-radius); background-color: var(--saas-bg-light); padding: 0.75rem 1rem; }
+    .btn-navy { background-color: var(--saas-text); color: white; border-radius: var(--saas-radius); font-weight: 700; border: none; }
+
+    /* 4. ICON ANIMATIONS */
+    @keyframes pulse { 0% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.7; } }
+    @keyframes lift { 0% { transform: translateY(0); } 50% { transform: translateY(-4px); } 100% { transform: translateY(0); } }
+    @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-3px, 0, 0); } 40%, 60% { transform: translate3d(3px, 0, 0); } }
+    .hub-icon-live { animation: pulse 3s infinite ease-in-out; }
+    .column-header:hover .icon-header-anim { animation: lift 0.6s ease; }
+    .work-card-actions .btn-light:hover .fa-volume-high { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+    .btn-dispatch .fa-arrow-right { transition: transform 0.2s ease-out; }
+    .btn-dispatch:hover .fa-arrow-right { transform: translateX(5px); }
+
+    /* 5. RESPONSIVE & FLUID TYPOGRAPHY */
+    /* Set a fluid base font size for the entire document. All 'rem' units will now scale relative to this. */
+    html {
+        font-size: clamp(14px, 0.75vw + 0.5rem, 18px);
+    }
+    /* Make major headings and numbers scale more dramatically */
+    .hub-title { font-size: clamp(1.5rem, 2.5vw, 2.2rem); }
+    .ticket-number, .queue-card-large .ticket-num-large { font-size: clamp(2rem, 3vw, 2.75rem); }
+    .stat-pill .value { font-size: clamp(1.5rem, 2vw, 2rem); }
+    .column-title { font-size: clamp(1.1rem, 1.5vw, 1.4rem); }
+
+</style>
+
+<div class="dashboard-container animate__animated animate__fadeIn">
+
+    <!-- TOP HUB STRIP -->
+    <header class="hub-command-strip">
+        <div class="d-flex align-items-center flex-grow-1 mb-3 mb-md-0">
+            <div class="me-4 d-none d-md-block">
+                <i class="fa-solid fa-cloud-bolt fa-3x text-primary hub-icon-live"></i>
             </div>
-            <div class="col-md-7">
-                <div class="d-flex justify-content-md-end gap-3 flex-wrap align-items-center">
-                    <div class="stat-pill">
-                        <label>QUEUE</label>
-                        <div class="value text-warning">{{ waiting_tickets|length }}</div>
-                    </div>
-                    <div class="stat-pill">
-                        <label>ACTIVE</label>
-                        <div class="value text-success">{{ serving_list|length }}</div>
-                    </div>
-                    <div class="divider-v"></div>
-                    <a href="/tv" target="_blank" class="btn-monitor hover-lift">
-                        <i class="fa-solid fa-display me-2"></i> PUBLIC MONITOR
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. PRODUCTION WORKSPACE -->
-    <div class="row g-4">
-
-        <!-- LEFT: ACTIVE PRODUCTION (MAIN STAGE) -->
-        <div class="col-lg-8">
-            <div class="biz-card h-100 shadow-sm border-0">
-                <div class="biz-card-header d-flex justify-content-between align-items-center bg-white border-bottom">
-                    <span class="small-caps"><i class="fa-solid fa-gears me-2 text-primary"></i>Active Workfloor</span>
-                    <div class="live-status-tag"><span class="pulse-dot"></span> LIVE OPERATIONS</div>
-                </div>
-
-                <div class="biz-card-body p-4">
-                    <div class="row g-4">
-                        {% for s in serving_list %}
-                        <div class="col-md-6 animate__animated animate__zoomIn">
-                            <div class="production-unit-card">
-                                <!-- CLICKABLE HEADER FOR MODAL -->
-                                <div class="unit-header clickable-trigger"
-                                     data-bs-toggle="modal"
-                                     data-bs-target="#jobDetails-{{ s.id }}"
-                                     title="Click for full job diagnostics">
-                                    <div class="unit-info">
-                                        <h1 class="ticket-no">{{ s.ticket_number }}</h1>
-                                        <div class="plate-badge-sm">
-                                            <span class="plate-tab"></span>
-                                            <span class="plate-text">{% if s.booking %}{{ s.booking.plate_number }}{% else %}WALK-IN{% endif %}</span>
-                                        </div>
-                                    </div>
-                                    <div class="unit-timer">
-                                        <i class="fa-solid fa-stopwatch me-1 ani-heartbeat"></i>
-                                        <span class="stopwatch" data-start="{{ s.start_time.isoformat() if s.start_time else '' }}">00:00</span>
-                                    </div>
-                                </div>
-
-                                <div class="unit-body">
-                                    <div class="client-label">
-                                        <i class="fa-solid fa-building-user me-2"></i>
-                                        {% if s.booking and s.booking.customer %}{{ s.booking.customer.company_name }}{% else %}GUEST CLIENT{% endif %}
-                                    </div>
-
-                                    <div class="tech-assignment mt-3">
-                                        <div class="tech-avatar-stack">
-                                            {% for tech in s.assigned_techs %}
-                                            <div class="tech-avatar-circle" title="{{ tech.name }}">
-                                                {{ tech.name[0] | upper }}
-                                            </div>
-                                            {% endfor %}
-                                        </div>
-                                        <div class="tech-name">
-                                            <span class="label">Assigned Team</span>
-                                            <span class="name text-truncate">
-                                                {% for tech in s.assigned_techs %}
-                                                    {{ tech.name }}{% if not loop.last %}, {% endif %}
-                                                {% endfor %}
-                                            </span>
-                                        </div>
-                                        <div class="spinning-gear ms-auto">
-                                            <i class="fa-solid fa-cog fa-spin"></i>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="unit-footer">
-                                    <a href="/staff/complete-work/{{ s.id }}" class="btn-complete-job">
-                                        COMPLETE WORK ORDER <i class="fa-solid fa-circle-check ms-2"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- MODAL FOR JOB DETAILS -->
-                        <div class="modal fade" id="jobDetails-{{ s.id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered modal-lg">
-                                <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                                    <div class="modal-header bg-navy text-white p-4">
-                                        <div>
-                                            <h5 class="modal-title fw-800">Job Diagnostics: {{ s.ticket_number }}</h5>
-                                            <p class="extra-small opacity-75 mb-0 text-uppercase font-monospace">Operational Node // {{ session.get('location_code') }}</p>
-                                        </div>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body p-0">
-                                        <div class="row g-0">
-                                            <!-- LEFT COL: CLIENT & ASSET -->
-                                            <div class="col-md-6 p-4 border-end bg-light bg-opacity-50">
-                                                <label class="detail-label">Client Association</label>
-                                                <div class="p-3 bg-white border rounded-3 mb-4 shadow-sm">
-                                                    <h5 class="fw-800 text-dark mb-1">{{ s.booking.customer.company_name if s.booking else "Walk-in Guest" }}</h5>
-                                                    <p class="small text-muted mb-0"><i class="fa-solid fa-phone me-2"></i>{{ s.booking.customer.phone if s.booking else "N/A" }}</p>
-                                                </div>
-
-                                                <label class="detail-label">Asset Identity</label>
-                                                <div class="p-3 bg-white border rounded-3 shadow-sm">
-                                                    <div class="d-flex justify-content-between mb-2">
-                                                        <span class="small fw-bold text-muted">Plate:</span>
-                                                        <span class="small fw-900 text-primary">{{ s.booking.plate_number if s.booking else "WALK-IN" }}</span>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between">
-                                                        <span class="small fw-bold text-muted">Service Type:</span>
-                                                        <span class="small fw-800 text-dark">{{ s.booking.service_type if s.booking else "General" }}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <!-- RIGHT COL: TEAM ROSTER -->
-                                            <div class="col-md-6 p-4">
-                                                <label class="detail-label">Technical Team Roster</label>
-                                                <div class="list-group list-group-flush mb-4">
-                                                    {% for tech in s.assigned_techs %}
-                                                    <div class="list-group-item px-0 py-2 border-0 d-flex align-items-center">
-                                                        <div class="tech-avatar-circle me-3" style="margin-left: 0; width: 35px; height: 35px; border: none;">{{ tech.name[0] }}</div>
-                                                        <div class="fw-700 small">{{ tech.name }}</div>
-                                                    </div>
-                                                    {% endfor %}
-                                                </div>
-
-                                                <div class="alert alert-info border-0 rounded-3">
-                                                    <div class="d-flex gap-3">
-                                                        <i class="fa-solid fa-clock-rotate-left fs-4"></i>
-                                                        <div>
-                                                            <div class="extra-small fw-800 text-uppercase">Time Since Dispatch</div>
-                                                            <div class="fw-900 stopwatch" data-start="{{ s.start_time.isoformat() }}">00:00</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer bg-light">
-                                        <button type="button" class="btn btn-white border fw-800" data-bs-dismiss="modal">DISMISS VIEW</button>
-                                        <a href="/staff/complete-work/{{ s.id }}" class="btn btn-navy fw-800">COMPLETE JOB <i class="fa-solid fa-check-double ms-2"></i></a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% else %}
-                        <div class="col-12 py-5 text-center text-muted opacity-50">
-                            <div class="idle-state-icon mb-3">
-                                <i class="fa-solid fa-couch fa-3x"></i>
-                            </div>
-                            <h5 class="fw-800">Workfloor is currently idle</h5>
-                            <p class="small">Assign a team from the queue to start a session.</p>
-                        </div>
-                        {% endfor %}
-                    </div>
+            <div>
+                <h2 class="hub-title">{{ session.get('location_name', 'Terminal') }} Console</h2>
+                <div class="hub-status-badge">
+                    <i class="fa-solid fa-server me-1"></i> Node ID: {{ session.get('location_code', '---') }} // Online
                 </div>
             </div>
         </div>
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            <div class="stat-pill">
+                <label class="label">Queue</label>
+                <div class="value text-warning">{{ waiting_tickets|length }}</div>
+            </div>
+            <div class="stat-pill">
+                <label class="label">On Floor</label>
+                <div class="value text-success">{{ serving_list|length }}</div>
+            </div>
+            <div class="vr mx-2 d-none d-md-block"></div>
+            <div class="action-button-group d-flex gap-2">
+                <a href="/tv" target="_blank" class="btn btn-outline-primary"><i class="fa-solid fa-display me-2"></i> Monitor</a>
+                <a href="/kiosk" target="_blank" class="btn btn-primary"><i class="fa-solid fa-ticket me-2"></i> Kiosk</a>
+            </div>
+        </div>
+    </header>
 
-        <!-- RIGHT: QUEUE FEED -->
-        <div class="col-lg-4">
-            <div class="biz-card h-100 shadow-sm border-0">
-                <div class="biz-card-header bg-navy text-white d-flex justify-content-between">
-                    <span class="small-caps text-white-50">Incoming Queue</span>
-                    <span class="badge rounded-pill bg-success text-white px-3">{{ waiting_tickets|length }} PENDING</span>
-                </div>
-                <div class="queue-scroll-area">
-                    {% for t in waiting_tickets %}
-                    <div class="queue-item animate__animated animate__fadeInRight">
-                        <div class="q-top d-flex justify-content-between align-items-center">
-                            <span class="q-ticket">{{ t.ticket_number }}</span>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="q-timestamp"><i class="fa-regular fa-clock me-1"></i> {{ t.created_at.strftime('%I:%M %p') }}</span>
-                                <a href="/staff/expire-ticket/{{ t.id }}"
-                                   class="text-danger opacity-50 hover-opacity-100"
-                                   onclick="return confirm('Mark this ticket as Expired/No-Show?')"
-                                   title="Expire Ticket">
-                                    <i class="fa-solid fa-circle-xmark fs-5"></i>
-                                </a>
-                            </div>
-                        </div>
-                        <div class="q-middle mt-2">
-                            <div class="q-client">{{ t.booking.customer.company_name if t.booking and t.booking.customer else "WALK-IN CLIENT" }}</div>
-                            <div class="q-asset text-primary fw-800">{% if t.booking %}{{ t.booking.plate_number }}{% else %}Standard Unit{% endif %}</div>
-                        </div>
-                        <div class="q-actions mt-3">
-                            <form action="/staff/start-work/{{ t.id }}" method="POST">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <div class="mb-2">
-                                    <label class="extra-small fw-800 text-muted text-uppercase mb-1">Select Technical Team</label>
-                                    <select name="technician_ids" class="form-select q-select-multi" multiple required>
-                                        {% for tech in technicians %}
-                                        <option value="{{ tech.id }}">{{ tech.name }}</option>
+    <!-- MAIN 3-COLUMN GRID -->
+    <main class="main-grid">
+
+        <!-- COLUMN 1: ACTIVE WORKFLOOR -->
+        <section class="column">
+            <div class="column-header">
+                <h3 class="column-title"><i class="fa-solid fa-gear text-primary me-2 icon-header-anim"></i>Active Workfloor</h3>
+            </div>
+            <div class="column-content">
+                <div class="row g-3">
+                    {% for s in serving_list %}
+                    <div class="col-md-12 col-xl-6">
+                        <div class="work-card">
+                            <div class="work-card-header">
+                                <div>
+                                    <div class="ticket-number">{{ s.ticket_number }}</div>
+                                    <div class="plate-number-badge">{% if s.booking %}{{ s.booking.plate_number }}{% else %}WALK-IN{% endif %}</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="timer-display mb-2" data-start="{{ s.start_time.isoformat() if s.start_time else '' }}">00:00:00</div>
+                                    <div class="assigned-tech-stack justify-content-end">
+                                        {% for tech in s.assigned_techs %}
+                                        <div class="assigned-tech-avatar" title="{{ tech.name }}">{{ tech.name[0] | upper }}</div>
                                         {% endfor %}
-                                    </select>
-                                    <div class="extra-small text-muted mt-1">Hold Ctrl (Cmd) to select multiple</div>
+                                    </div>
                                 </div>
-                                <button type="submit" class="btn btn-navy w-100 btn-sm fw-800 py-2">
-                                    DISPATCH TEAM <i class="fa-solid fa-bolt-lightning ms-1"></i>
-                                </button>
-                            </form>
+                            </div>
+                            <div class="p-4 flex-grow-1">
+                                <label class="d-block mb-1 fw-bold small text-muted">Client Context</label>
+                                <h6 class="fw-700 text-dark mb-1">{% if s.booking and s.booking.customer %}{{ s.booking.customer.company_name }}{% else %}Guest Client{% endif %}</h6>
+                                <p class="small text-muted mb-3"><i class="fa-solid fa-phone me-1"></i> {{ s.booking.customer.phone if s.booking else "N/A" }}</p>
+                                <button type="button" class="btn btn-sm btn-outline-secondary w-100 fw-600" data-bs-toggle="modal" data-bs-target="#jobDetails-{{ s.id }}">View Details</button>
+                            </div>
+                            <div class="work-card-actions">
+                                <a href="/staff/recall-ticket/{{ s.id }}" class="btn btn-light border-end text-muted" title="Recall on TV"><i class="fa-solid fa-volume-high"></i></a>
+                                <a href="/staff/complete-work/{{ s.id }}" class="btn btn-primary text-white">COMPLETE JOB <i class="fa-solid fa-check ms-1"></i></a>
+                            </div>
                         </div>
                     </div>
-                    {% else %}
-                    <div class="p-5 text-center text-muted opacity-25">
-                        <i class="fa-solid fa-clipboard-check fa-4x mb-2"></i>
-                        <p class="fw-800 text-uppercase">Queue Clear</p>
+                     <!-- MODAL for Job Details -->
+                    <div class="modal fade" id="jobDetails-{{ s.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Job Diagnostics: {{ s.ticket_number }}</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-4">
+                                    <div class="row g-4">
+                                        <div class="col-md-6 border-end">
+                                            <label>Client & Booking Info</label>
+                                            <div class="p-3 bg-light rounded-3 mb-4">
+                                                <h6 class="fw-700 mb-1">{% if s.booking %}{{ s.booking.customer.company_name }}{% else %}Walk-in Guest{% endif %}</h6>
+                                                <p class="small text-muted mb-0">Plate: <span class="fw-bold">{{ s.booking.plate_number if s.booking else 'N/A' }}</span></p>
+                                            </div>
+                                            <label>NetSuite ERP Sync</label>
+                                            <div id="ns-data-{{ s.id }}" class="p-3 bg-light rounded-3 border-start border-4 border-primary">
+                                                <span class="text-muted fw-600">Loading ERP data...</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label>Assigned Team</label>
+                                            <div class="list-group list-group-flush mb-4">
+                                                {% for tech in s.assigned_techs %}
+                                                <div class="list-group-item px-0 py-2 border-0 d-flex align-items-center">
+                                                    <div class="assigned-tech-avatar me-3 m-0" style="width: 30px; height: 30px;">{{ tech.name[0] }}</div>
+                                                    <div class="fw-600 small">{{ tech.name }}</div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                            <label>Internal Notes</label>
+                                            <form action="/staff/save-notes/{{ s.id }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <textarea name="notes" class="form-control" rows="3" placeholder="Add observations...">{{ s.internal_notes or '' }}</textarea>
+                                                <button type="submit" class="btn btn-navy w-100 mt-3">SAVE NOTES</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
-        </div>
+        </section>
 
-    </div>
+        <!-- COLUMN 2: PENDING QUEUE -->
+        <section class="column">
+            <div class="column-header">
+                <h3 class="column-title"><i class="fa-solid fa-list-ol text-warning me-2 icon-header-anim"></i>Pending Queue</h3>
+                <span class="badge bg-warning text-dark-50 rounded-pill">{{ waiting_tickets|length }}</span>
+            </div>
+            <div class="column-content">
+                {% for t in waiting_tickets %}
+                <div class="queue-card-large animate__animated animate__fadeInRight">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <span class="ticket-num-large">{{ t.ticket_number }}</span>
+                        <a href="/staff/expire-ticket/{{ t.id }}" class="text-danger opacity-50" onclick="return confirm('Dismiss ticket?')" title="Dismiss Ticket"><i class="fa-solid fa-xmark fs-4"></i></a>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 mt-2">
+                        <span class="plate-badge">{{ t.booking.plate_number if t.booking else "WALK-IN" }}</span>
+                        <span class="small fw-bold text-muted">{% if t.booking and t.booking.customer %}{{ t.booking.customer.company_name }}{% else %}Guest Client{% endif %}</span>
+                    </div>
+                    <hr class="my-4">
+                    <form action="/staff/start-work/{{ t.id }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <label class="d-block mb-2 fw-600 text-muted">Assign Technicians</label>
+                        <select name="technician_ids" class="form-select mb-3" multiple required>
+                            {% for tech in technicians if tech.is_present %} {# ONLY SHOW PRESENT TECHNICIANS #}
+                            <option value="{{ tech.id }}"> {{ tech.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-dispatch w-100">DISPATCH <i class="fa-solid fa-arrow-right ms-2"></i></button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- COLUMN 3: PERSONNEL ROSTER -->
+        <section class="column">
+            <div class="roster-card">
+                <div class="roster-header">
+                    <h5 class="mb-0 fw-800"><i class="fa-solid fa-users text-success me-2 icon-header-anim"></i>Personnel</h5>
+                    <a href="/staff/technicians" class="btn btn-sm btn-outline-secondary fw-600"><i class="fa-solid fa-user-plus me-1"></i> Manage</a>
+                </div>
+                <div class="roster-list">
+                    {% for tech in roster %}
+                    <div class="roster-list-item {% if not tech.is_present %}off-duty-item{% endif %}">
+                        <div class="d-flex align-items-center">
+                            <span class="tech-status-dot {% if not tech.is_present %}dot-offline{% elif tech.tasks|selectattr('status', 'equalto', 'serving')|list|length > 0 %}dot-busy{% else %}dot-online{% endif %}"></span>
+                            <div>
+                                <div class="fw-700">{{ tech.name }}</div>
+                                <div class="small text-muted">{% if not tech.is_present %}Off-Duty{% elif tech.tasks|selectattr('status', 'equalto', 'serving')|list|length > 0 %}On Floor{% else %}Available{% endif %}</div>
+                            </div>
+                        </div>
+                        <a href="/staff/technician/toggle/{{ tech.id }}" title="Toggle On/Off Duty"><i class="fa-solid {{ 'fa-toggle-on text-success' if tech.is_present else 'fa-toggle-off text-muted' }} fs-4"></i></a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+    </main>
 </div>
 
-<style>
-    :root {
-        --coolaire-navy: #002d72;
-        --coolaire-green: #76b82a;
-        --soft-bg: #f8fafc;
-        --border-color: #e2e8f0;
-    }
-
-    .biz-console-wrapper { font-family: 'Inter', sans-serif; }
-    .extra-small { font-size: 0.65rem; }
-    .fw-800 { font-weight: 800; }
-    .ls-widest { letter-spacing: 1.5px; }
-    .small-caps { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
-
-    /* Production Cards */
-    .production-unit-card { background: white; border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; transition: all 0.3s; }
-    .clickable-trigger:hover { background-color: #f1f5f9 !important; cursor: pointer; }
-
-    .unit-header { padding: 20px; display: flex; justify-content: space-between; align-items: flex-start; background: #fafafa; border-bottom: 1px solid #f1f5f9; }
-    .ticket-no { font-size: 2.5rem; font-weight: 900; margin: 0; color: var(--coolaire-navy); letter-spacing: -2px; }
-    .unit-timer { font-family: 'Monaco', monospace; background: #000; color: var(--coolaire-green); padding: 5px 12px; border-radius: 6px; font-weight: 800; font-size: 1rem; }
-
-    /* Detail Label for Modal */
-    .detail-label { font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
-
-    /* Avatar Stack Styling */
-    .tech-avatar-stack { display: flex; align-items: center; padding-left: 8px; }
-    .tech-avatar-circle {
-        width: 32px; height: 32px; background: var(--coolaire-navy); color: white;
-        border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        font-weight: 800; font-size: 0.75rem; border: 2px solid white; margin-left: -8px;
-    }
-    .tech-name { display: flex; flex-direction: column; overflow: hidden; margin-left: 10px; }
-    .tech-name .label { font-size: 0.6rem; color: #94a3b8; font-weight: 800; text-transform: uppercase; }
-    .tech-name .name { font-size: 0.8rem; font-weight: 700; color: var(--coolaire-navy); }
-
-    .btn-complete-job { background: #000; color: white; display: flex; justify-content: center; align-items: center; padding: 15px; text-decoration: none; font-weight: 800; font-size: 0.75rem; transition: 0.3s; }
-    .btn-complete-job:hover { background: var(--coolaire-green); }
-
-    .bg-navy { background: var(--coolaire-navy) !important; }
-    .btn-navy { background: var(--coolaire-navy); color: white; border: none; }
-
-    .hover-lift:hover { transform: translateY(-2px); }
-</style>
-
 <script>
+    // TIMER FUNCTIONALITY
     function updateTimers() {
         const now = new Date();
-        document.querySelectorAll('.stopwatch').forEach(timer => {
-            if (!timer.dataset.start) return;
+        document.querySelectorAll('.timer-display').forEach(timer => {
+            if (!timer.dataset.start) {
+                timer.textContent = "00:00:00";
+                return;
+            }
             const startTime = new Date(timer.dataset.start);
             const diff = Math.floor((now - startTime) / 1000);
             const h = Math.floor(diff / 3600);
             const m = Math.floor((diff % 3600) / 60);
             const s = diff % 60;
-            let display = (h > 0 ? (h < 10 ? "0"+h : h) + ":" : "") + (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s);
-            timer.textContent = display;
+            const format = (num) => num < 10 ? "0" + num : num;
+            timer.textContent = `${format(h)}:${format(m)}:${format(s)}`;
         });
     }
     setInterval(updateTimers, 1000);
     updateTimers();
+
+    // NETSUITE FETCHING LOGIC
+    {% for s in serving_list %}
+    document.getElementById('jobDetails-{{ s.id }}').addEventListener('shown.bs.modal', function () {
+        const plate = "{{ s.booking.plate_number if s.booking else 'WALKIN' }}";
+        const nsDataBox = document.getElementById('ns-data-{{ s.id }}');
+
+        nsDataBox.innerHTML = '<span class="text-muted fw-600">Loading ERP data...</span>';
+        nsDataBox.className = 'p-3 bg-light rounded-3 border-start border-4 border-primary';
+
+        fetch(`/api/netsuite/verify/${plate}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    nsDataBox.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small fw-bold text-dark">ERP Job Order:</span>
+                            <span class="small fw-900 text-primary">${data.order_no}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small fw-bold text-dark">ERP Status:</span>
+                            <span class="badge bg-success">${data.status_erp}</span>
+                        </div>`;
+                    nsDataBox.classList.add('border-primary');
+                    nsDataBox.classList.remove('border-danger');
+                } else {
+                    nsDataBox.innerHTML = '<span class="small fw-800 text-danger"><i class="fa-solid fa-exclamation-circle me-1"></i> NO ERP RECORD FOUND</span>';
+                    nsDataBox.classList.add('border-danger');
+                    nsDataBox.classList.remove('border-primary');
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching NetSuite data:", error);
+                nsDataBox.innerHTML = '<span class="small fw-800 text-danger"><i class="fa-solid fa-exclamation-circle me-1"></i> ERROR FETCHING ERP DATA</span>';
+                nsDataBox.classList.add('border-danger');
+                nsDataBox.classList.remove('border-primary');
+            });
+    });
+    {% endfor %}
 </script>
 {% endblock %}

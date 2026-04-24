@@ -1,0 +1,214 @@
+{% extends "base_staff.html" %}
+{% block content %}
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+    /* VARIABLES */
+    :root {
+        --saas-primary: #002d72;
+        --saas-accent: #3b82f6;
+        --saas-success: #10b981;
+        --saas-warning: #f59e0b;
+        --saas-danger: #ef4444;
+        --saas-text: #1f2937;
+        --saas-light-text: #6b7280;
+        --saas-border: #e5e7eb;
+        --saas-bg: #f3f4f6;
+        --saas-bg-white: #ffffff;
+        --saas-radius: 0.75rem;
+        --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+    }
+
+    /* 1. APP LAYOUT */
+    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); }
+
+    .audit-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        font-family: 'Inter', sans-serif;
+        color: var(--saas-text);
+    }
+
+    /* 2. HEADER (Fixed) */
+    .audit-header {
+        flex: 0 0 auto;
+        padding: 1.5rem 2rem;
+        background-color: var(--saas-bg-white);
+        border-bottom: 1px solid var(--saas-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: var(--saas-shadow);
+        z-index: 10;
+    }
+    .fw-900 { font-weight: 900; }
+    .letter-spacing-tight { letter-spacing: -1px; }
+
+    /* 3. CONTENT AREA (Scrollable) */
+    .audit-content {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 2rem;
+    }
+
+    .audit-card {
+        background-color: var(--saas-bg-white);
+        border: 1px solid var(--saas-border);
+        border-radius: var(--saas-radius);
+        box-shadow: var(--saas-shadow);
+        overflow: hidden;
+    }
+
+    /* Modern Table Styling */
+    .audit-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .audit-table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f9fafb;
+        padding: 1rem 1.5rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--saas-light-text);
+        border-bottom: 1px solid var(--saas-border);
+        z-index: 5;
+    }
+    .audit-table tbody tr { transition: background-color 0.15s ease; }
+    .audit-table tbody tr:hover { background-color: #f8fafc; }
+    .audit-table td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
+
+    /* Component Styling */
+    .timestamp-date { font-weight: 700; color: var(--saas-text); font-size: 0.85rem; }
+    .timestamp-time { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--saas-light-text); }
+
+    .performer-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .performer-avatar {
+        width: 30px; height: 30px;
+        background: var(--saas-primary);
+        color: white;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem; font-weight: 800;
+    }
+
+    .action-pill {
+        padding: 0.3rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.65rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        display: inline-block;
+    }
+    .pill-success { background: #dcfce7; color: #15803d; }
+    .pill-danger { background: #fee2e2; color: #b91c1c; }
+    .pill-info { background: #eff6ff; color: #1d4ed8; }
+
+    .tech-details {
+        font-size: 0.85rem;
+        color: var(--saas-light-text);
+        font-weight: 500;
+    }
+
+    /* Live Badge Pulse */
+    .pulse-dot {
+        width: 8px; height: 8px;
+        background: var(--saas-accent);
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+</style>
+
+<div class="audit-container animate__animated animate__fadeIn">
+
+    <!-- HEADER -->
+    <header class="audit-header">
+        <div>
+            <h2 class="fw-900 mb-1 letter-spacing-tight">Security Audit Trail</h2>
+            <p class="text-muted small mb-0">Operational event ledger for <strong>{{ session.get('location_name') }}</strong></p>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="badge bg-light border text-dark px-3 py-2 rounded-pill d-flex align-items-center gap-2">
+                <span class="pulse-dot"></span>
+                <span class="small fw-800">IMMUTABLE LEDGER</span>
+            </div>
+            <button onclick="window.location.reload()" class="btn btn-sm btn-white border fw-bold px-3 py-2 rounded-pill shadow-sm">
+                <i class="fa-solid fa-rotate me-1"></i> Refresh
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="audit-content">
+        <div class="audit-card">
+            <div class="table-responsive">
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 200px;">Event Timestamp</th>
+                            <th>Performer</th>
+                            <th>Action Type</th>
+                            <th>Technical Manifest / Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>
+                                <div class="timestamp-date">{{ log.created_at.strftime('%Y-%m-%d') }}</div>
+                                <div class="timestamp-time">{{ log.created_at.strftime('%I:%M:%S %p') }}</div>
+                            </td>
+                            <td>
+                                <div class="performer-badge">
+                                    <div class="performer-avatar">
+                                        {{ log.performer.full_name[0] if log.performer else 'S' }}
+                                    </div>
+                                    <span class="fw-600" style="font-size: 0.9rem;">
+                                        {{ log.performer.full_name if log.performer else 'System Automation' }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                {% if 'Started' in log.action or 'Approved' in log.action or 'Complete' in log.action %}
+                                    <span class="action-pill pill-success">{{ log.action|upper }}</span>
+                                {% elif 'Expired' in log.action or 'Rejected' in log.action or 'Failed' in log.action %}
+                                    <span class="action-pill pill-danger">{{ log.action|upper }}</span>
+                                {% else %}
+                                    <span class="action-pill pill-info">{{ log.action|upper }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="tech-details">
+                                {{ log.details }}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5">
+                                <div class="opacity-25 mb-3">
+                                    <i class="fa-solid fa-shield-halved fa-4x"></i>
+                                </div>
+                                <h5 class="fw-800 text-muted">No security events found</h5>
+                                <p class="small text-muted">A record of all system interactions will appear here.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+{% endblock %}

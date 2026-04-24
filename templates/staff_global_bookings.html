@@ -1,0 +1,287 @@
+{% extends "base_staff.html" %}
+
+{% block content %}
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+    /* CORE VARIABLES */
+    :root {
+        --saas-navy: #002d72;
+        --saas-accent: #3b82f6;
+        --saas-success: #10b981;
+        --saas-warning: #f59e0b;
+        --saas-text: #1e293b;
+        --saas-light-text: #64748b;
+        --saas-border: #f1f5f9;
+        --saas-bg: #f8fafc;
+        --saas-radius: 1.25rem;
+    }
+
+    /* 1. LAYOUT ENGINE (AUTO-SIZE) */
+    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; }
+
+    .dashboard-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 2rem;
+        gap: 1.5rem;
+    }
+
+    /* 2. ENHANCED TOP KPI DESIGN */
+    .header-section { flex: 0 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+
+    .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+    }
+
+    .kpi-module {
+        background: #ffffff;
+        padding: 1.5rem;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .kpi-module:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08); }
+
+    /* Icon Wrappers */
+    .kpi-icon {
+        width: 56px; height: 56px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+    .icon-total { background: #eff6ff; color: var(--saas-accent); }
+    .icon-forecast { background: #fffbeb; color: var(--saas-warning); }
+    .icon-active { background: #f0fdf4; color: var(--saas-success); }
+
+    .kpi-info { display: flex; flex-direction: column; }
+    .kpi-label { font-size: 0.65rem; font-weight: 800; color: var(--saas-light-text); text-uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+    .kpi-value { font-family: 'JetBrains Mono', monospace; font-weight: 900; line-height: 1; letter-spacing: -1.5px; color: var(--saas-text); }
+
+    /* Export Module Branding */
+    .btn-export-module {
+        background: var(--saas-navy);
+        border: none;
+        color: white;
+        padding: 1.5rem;
+        border-radius: var(--saas-radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        font-weight: 900;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 20px -5px rgba(0, 45, 114, 0.3);
+    }
+    .btn-export-module:hover { background: var(--saas-accent); transform: scale(1.02); }
+
+    /* 3. SEARCH BAR DESIGN */
+    .action-bar {
+        background: #ffffff;
+        padding: 1rem 1.5rem;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .hub-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; }
+
+    /* 4. SCROLLABLE LEDGER */
+    .ledger-content {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        background: #ffffff;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+    }
+    .master-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .master-table thead th {
+        position: sticky; top: 0; background: #f9fafb; padding: 1.25rem 1.5rem;
+        font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+        color: var(--saas-light-text); border-bottom: 1px solid var(--saas-border); z-index: 10;
+    }
+    .master-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
+    .ledger-row:hover { background-color: #fcfdfe; cursor: pointer; }
+
+    /* COMPONENTS */
+    .plate-badge {
+        background: #0f172a; color: white; padding: 4px 10px; border-radius: 6px;
+        font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700;
+    }
+    .status-pill {
+        padding: 0.5rem 1rem; border-radius: 999px; font-size: 0.65rem; font-weight: 800;
+        display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid transparent;
+    }
+    .status-pending { background: #fff9db; color: #854d0e; border-color: #fef08a; }
+    .status-arrived { background: #e7f5ff; color: #1971c2; border-color: #a5d8ff; }
+    .status-done { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+
+    /* RESPONSIVE TYPE */
+    html { font-size: clamp(14px, 0.5vw + 0.5rem, 18px); }
+    .kpi-value { font-size: clamp(1.8rem, 2.5vw, 2.4rem); }
+</style>
+
+<div class="dashboard-container animate__animated animate__fadeIn">
+
+    <div class="header-section">
+
+        <!-- ENHANCED KPI GRID -->
+        <div class="kpi-row">
+            <!-- Box 1: Total -->
+            <div class="kpi-module">
+                <div class="kpi-icon icon-total">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div class="kpi-info">
+                    <label class="kpi-label">TOTAL BOOKINGS</label>
+                    <div class="kpi-value">{{ bookings|length }}</div>
+                </div>
+            </div>
+
+            <!-- Box 2: Forecast -->
+            <div class="kpi-module">
+                <div class="kpi-icon icon-forecast">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                </div>
+                <div class="kpi-info">
+                    <label class="kpi-label">FORECASTED (ON-WAY)</label>
+                    <div class="kpi-value text-warning">
+                        {{ bookings|selectattr('status', 'equalto', 'pending')|list|length }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 3: Active -->
+            <div class="kpi-module">
+                <div class="kpi-icon icon-active">
+                    <i class="fa-solid fa-truck-ramp-box"></i>
+                </div>
+                <div class="kpi-info">
+                    <label class="kpi-label">ACTIVE IN HUBS</label>
+                    <div class="kpi-value text-success">
+                        {{ bookings|selectattr('status', 'equalto', 'arrived')|list|length }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 4: Export -->
+            <button onclick="exportTableToCSV('logistics_forecast.csv')" class="btn-export-module">
+                <i class="fa-solid fa-file-csv fa-2x"></i>
+                <div class="text-start">
+                    <div style="font-size: 0.6rem; opacity: 0.7; letter-spacing: 1px;">LEDGER ACTION</div>
+                    <div>EXPORT LOGISTICS</div>
+                </div>
+            </button>
+        </div>
+
+        <!-- SEARCH BAR -->
+        <div class="action-bar">
+            <h4 class="hub-title">Deployment Intelligence Ledger</h4>
+            <div class="input-group" style="max-width: 450px;">
+                <span class="input-group-text bg-light border-end-0 ps-3"><i class="fa-solid fa-magnifying-glass text-muted small"></i></span>
+                <input type="text" id="globalSearch" class="form-control bg-light border-start-0 py-2 fw-600" placeholder="Search entity, node, or plate...">
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN TABLE -->
+    <main class="ledger-content">
+        <table class="master-table" id="masterLedger">
+            <thead>
+                <tr>
+                    <th>Target Node</th>
+                    <th>Asset Details</th>
+                    <th>Client Entity</th>
+                    <th>Arrival Window</th>
+                    <th class="text-center">Lifecycle Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in bookings %}
+                <tr class="ledger-row">
+                    <td>
+                        <div class="fw-800 text-dark" style="font-size: 0.95rem;">
+                            {{ b.location.name if b.location else 'UNASSIGNED' }}
+                        </div>
+                        <div class="extra-small text-muted fw-bold font-monospace">NODE_{{ b.location.code }}</div>
+                    </td>
+                    <td>
+                        <div class="plate-badge mb-1">{{ b.plate_number }}</div>
+                        <div class="extra-small text-primary fw-800 text-uppercase">{{ b.service_type }}</div>
+                    </td>
+                    <td>
+                        <div class="fw-800 text-dark" style="font-size: 0.95rem;">{{ b.customer.company_name }}</div>
+                        <div class="small text-muted fw-500">{{ b.customer.full_name }}</div>
+                    </td>
+                    <td>
+                        <div class="fw-800 text-dark" style="font-size: 0.95rem;">{{ b.scheduled_time.strftime('%b %d, %Y') }}</div>
+                        <div class="small text-primary fw-900" style="font-family: 'JetBrains Mono';">{{ b.scheduled_time.strftime('%I:%M %p') }}</div>
+                    </td>
+                    <td class="text-center">
+                        {% if b.status == 'pending' %}
+                            <span class="status-pill status-pending">
+                                <i class="fa-solid fa-clock-rotate-left"></i> EXPECTED
+                            </span>
+                        {% elif b.status == 'arrived' %}
+                            <span class="status-pill status-arrived">
+                                <i class="fa-solid fa-truck-moving"></i> ARRIVED
+                            </span>
+                        {% elif b.status == 'done' %}
+                            <span class="status-pill status-done">
+                                <i class="fa-solid fa-circle-check"></i> RELEASED
+                            </span>
+                        {% else %}
+                            <span class="badge bg-light text-muted border-0 px-3 py-2 fw-800" style="font-size:0.6rem;">
+                                {{ b.status|upper }}
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </main>
+</div>
+
+<script>
+    // Search Logic
+    document.getElementById('globalSearch').addEventListener('input', function() {
+        const val = this.value.toLowerCase();
+        document.querySelectorAll('.ledger-row').forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(val) ? '' : 'none';
+        });
+    });
+
+    // CSV Export
+    function exportTableToCSV(filename) {
+        let csv = [];
+        let rows = document.querySelectorAll("table tr");
+        for (let i = 0; i < rows.length; i++) {
+            let row = [], cols = rows[i].querySelectorAll("td, th");
+            for (let j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/\n/g, " ").trim() + '"');
+            csv.push(row.join(","));
+        }
+        let csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
+        let downloadLink = document.createElement("a");
+        downloadLink.download = filename;
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+    }
+</script>
+{% endblock %}

@@ -1,214 +1,314 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<div class="p-2 animate__animated animate__fadeIn">
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- 1. HEADER: IDENTITY CONTROL -->
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-6">
-            <div class="d-flex align-items-center gap-3">
-                <div class="bg-navy p-3 rounded-4 shadow-lg text-white icon-scan-wrapper">
-                    <div class="radar-ping"></div>
-                    <i class="fa-solid fa-user-shield fs-4 position-relative"></i>
-                </div>
-                <div>
-                    <h3 class="fw-900 mb-0 text-dark letter-spacing-tight">Identity & Access Control</h3>
-                    <p class="text-muted small mb-0 font-monospace text-uppercase">
-                        <span class="status-indicator-green"></span> Global Directory // Registry Active
-                    </p>
-                </div>
+<style>
+    /* MODERN CORE VARIABLES */
+    :root {
+        --saas-navy: #002d72;
+        --saas-accent: #3b82f6;
+        --saas-success: #10b981;
+        --saas-danger: #ef4444;
+        --saas-warning: #f59e0b;
+        --saas-text: #1e293b;
+        --saas-light-text: #64748b;
+        --saas-border: #f1f5f9;
+        --saas-bg: #f8fafc;
+        --saas-radius: 1rem;
+        --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    }
+
+    /* 1. LAYOUT ENGINE */
+    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; }
+
+    .dashboard-container {
+        height: calc(100vh - 100px); /* Adjust for header/footer */
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem;
+        gap: 1.5rem;
+    }
+
+    /* 2. HEADER SECTION */
+    .header-section {
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff;
+        padding: 1.25rem 2rem;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+    }
+    .page-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; font-size: 1.5rem; }
+
+    /* 3. DUAL COLUMN GRID */
+    .main-grid {
+        flex: 1 1 auto;
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        gap: 1.5rem;
+        min-height: 0;
+    }
+
+    /* 4. LEFT: ACCESS ENROLLMENT FORM */
+    .form-card {
+        background: #ffffff;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        overflow-y: auto;
+    }
+
+    .custom-label { font-size: 0.65rem; font-weight: 800; color: var(--saas-light-text); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: block; }
+
+    .modern-input, .modern-select {
+        background: #f8fafc;
+        border: 2px solid transparent;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.2s;
+        width: 100%;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+    .modern-input:focus, .modern-select:focus {
+        background: #fff;
+        border-color: var(--saas-accent);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+
+    .btn-enroll {
+        background: var(--saas-navy);
+        color: white;
+        border: none;
+        padding: 1rem;
+        border-radius: 10px;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .btn-enroll:hover { background: var(--saas-accent); transform: translateY(-2px); }
+
+    /* 5. RIGHT: MASTER REGISTRY */
+    .list-container {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        background: #ffffff;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+    }
+
+    .registry-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .registry-table thead th {
+        position: sticky; top: 0; background: #f9fafb; padding: 1rem 1.5rem;
+        font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+        color: var(--saas-light-text); border-bottom: 1px solid var(--saas-border); z-index: 10;
+    }
+    .registry-table td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
+
+    .section-divider { background: #f8fafc !important; font-weight: 900; font-size: 0.65rem; color: var(--saas-light-text); letter-spacing: 1px; padding: 0.75rem 1.5rem !important; }
+
+    /* COMPONENTS */
+    .user-avatar {
+        width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 0.9rem; border: 1px solid var(--saas-border);
+    }
+    .avatar-staff { background: #eef2ff; color: var(--saas-navy); }
+    .avatar-client { background: #f0fdf4; color: var(--saas-success); }
+
+    .clearance-pill { padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.55rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; }
+    .badge-super { background: #000; color: #fff; border: 1px solid #76b82a; }
+    .badge-admin { background: #0f172a; color: var(--saas-warning); }
+    .badge-staff { background: #eff6ff; color: var(--saas-accent); }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .dot-connected { background: var(--saas-success); box-shadow: 0 0 8px var(--saas-success); animation: pulse-live 2s infinite; }
+    .dot-offline { background: #cbd5e1; }
+    @keyframes pulse-live { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+    .btn-action { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--saas-border); background: white; color: var(--saas-light-text); }
+</style>
+
+<div class="dashboard-container animate__animated animate__fadeIn">
+
+    <!-- HEADER -->
+    <header class="header-section">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-primary text-white p-2 rounded-3 shadow-sm" style="background: var(--saas-navy) !important;">
+                <i class="fa-solid fa-fingerprint fs-4"></i>
+            </div>
+            <div>
+                <h3 class="page-title">Identity Registry</h3>
+                <p class="small text-muted mb-0 font-monospace">HUB_SECURITY_PROTOCOL_2.5 // ENCRYPTED</p>
             </div>
         </div>
-        <div class="col-md-6 text-md-end mt-3 mt-md-0">
-            <div class="d-inline-flex bg-white p-1 rounded-pill shadow-sm border">
-                <button class="btn btn-sm btn-navy px-4 rounded-pill fw-800">ALL NODES</button>
-                <button class="btn btn-sm btn-white text-muted px-4 border-0 fw-800">STAFF</button>
-                <button class="btn btn-sm btn-white text-muted px-4 border-0 fw-800">CLIENTS</button>
+        <div class="d-flex gap-2">
+            <div class="badge bg-light border text-dark fw-900 rounded-pill px-3 py-2">
+                {{ users|length }} Total Nodes
             </div>
         </div>
-    </div>
+    </header>
 
-    <div class="row g-4">
+    <main class="main-grid">
 
-        <!-- 2. LEFT: PROVISIONING PANEL -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden sticky-top" style="top: 20px;">
-                <div class="card-header bg-navy text-white p-3 border-0">
-                    <h6 class="mb-0 fw-800 text-uppercase small ls-1">
-                        <i class="fa-solid fa-key me-2"></i>Provision New Access
-                    </h6>
-                </div>
-                <div class="card-body p-4">
-                    <form action="/staff/users" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                        <div class="mb-3">
-                            <label class="biz-label">Security Clearance</label>
-                            <select name="role" class="form-select biz-input" required>
-                                <option value="customer">Client / Fleet Operator</option>
-                                <option value="staff">System Staff / Dispatcher</option>
-                                <option value="admin">System Administrator</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="biz-label">Full Personnel Name</label>
-                            <input type="text" name="full_name" class="form-control biz-input" placeholder="Legal Name" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="biz-label">Encrypted Email</label>
-                            <input type="email" name="email" class="form-control biz-input" placeholder="auth@coolaire.com" required>
-                        </div>
-
-                        <div class="row g-2 mb-4">
-                            <div class="col-6">
-                                <label class="biz-label">Username</label>
-                                <input type="text" name="username" class="form-control biz-input" placeholder="ID" required>
-                            </div>
-                            <div class="col-6">
-                                <label class="biz-label">Temp Key</label>
-                                <input type="password" name="password" class="form-control biz-input" placeholder="••••" required>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-navy w-100 fw-800 py-3 rounded-3 shadow-sm hover-lift">
-                            AUTHENTICATE & ENROLL <i class="fa-solid fa-fingerprint ms-2"></i>
-                        </button>
-                    </form>
-                </div>
+        <!-- LEFT: PROVISIONING FORM -->
+        <aside class="form-card">
+            <div>
+                <h5 class="fw-900 text-dark mb-1">Provision Node</h5>
+                <p class="small text-muted">Initialize new internal staff or client access.</p>
             </div>
-        </div>
 
-        <!-- 3. RIGHT: PERSONNEL REGISTRY -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
-                <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-900 mb-0">Identity Registry</h5>
-                    <div class="badge bg-primary-soft text-primary px-3 py-2 rounded-pill fw-bold ani-heartbeat">
-                        {{ users|length }} ACCOUNTS PROVISIONED
+            <form action="/staff/users" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <label class="custom-label">Role Assignment</label>
+                <select name="role" class="modern-select" required>
+                    <option value="customer">Client / Fleet Operator</option>
+                    <option value="staff">Floor Staff (Dispatcher)</option>
+                    <option value="admin">Hub Manager (Admin)</option>
+                    <option value="super_admin">IT Management (Super Admin)</option>
+                </select>
+
+                <label class="custom-label">Personnel Full Name</label>
+                <input type="text" name="full_name" class="modern-input" placeholder="Legal Name" required>
+
+                <label class="custom-label">Work Email / Contact</label>
+                <input type="email" name="email" class="modern-input" placeholder="email@company.com" required>
+
+                <label class="custom-label">Organization Name</label>
+                <input type="text" name="company_name" class="modern-input" placeholder="Coolaire or Client Co." required>
+
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="custom-label">Business TIN</label>
+                        <input type="text" name="tin_number" class="modern-input" placeholder="TIN#">
+                    </div>
+                    <div class="col-6">
+                        <label class="custom-label">Permit No.</label>
+                        <input type="text" name="business_permit" class="modern-input" placeholder="Permit#">
                     </div>
                 </div>
 
-                <div class="table-responsive" style="max-height: calc(100vh - 280px);">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light extra-small fw-800 text-uppercase text-muted sticky-top">
-                            <tr>
-                                <th class="ps-4 py-3">Identity Node</th>
-                                <th>Role</th>
-                                <th>Association</th>
-                                <th>Terminal Link</th>
-                                <th class="text-end pe-4">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for u in users %}
-                            <tr class="user-row">
-                                <td class="ps-4">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar-3d me-3 {{ 'staff-glow' if u.role in ['staff', 'admin'] else 'client-glow' }}">
-                                            {{ u.full_name[0] | upper }}
-                                        </div>
-                                        <div>
-                                            <div class="fw-800 text-dark">{{ u.full_name }}</div>
-                                            <div class="extra-small text-muted font-monospace">@{{ u.username }}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    {% if u.role == 'admin' %}
-                                        <span class="badge bg-dark text-warning border-warning px-2 py-1 rounded-1 fw-900" style="font-size: 0.55rem;">ROOT_ADMIN</span>
-                                    {% elif u.role == 'staff' %}
-                                        <span class="badge bg-primary-soft text-primary px-2 py-1 rounded-1 fw-800" style="font-size: 0.55rem;">OPERATOR</span>
-                                    {% else %}
-                                        <span class="badge bg-light text-muted border px-2 py-1 rounded-1 fw-800" style="font-size: 0.55rem;">FLEET_CLIENT</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="small fw-700 text-dark">{{ u.company_name or 'INDEPENDENT' }}</div>
-                                    <div class="extra-small text-muted fw-600">{{ u.email }}</div>
-                                </td>
-                                <td>
-                                    <!-- DYNAMIC ONLINE DETECTION BASED ON LAST_SEEN -->
-                                    <div class="d-flex align-items-center gap-2">
-                                        {% if u.last_seen and (now_utc - u.last_seen).total_seconds() < 120 %}
-                                            <span class="online-dot pulse-green"></span>
-                                            <span class="extra-small fw-800 text-success">CONNECTED</span>
-                                        {% else %}
-                                            <span class="online-dot bg-secondary opacity-50"></span>
-                                            <span class="extra-small fw-600 text-muted">OFFLINE</span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td class="text-end pe-4">
-                                    <div class="dropdown">
-                                        <button class="btn btn-action" data-bs-toggle="dropdown">
-                                            <i class="fa-solid fa-ellipsis"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                            <li><a class="dropdown-item fw-700 py-2 small" href="#"><i class="fa-solid fa-user-pen me-2 opacity-50"></i> Modify Access</a></li>
-                                            <li><a class="dropdown-item fw-700 py-2 small" href="#"><i class="fa-solid fa-shield-halved me-2 opacity-50"></i> Reset Credentials</a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><a class="dropdown-item fw-700 py-2 small text-danger" href="#"><i class="fa-solid fa-user-slash me-2"></i> Revoke Identity</a></li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="row g-2 mt-2">
+                    <div class="col-6">
+                        <label class="custom-label">Username</label>
+                        <input type="text" name="username" class="modern-input" placeholder="ID" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="custom-label">Temporary Key</label>
+                        <input type="password" name="password" class="modern-input" placeholder="••••" required>
+                    </div>
                 </div>
+
+                <button type="submit" class="btn-enroll shadow-lg mt-3">
+                    <i class="fa-solid fa-shield-plus"></i> AUTHORIZE NODE
+                </button>
+            </form>
+        </aside>
+
+        <!-- RIGHT: MASTER REGISTRY TABLE -->
+        <section class="list-container">
+            <div class="table-responsive">
+                <table class="registry-table">
+                    <thead>
+                        <tr>
+                            <th>Personnel Node</th>
+                            <th>Clearance & Organization</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- PENDING SECTION -->
+                        {% set pending_users = users|selectattr('is_approved', 'equalto', false)|selectattr('is_rejected', 'equalto', false)|list %}
+                        {% if pending_users %}
+                        <tr><td colspan="4" class="section-divider">PENDING SECURITY REVIEW</td></tr>
+                        {% for u in pending_users %}
+                        <tr class="pending-row" style="background: #fffbeb;">
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="user-avatar bg-white border-warning text-warning">{{ u.full_name[0] }}</div>
+                                    <div>
+                                        <div class="fw-800 text-dark">{{ u.full_name }}</div>
+                                        <div class="extra-small text-muted">@{{ u.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="badge bg-white border text-warning fw-900 mb-1">{{ u.company_name }}</div>
+                                <div class="extra-small text-muted font-monospace">TIN: {{ u.tin_number or 'N/A' }}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning text-dark px-3 rounded-pill fw-800" style="font-size: 0.55rem;">VERIFICATION_PENDING</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="/staff/users/approve/{{ u.id }}" class="btn btn-sm btn-success fw-900 px-3 rounded-pill shadow-sm">VERIFY</a>
+                                    <a href="/staff/verify-action/{{ u.id }}/reject" class="btn-action" title="Reject"><i class="fa-solid fa-user-slash"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% endif %}
+
+                        <!-- AUTHORIZED SECTION -->
+                        <tr><td colspan="4" class="section-divider">AUTHORIZED PERSONNEL NODES</td></tr>
+                        {% for u in users if u.is_approved and not u.is_rejected %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="user-avatar {{ 'avatar-staff' if u.role in ['staff', 'admin', 'super_admin'] else 'avatar-client' }}">
+                                        {{ u.full_name[0] | upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-800 text-dark">{{ u.full_name }}</div>
+                                        <div class="extra-small text-muted">{{ u.email }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if u.role == 'super_admin' %}<span class="clearance-pill badge-super">SUPER_ADMIN</span>
+                                {% elif u.role == 'admin' %}<span class="clearance-pill badge-admin">HUB_MANAGER</span>
+                                {% elif u.role == 'staff' %}<span class="clearance-pill badge-staff">DISPATCHER</span>
+                                {% else %}<span class="clearance-pill badge-client">CLIENT_NODE</span>{% endif %}
+                                <div class="extra-small text-muted mt-1 fw-bold">{{ u.company_name }}</div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if u.last_seen and (now_utc - u.last_seen).total_seconds() < 120 %}
+                                        <span class="dot dot-connected"></span><span class="text-success fw-900 extra-small">LIVE</span>
+                                    {% else %}
+                                        <span class="dot dot-offline"></span><span class="text-muted fw-900 extra-small">OFFLINE</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <a href="/staff/verify-action/{{ u.id }}/reject" class="btn-action" title="Revoke Access" onclick="return confirm('Revoke access for this node?')">
+                                    <i class="fa-solid fa-ban"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        </div>
-
-    </div>
+        </section>
+    </main>
 </div>
-
-<style>
-    :root { --coolaire-navy: #002d72; --coolaire-green: #22c55e; }
-    .bg-navy { background: var(--coolaire-navy); }
-    .btn-navy { background: var(--coolaire-navy); color: white; border: none; }
-    .btn-navy:hover { background: #001a45; color: white; }
-    .fw-900 { font-weight: 900; }
-    .fw-800 { font-weight: 800; }
-    .ls-1 { letter-spacing: 1px; }
-    .letter-spacing-tight { letter-spacing: -1.5px; }
-    .extra-small { font-size: 0.65rem; }
-
-    /* Forms */
-    .biz-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 6px; display: block; }
-    .biz-input { border-radius: 8px; border: 1px solid #e2e8f0; padding: 10px 15px; font-weight: 600; font-size: 0.9rem; }
-    .biz-input:focus { border-color: var(--coolaire-navy); box-shadow: 0 0 0 4px rgba(0,45,114,0.05); }
-
-    /* Radar Ping Icon */
-    .icon-scan-wrapper { position: relative; }
-    .radar-ping { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px solid var(--coolaire-navy); border-radius: inherit; animation: radar-expand 2s infinite; }
-    @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.8); opacity: 0; } }
-
-    /* 3D Avatar Icons */
-    .avatar-3d {
-        width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
-        font-weight: 900; font-size: 1rem; border: 1px solid rgba(0,0,0,0.1); transition: 0.3s;
-    }
-    .staff-glow { background: #eef2ff; color: var(--coolaire-navy); box-shadow: inset 0 -3px 0 rgba(0,45,114,0.1); }
-    .client-glow { background: #f0fdf4; color: var(--coolaire-green); box-shadow: inset 0 -3px 0 rgba(34,197,94,0.1); }
-    .user-row:hover .avatar-3d { transform: scale(1.1) rotate(-5deg); }
-
-    /* Online Dots */
-    .online-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-    .pulse-green { background: var(--coolaire-green); box-shadow: 0 0 10px var(--coolaire-green); animation: dot-pulse 1.5s infinite; }
-    @keyframes dot-pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-    /* Registry Table */
-    .user-row { transition: 0.2s; }
-    .user-row:hover { background-color: #f8fafc !important; }
-    .btn-action { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #94a3b8; transition: 0.2s; }
-    .btn-action:hover { background: var(--coolaire-navy); color: white; border-color: var(--coolaire-navy); }
-
-    .status-indicator-green { width: 8px; height: 8px; background: var(--coolaire-green); border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 8px var(--coolaire-green); }
-    .bg-primary-soft { background-color: rgba(0, 45, 114, 0.08); }
-    .ani-heartbeat { animation: heartbeat 1.5s infinite; }
-    @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-    .hover-lift:hover { transform: translateY(-3px); }
-</style>
 {% endblock %}

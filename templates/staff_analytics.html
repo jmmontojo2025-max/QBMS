@@ -1,250 +1,239 @@
 {% extends "base_staff.html" %}
-
 {% block content %}
-<div class="p-4 animate__animated animate__fadeIn" style="background: #f8fafc; min-height: 100vh;">
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- 1. HEADER: BRANCH & SESSION CONTEXT -->
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-8">
-            <div class="d-flex align-items-center gap-3">
-                <div class="bg-navy p-3 rounded-4 shadow-lg text-white icon-pulse">
-                    <i class="fa-solid fa-chart-line fs-4"></i>
-                </div>
+<style>
+    /* VARIABLES */
+    :root {
+        --saas-primary: #002d72; /* Using your navy as the primary */
+        --saas-accent: #3b82f6;
+        --saas-success: #10b981;
+        --saas-warning: #f59e0b;
+        --saas-text: #1f2937;
+        --saas-light-text: #6b7280;
+        --saas-border: #e5e7eb;
+        --saas-bg: #f3f4f6;
+        --saas-bg-white: #ffffff;
+        --saas-radius: 1rem;
+        --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+    }
+
+    /* BASE STYLES */
+    .bi-dashboard {
+        background-color: var(--saas-bg);
+        font-family: 'Inter', sans-serif;
+        color: var(--saas-text);
+    }
+    .fw-800 { font-weight: 800; }
+    .fw-900 { font-weight: 900; }
+    .letter-spacing-tight { letter-spacing: -1px; }
+
+    /* HEADER */
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .status-dot-live { background-color: var(--saas-success); box-shadow: 0 0 8px var(--saas-success); }
+
+    /* CARDS */
+    .stat-card {
+        background-color: var(--saas-bg-white);
+        border: 1px solid var(--saas-border);
+        border-radius: var(--saas-radius);
+        box-shadow: var(--saas-shadow);
+        padding: 1.5rem;
+        height: 100%;
+        transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    }
+    .stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.07); }
+
+    .stat-card .card-label { font-size: 0.8rem; font-weight: 700; color: var(--saas-light-text); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+    .stat-card .metric { font-size: 2.5rem; font-weight: 900; color: var(--saas-text); line-height: 1; }
+    .stat-card .metric-unit { font-size: 1rem; font-weight: 600; color: var(--saas-light-text); margin-left: 0.5rem; }
+    .stat-card .card-subtext { font-size: 0.8rem; color: var(--saas-light-text); margin-top: 1rem; }
+    .stat-card .icon-shape { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+
+    /* KPI GRID LAYOUT */
+    .main-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+    .grid-col-span-2 { grid-column: span 2; }
+
+    /* LEADERBOARD (replaces table) */
+    .leaderboard-list { list-style: none; padding: 0; margin: 0; }
+    .leaderboard-item { display: flex; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--saas-border); }
+    .leaderboard-item:last-child { border-bottom: none; }
+    .leaderboard-rank { font-size: 1rem; font-weight: 900; color: var(--saas-light-text); width: 30px; text-align: center; }
+    .leaderboard-item:nth-child(1) .leaderboard-rank { color: #f59e0b; } /* Gold */
+    .leaderboard-item:nth-child(2) .leaderboard-rank { color: #9ca3af; } /* Silver */
+    .leaderboard-item:nth-child(3) .leaderboard-rank { color: #a16207; } /* Bronze */
+    .leaderboard-avatar { width: 36px; height: 36px; background-color: #e2e8f0; color: #475569; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+    .leaderboard-name { font-weight: 600; color: var(--saas-text); }
+    .leaderboard-jobs { font-size: 0.9rem; font-weight: 800; color: var(--saas-primary); }
+
+    /* ANIMATIONS */
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    .anim-float { animation: float 3s ease-in-out infinite; }
+</style>
+
+<div class="bi-dashboard p-4 p-lg-5 animate__animated animate__fadeIn">
+
+    <!-- 1. HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="fw-900 mb-1 letter-spacing-tight">{{ session.get('location_name') }} Business Intelligence</h2>
+            <p class="text-muted small mb-0"><span class="status-dot status-dot-live"></span>Data stream active</p>
+        </div>
+        <button onclick="window.location.reload()" class="btn btn-light border fw-600 px-4 py-2 rounded-pill d-none d-md-block">
+            <i class="fa-solid fa-arrows-rotate me-2"></i> Refresh
+        </button>
+    </div>
+
+    <!-- 2. MAIN KPI GRID -->
+    <div class="main-kpi-grid mb-5">
+        <!-- Today's Throughput -->
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <h3 class="fw-900 mb-0 letter-spacing-tight text-dark">{{ session.get('location_name') }} Analytics</h3>
-                    <p class="text-muted small mb-0 font-monospace text-uppercase">
-                        <span class="status-indicator-green"></span> NODE: {{ session.get('location_code') }} // STREAM: LIVE_DATA_FEED
-                    </p>
+                    <div class="card-label">Today's Throughput</div>
+                    <h2 class="metric">{{ daily_count }}<span class="metric-unit">Jobs</span></h2>
+                </div>
+                <div class="icon-shape bg-blue-100 text-blue-600" style="background-color:#eff6ff; color:#2563eb;">
+                    <i class="fa-solid fa-clipboard-check"></i>
                 </div>
             </div>
+            <div class="card-subtext"><i class="fa-solid fa-circle-check text-success me-1"></i>Live workfloor data</div>
         </div>
-        <div class="col-md-4 text-md-end mt-3 mt-md-0">
-            <button onclick="window.location.reload()" class="btn btn-white border shadow-sm fw-bold px-4 py-2 rounded-3 transition-all hover-lift">
-                <i class="fa-solid fa-arrows-rotate me-2 text-primary rotate-icon"></i> Live Refresh
-            </button>
-        </div>
-    </div>
 
-    <!-- 2. AI STRATEGIC INSIGHT (ANIMATED ORB) -->
-    <div class="card border-0 rounded-4 shadow-sm mb-4 overflow-hidden" style="border-left: 6px solid #002d72 !important;">
-        <div class="card-body p-4 bg-glass">
-            <div class="d-flex align-items-center gap-4">
-                <div class="ai-orb-container d-none d-lg-block">
-                    <div class="orb-core"></div>
-                    <div class="orb-ring ring-1"></div>
-                    <div class="orb-ring ring-2"></div>
+        <!-- Avg Service Velocity -->
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="card-label">Avg. Service Velocity</div>
+                    <h2 class="metric">{{ avg_wait }}<span class="metric-unit">Mins</span></h2>
                 </div>
-                <div class="flex-grow-1">
-                    <h6 class="fw-bold text-primary mb-1 text-uppercase ls-1">Strategic AI Insight</h6>
-                    <p class="text-secondary mb-0 fw-500">
-                        Operational efficiency is tracking
-                        <span class="fw-bold text-{{ 'success' if momentum >= 0 else 'danger' }}">
-                            {{ momentum }}% {{ 'higher' if momentum >= 0 else 'lower' }}
-                        </span>
-                        than the previous cycle. Recommendation: Allocate additional technical resources on
-                        <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" id="recommendationDay">Analyzing Patterns...</span>
-                        to mitigate peak arrival latency.
-                    </p>
+                <div class="icon-shape bg-green-100 text-green-600 anim-float" style="background-color:#f0fdf4; color:#16a34a;">
+                    <i class="fa-solid fa-gauge-high"></i>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- 3. KPI GRID -->
-    <div class="row g-4 mb-4">
-        <!-- TODAY'S JOBS -->
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 p-4 h-100 kpi-card overflow-hidden">
-                <div class="kpi-bg-icon"><i class="fa-solid fa-truck-fast"></i></div>
-                <div class="text-muted fw-bold small text-uppercase mb-2 ls-1">Today's Jobs</div>
-                <div class="d-flex align-items-center justify-content-between position-relative">
-                    <h2 class="fw-900 mb-0">{{ daily_count }}</h2>
-                    <div class="icon-shape bg-primary-soft text-primary ani-float">
-                        <i class="fa-solid fa-calendar-day"></i>
-                    </div>
-                </div>
-                <div class="mt-3 small text-muted position-relative">
-                    <i class="fa-solid fa-circle-check text-success me-1"></i> Data synced 1m ago
-                </div>
-            </div>
+            <div class="card-subtext">Queue-to-completion average</div>
         </div>
 
-        <!-- AVG WAIT TIME -->
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 p-4 h-100 kpi-card overflow-hidden">
-                <div class="kpi-bg-icon"><i class="fa-solid fa-clock"></i></div>
-                <div class="text-muted fw-bold small text-uppercase mb-2 ls-1">Avg Wait Time</div>
-                <div class="d-flex align-items-center justify-content-between position-relative">
-                    <h2 class="fw-900 mb-0">{{ avg_wait }} <span class="fs-6 fw-normal">m</span></h2>
-                    <div class="icon-shape bg-warning-soft text-warning ani-pendulum">
-                        <i class="fa-solid fa-hourglass-half"></i>
-                    </div>
+        <!-- Momentum Card (Hero) -->
+        <div class="stat-card grid-col-span-2 text-white" style="background: linear-gradient(135deg, #002d72 0%, #001d4a 100%);">
+             <div class="row align-items-center h-100">
+                <div class="col-7">
+                    <div class="card-label text-white-50">Monthly Growth</div>
+                    <h1 class="fw-900 mb-1" style="font-size: 3.5rem;">{{ '+' if momentum >= 0 }}{{ momentum }}%</h1>
+                    <p class="small text-white-50 mb-0">Total: {{ monthly_count }} assets this cycle</p>
                 </div>
-                <div class="mt-3 position-relative">
-                    <div class="progress" style="height: 6px; background: #f1f5f9;">
-                        <div class="progress-bar bg-warning" style="width: 75%"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- MOMENTUM CARD (GLASSMORPHISM) -->
-        <div class="col-md-6">
-            <div class="card border-0 shadow-lg rounded-4 h-100 overflow-hidden text-white"
-                 style="background: linear-gradient(135deg, #002d72 0%, #001d4a 100%);">
-                <div class="card-body p-4 position-relative">
-                    <div class="row align-items-center h-100">
-                        <div class="col-7 z-index-2">
-                            <h6 class="text-warning fw-bold mb-1 text-uppercase ls-1">Monthly Momentum</h6>
-                            <h1 class="fw-900 mb-1 animate__animated animate__pulse animate__infinite">{{ '+' if momentum >= 0 }}{{ momentum }}%</h1>
-                            <p class="small opacity-75 mb-0">Processed <span class="fw-bold">{{ monthly_count }}</span> assets vs <span class="fw-bold">{{ prev_month_count }}</span> last cycle.</p>
-                        </div>
-                        <div class="col-5">
-                            <canvas id="miniGrowthChart" style="height: 90px !important;"></canvas>
-                        </div>
-                    </div>
-                    <!-- Background decorative icon -->
-                    <i class="fa-solid fa-chart-line position-absolute bottom-0 end-0 opacity-10 mb-n4 me-n2" style="font-size: 10rem;"></i>
+                <div class="col-5">
+                    <canvas id="miniGrowthChart" style="height: 80px !important;"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 4. PRODUCTION FORECAST CHART -->
-    <div class="card border-0 shadow-sm rounded-4 bg-white mb-5">
-        <div class="card-header bg-transparent border-0 p-4 d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="fw-900 mb-0">Arrival Load Prediction</h5>
-                <p class="small text-muted mb-0">Historical daily throughput based on 30-day rolling averages.</p>
-            </div>
-            <div class="badge bg-success-soft text-success px-3 py-2 rounded-pill">
-                <i class="fa-solid fa-server me-1"></i> VERIFIED HISTORY
+    <!-- 3. SECONDARY ANALYSIS ROW -->
+    <div class="row g-4">
+        <!-- Technician Leaderboard -->
+        <div class="col-lg-5">
+            <div class="stat-card p-0">
+                <div class="p-4 border-bottom">
+                    <h5 class="fw-800 mb-0"><i class="fa-solid fa-medal text-warning me-2"></i>Technician Performance</h5>
+                </div>
+                <ul class="leaderboard-list">
+                    {% for stat in tech_stats %}
+                    <li class="leaderboard-item">
+                        <span class="leaderboard-rank me-3">{{ loop.index }}</span>
+                        <div class="leaderboard-avatar me-3">{{ stat.name[0] }}</div>
+                        <div class="leaderboard-name flex-grow-1">{{ stat.name }}</div>
+                        <span class="leaderboard-jobs">{{ stat.total_jobs }} Jobs</span>
+                    </li>
+                    {% else %}
+                    <li class="leaderboard-item justify-content-center text-muted">No performance data captured today.</li>
+                    {% endfor %}
+                </ul>
             </div>
         </div>
-        <div class="card-body p-4 pt-0">
-            <div style="height: 350px;">
-                <canvas id="forecastChart"></canvas>
+
+        <!-- Arrival Load Prediction -->
+        <div class="col-lg-7">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div>
+                        <h5 class="fw-800 mb-0">Arrival Load Prediction</h5>
+                        <p class="small text-muted mb-0">Forecast based on historical daily averages</p>
+                    </div>
+                     <span class="badge bg-green-100 text-green-700 fw-bold rounded-pill" style="background-color:#dcfce7; color:#15803d;">
+                        <i class="fa-solid fa-check-circle me-1"></i> AI Recommended
+                    </span>
+                </div>
+                <div class="mt-4" style="height: 250px;">
+                    <canvas id="forecastChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-    :root { --coolaire-navy: #002d72; --coolaire-green: #76b82a; }
-    .bg-navy { background: var(--coolaire-navy); }
-    .fw-900 { font-weight: 900; }
-    .ls-1 { letter-spacing: 1px; }
-    .letter-spacing-tight { letter-spacing: -1.5px; }
-
-    /* KPI Card Styling */
-    .kpi-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 1px solid #f1f5f9 !important; }
-    .kpi-card:hover { transform: translateY(-8px); border-color: var(--coolaire-navy) !important; box-shadow: 0 15px 30px rgba(0,45,114,0.1) !important; }
-    .kpi-bg-icon { position: absolute; right: -10px; bottom: -10px; font-size: 5rem; color: #f8fafc; z-index: 0; }
-    .icon-shape { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.25rem; z-index: 1; position: relative; }
-    .bg-primary-soft { background: #eef2ff; }
-    .bg-warning-soft { background: #fffbeb; }
-    .bg-success-soft { background: #f0fdf4; }
-
-    /* Animated AI Orb */
-    .ai-orb-container { width: 45px; height: 45px; position: relative; }
-    .orb-core { width: 100%; height: 100%; background: var(--coolaire-navy); border-radius: 50%; z-index: 5; position: relative; }
-    .orb-ring { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px solid var(--coolaire-navy); border-radius: 50%; }
-    .ring-1 { animation: orb-expand 2s infinite; }
-    .ring-2 { animation: orb-expand 2s infinite 1s; }
-    @keyframes orb-expand { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
-
-    /* Status Indicator */
-    .status-indicator-green { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 10px #22c55e; }
-
-    /* Icon Animations */
-    .ani-float { animation: float 3s ease-in-out infinite; }
-    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-    .ani-pendulum { animation: pendulum 2s ease-in-out infinite; transform-origin: top center; }
-    @keyframes pendulum { 0%, 100% { transform: rotate(-15deg); } 50% { transform: rotate(15deg); } }
-    .rotate-icon { transition: transform 0.5s ease; }
-    .hover-lift:hover .rotate-icon { transform: rotate(180deg); }
-
-    .z-index-2 { z-index: 2; position: relative; }
-</style>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const fCtx = document.getElementById('forecastChart').getContext('2d');
+    // Forecast Bar Chart
+    const fCtx = document.getElementById('forecastChart')?.getContext('2d');
+    if (fCtx) {
+        fetch('/api/analytics/forecast')
+            .then(res => res.json())
+            .then(data => {
+                const forecastValues = data.forecast;
+                const daysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    // FETCH REAL FORECAST DATA
-    fetch('/api/analytics/forecast')
-        .then(res => res.json())
-        .then(data => {
-            const daysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            const daysFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            const forecastValues = data.forecast;
-
-            const maxVal = Math.max(...forecastValues);
-            if (maxVal > 0) {
-                const busiestIdx = forecastValues.indexOf(maxVal);
-                document.getElementById('recommendationDay').innerText = daysFull[busiestIdx];
-            } else {
-                document.getElementById('recommendationDay').innerText = "Insufficient Data";
-            }
-
-            // Create Professional Gradient
-            const gradient = fCtx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, '#002d72');
-            gradient.addColorStop(1, 'rgba(0, 45, 114, 0.05)');
-
-            new Chart(fCtx, {
-                type: 'bar',
-                data: {
-                    labels: daysShort,
-                    datasets: [{
-                        label: 'Average Arrivals',
-                        data: forecastValues,
-                        backgroundColor: gradient,
-                        hoverBackgroundColor: '#76b82a',
-                        borderRadius: 10,
-                        barThickness: 55
-                    }]
-                },
-                options: {
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#001d4a',
-                            padding: 15,
-                            cornerRadius: 10,
-                            callbacks: { label: (c) => ` Projected Load: ${c.raw} Units` }
-                        }
+                new Chart(fCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: daysShort,
+                        datasets: [{
+                            label: 'Forecasted Units',
+                            data: forecastValues,
+                            backgroundColor: 'rgba(0, 45, 114, 0.8)',
+                            hoverBackgroundColor: 'rgba(0, 45, 114, 1)',
+                            borderRadius: 6,
+                            borderSkipped: false,
+                        }]
                     },
-                    scales: {
-                        y: { beginAtZero: true, grid: { borderDash: [5,5], color: '#f1f5f9' }, border: { display: false } },
-                        x: { grid: { display: false }, border: { display: false } }
+                    options: {
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { drawOnChartArea: false } },
+                            x: { grid: { display: false } }
+                        }
                     }
-                }
+                });
             });
-        });
+    }
 
-    // MINI SPARKLINE CHART
-    const mCtx = document.getElementById('miniGrowthChart').getContext('2d');
-    new Chart(mCtx, {
-        type: 'line',
-        data: {
-            labels: [1,2,3,4,5],
-            datasets: [{
-                data: [15, 25, 18, 32, {{ monthly_count }}],
-                borderColor: '#76b82a',
-                borderWidth: 4,
-                tension: 0.4,
-                pointRadius: 0
-            }]
-        },
-        options: {
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { x: { display: false }, y: { display: false } }
-        }
-    });
+    // Mini Growth Line Chart
+    const mCtx = document.getElementById('miniGrowthChart')?.getContext('2d');
+    if (mCtx) {
+        new Chart(mCtx, {
+            type: 'line',
+            data: {
+                labels: ['W1', 'W2', 'W3', 'W4', 'Current'],
+                datasets: [{
+                    data: [12, 19, 15, 22, {{ monthly_count }}], // Example data
+                    borderColor: '#76b82a',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    fill: true,
+                    backgroundColor: 'rgba(118, 184, 42, 0.1)'
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

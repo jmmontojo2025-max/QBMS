@@ -1,214 +1,309 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<div class="p-2 animate__animated animate__fadeIn">
-
-    <!-- 1. HEADER SECTION -->
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-8">
-            <div class="d-flex align-items-center gap-3">
-                <div class="bg-navy p-3 rounded-4 shadow-lg text-white icon-scan-wrapper">
-                    <div class="radar-ping"></div>
-                    <i class="fa-solid fa-tower-observation fs-4 position-relative"></i>
-                </div>
-                <div>
-                    <h3 class="fw-900 mb-0 text-dark letter-spacing-tight">Network Hub Management</h3>
-                    <p class="text-muted small mb-0 font-monospace text-uppercase">
-                        Configure physical terminals and broadcast nodes
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4">
-        <!-- 2. LEFT: ADD NEW HUB FORM -->
-        {% if current_user_role in ['admin', 'staff'] %}
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden sticky-top" style="top: 20px;">
-                <div class="card-header bg-navy text-white p-3 border-0">
-                    <h6 class="mb-0 fw-800 text-uppercase small ls-1">
-                        <i class="fa-solid fa-plus-circle me-2"></i>Initialize New Hub
-                    </h6>
-                </div>
-                <div class="card-body p-4">
-                    <form action="{{ url_for('staff_locations') }}" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                        <div class="mb-3">
-                            <label class="biz-label">Station Name</label>
-                            <input type="text" class="form-control biz-input" name="name" placeholder="e.g. Makati Central" required>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="biz-label">Branch Code</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0 text-muted fw-bold">ID-</span>
-                                <input type="text" class="form-control biz-input border-start-0" name="code" placeholder="MKT" maxlength="10" required>
-                            </div>
-                            <small class="text-muted extra-small mt-1 d-block">This code will appear on all queue tickets.</small>
-                        </div>
-
-                        <button type="submit" class="btn btn-navy w-100 fw-800 py-3 rounded-3 shadow-sm hover-lift">
-                            REGISTER HUB <i class="fa-solid fa-arrow-right ms-2"></i>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- 3. RIGHT: REGISTERED HUBS LIST -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
-                <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-900 mb-0">Active Terminal Hubs</h5>
-                    <span class="badge bg-primary-soft text-primary px-3 rounded-pill fw-bold">
-                        {{ locations|length }} Registered
-                    </span>
-                </div>
-
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light extra-small fw-800 text-uppercase text-muted">
-                                <tr>
-                                    <th class="ps-4 py-3">Hub Identity</th>
-                                    <th>Status</th>
-                                    <th>Queue Prefix</th>
-                                    <th class="text-end pe-4">System Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for loc in locations %}
-                                <tr class="hub-row">
-                                    <td class="ps-4 py-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="hub-avatar me-3">
-                                                {{ loc.name[:1] | upper }}
-                                            </div>
-                                            <div>
-                                                <div class="fw-800 text-dark">{{ loc.name }}</div>
-                                                <div class="extra-small text-muted font-monospace">UUID: {{ 1000 + loc.id }}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    <!-- DYNAMIC ONLINE/OFFLINE DETECTION -->
-                                    <td>
-                                        {% if loc.is_online %}
-                                            <span class="status-pill-green animate__animated animate__fadeIn">
-                                                <span class="dot"></span> Online
-                                            </span>
-                                        {% else %}
-                                            <span class="status-pill-gray animate__animated animate__fadeIn">
-                                                <span class="dot-gray"></span> Offline
-                                            </span>
-                                        {% endif %}
-                                    </td>
-
-                                    <td>
-                                        <span class="badge-code">{{ loc.code }}</span>
-                                    </td>
-                                    <td class="text-end pe-4">
-                                        <div class="d-flex justify-content-end gap-2">
-                                            <a href="{{ url_for('edit_location', loc_id=loc.id) }}" class="btn-action btn-edit" title="Configure Hub">
-                                                <i class="fa-solid fa-sliders"></i>
-                                            </a>
-                                            <a href="{{ url_for('delete_location', loc_id=loc.id) }}"
-                                               class="btn-action btn-delete"
-                                               onclick="return confirm('WARNING: Deleting Hub {{ loc.name }} will disconnect all associated terminals. Proceed?')"
-                                               title="Decommission Hub">
-                                                <i class="fa-solid fa-trash-can"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="4" class="text-center py-5 opacity-50">
-                                        <i class="fa-solid fa-map-location-dot fa-4x mb-3 text-muted"></i>
-                                        <h5 class="fw-800">No Terminals Found</h5>
-                                        <p>Initialize your first branch hub using the panel on the left.</p>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
-    :root { --coolaire-navy: #002d72; --coolaire-green: #22c55e; }
-    .bg-navy { background: var(--coolaire-navy); }
-    .btn-navy { background: var(--coolaire-navy); color: white; border: none; }
-    .btn-navy:hover { background: #001d4a; color: white; }
-    .text-dark { color: #0f172a !important; }
-    .fw-900 { font-weight: 900; }
-    .fw-800 { font-weight: 800; }
-    .ls-1 { letter-spacing: 1px; }
-    .letter-spacing-tight { letter-spacing: -1.5px; }
-    .extra-small { font-size: 0.65rem; }
+    /* MODERN CORE VARIABLES */
+    :root {
+        --saas-navy: #002d72;
+        --saas-accent: #3b82f6;
+        --saas-success: #10b981;
+        --saas-danger: #ef4444;
+        --saas-text: #1e293b;
+        --saas-light-text: #64748b;
+        --saas-border: #f1f5f9;
+        --saas-bg: #f8fafc;
+        --saas-radius: 1rem;
+        --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    }
 
-    /* Forms */
-    .biz-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
-    .biz-input { border-radius: 8px; border: 1px solid #e2e8f0; padding: 10px 15px; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
-    .biz-input:focus { border-color: var(--coolaire-navy); box-shadow: 0 0 0 4px rgba(0,45,114,0.05); }
+    /* 1. LAYOUT ENGINE (AUTO-SIZE) */
+    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; }
 
-    /* Radar Ping Icon */
-    .icon-scan-wrapper { position: relative; }
-    .radar-ping { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px solid var(--coolaire-navy); border-radius: inherit; animation: radar-expand 2s infinite; }
+    .dashboard-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 2rem;
+        gap: 1.5rem;
+    }
+
+    /* 2. HEADER SECTION */
+    .header-section {
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff;
+        padding: 1.25rem 2.5rem;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+    }
+    .page-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; }
+
+    /* 3. DUAL COLUMN GRID */
+    .main-grid {
+        flex: 1 1 auto;
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 1.5rem;
+        min-height: 0;
+    }
+
+    /* 4. LEFT: INITIALIZATION FORM */
+    .form-card {
+        background: #ffffff;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .custom-label { font-size: 0.7rem; font-weight: 800; color: var(--saas-light-text); text-transform: uppercase; letter-spacing: 1px; }
+
+    .modern-input-group {
+        display: flex;
+        background: #f8fafc;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+    }
+    .modern-input-group:focus-within {
+        border-color: var(--saas-accent);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    .input-prefix { background: #e2e8f0; padding: 0 1rem; display: flex; align-items: center; font-weight: 800; font-size: 0.8rem; color: var(--saas-light-text); }
+    .modern-input { border: none; background: transparent; padding: 1rem; width: 100%; font-weight: 600; outline: none; }
+
+    .btn-initialize {
+        background: var(--saas-navy);
+        color: white;
+        border: none;
+        padding: 1.25rem;
+        border-radius: 12px;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        transition: all 0.3s;
+    }
+    .btn-initialize:hover { background: var(--saas-accent); transform: translateY(-2px); }
+
+    /* 5. RIGHT: HUB NETWORK LIST */
+    .list-container {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        background: #ffffff;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+    }
+
+    .list-header {
+        position: sticky; top: 0; background: #fff; z-index: 10;
+        padding: 1.5rem 2rem;
+        border-bottom: 2px solid var(--saas-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .hub-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .hub-table th { padding: 1rem 2rem; background: #f9fafb; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--saas-light-text); border-bottom: 1px solid var(--saas-border); }
+    .hub-table td { padding: 1.25rem 2rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
+    .hub-row:hover { background-color: #fcfdfe; }
+
+    /* MODERN COMPONENTS */
+    .hub-avatar {
+        width: 42px; height: 42px;
+        background: #f1f5f9; color: var(--saas-navy);
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 1.2rem;
+        border: 1px solid var(--saas-border);
+    }
+
+    /* GLOW PILLS */
+    .status-glow {
+        padding: 0.5rem 1rem; border-radius: 999px; font-size: 0.65rem; font-weight: 900;
+        display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .status-online { background: rgba(16, 185, 129, 0.1); color: var(--saas-success); }
+    .status-offline { background: #f1f5f9; color: var(--saas-light-text); }
+
+    .pulse-dot {
+        width: 8px; height: 8px; background: var(--saas-success); border-radius: 50%;
+        box-shadow: 0 0 10px var(--saas-success);
+        animation: status-pulse 2s infinite;
+    }
+    @keyframes status-pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.6; } 100% { transform: scale(1); opacity: 1; } }
+
+    .code-badge {
+        background: #0f172a; color: white; padding: 4px 10px; border-radius: 6px;
+        font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700;
+    }
+
+    .btn-action {
+        width: 38px; height: 38px; border-radius: 10px;
+        border: 1px solid var(--saas-border);
+        background: #fff; display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s; color: var(--saas-light-text);
+    }
+    .btn-action:hover { background: var(--saas-navy); color: white; border-color: var(--saas-navy); }
+    .btn-action.delete:hover { background: var(--saas-danger); border-color: var(--saas-danger); }
+
+    /* RADAR ANIMATION */
+    .icon-wrapper { position: relative; width: 48px; height: 48px; background: var(--saas-navy); color: white; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+    .radar-ping { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px solid var(--saas-navy); border-radius: 14px; animation: radar-expand 2.5s infinite; }
     @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.8); opacity: 0; } }
 
-    /* Hub Rows */
-    .hub-row { transition: all 0.2s; }
-    .hub-row:hover { background-color: #f8fafc !important; }
-    .hub-avatar {
-        width: 40px; height: 40px; background: #f1f5f9; border: 1px solid #e2e8f0;
-        color: var(--coolaire-navy); display: flex; align-items: center; justify-content: center;
-        border-radius: 12px; font-weight: 900; font-size: 1.1rem;
-    }
-
-    /* DYNAMIC STATUS PILLS */
-    .status-pill-green {
-        background: #f0fdf4; color: #166534; padding: 6px 14px; border-radius: 20px;
-        font-size: 0.65rem; font-weight: 800; text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px;
-    }
-    .status-pill-green .dot {
-        width: 8px; height: 8px; background: var(--coolaire-green); border-radius: 50%; display: inline-block;
-        box-shadow: 0 0 10px var(--coolaire-green); animation: status-pulse 2s infinite;
-    }
-
-    .status-pill-gray {
-        background: #f1f5f9; color: #64748b; padding: 6px 14px; border-radius: 20px;
-        font-size: 0.65rem; font-weight: 800; text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px;
-    }
-    .status-pill-gray .dot-gray {
-        width: 8px; height: 8px; background: #cbd5e1; border-radius: 50%; display: inline-block;
-    }
-
-    @keyframes status-pulse {
-        0% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.2); opacity: 0.7; }
-        100% { transform: scale(1); opacity: 1; }
-    }
-
-    /* Code Badge */
-    .badge-code { background: #1e293b; color: white; padding: 4px 10px; border-radius: 6px; font-family: 'Monaco', monospace; font-size: 0.75rem; font-weight: 800; }
-
-    /* Action Buttons */
-    .btn-action { width: 34px; height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; border: 1px solid #e2e8f0; text-decoration: none; }
-    .btn-edit { color: var(--coolaire-navy); background: white; }
-    .btn-edit:hover { background: var(--coolaire-navy); color: white; border-color: var(--coolaire-navy); }
-    .btn-delete { color: #ef4444; background: white; }
-    .btn-delete:hover { background: #ef4444; color: white; border-color: #ef4444; }
-
-    /* General Helpers */
-    .bg-primary-soft { background-color: rgba(0, 45, 114, 0.08); }
-    .hover-lift:hover { transform: translateY(-3px); }
+    /* FLUID TYPE */
+    html { font-size: clamp(14px, 0.4vw + 0.5rem, 18px); }
+    .page-title { font-size: clamp(1.4rem, 2vw, 1.8rem); }
 </style>
+
+<div class="dashboard-container animate__animated animate__fadeIn">
+
+    <!-- HEADER SECTION -->
+    <header class="header-section">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icon-wrapper">
+                <div class="radar-ping"></div>
+                <i class="fa-solid fa-tower-observation position-relative"></i>
+            </div>
+            <div>
+                <h3 class="page-title">Network Hub Management</h3>
+                <p class="small text-muted mb-0 font-monospace">INFRASTRUCTURE_NODES // ACTIVE</p>
+            </div>
+        </div>
+
+        <div class="badge bg-light border text-primary fw-900 rounded-pill px-4 py-2">
+            {{ locations|length }} Broadcast Nodes
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT GRID -->
+    <main class="main-grid">
+
+        <!-- LEFT: INITIALIZATION COLUMN -->
+        {% if current_user_role in ['admin', 'staff'] %}
+        <aside class="form-card">
+            <div>
+                <h5 class="fw-900 text-dark mb-1">Initialize Hub</h5>
+                <p class="small text-muted mb-0">Provision a new physical terminal broadcast node.</p>
+            </div>
+
+            <form action="{{ url_for('staff_locations') }}" method="POST" class="d-flex flex-column gap-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div>
+                    <label class="custom-label">Station Identity</label>
+                    <div class="modern-input-group mt-2">
+                        <input type="text" name="name" class="modern-input" placeholder="e.g. Makati North Center" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="custom-label">Broadcast Prefix</label>
+                    <div class="modern-input-group mt-2">
+                        <div class="input-prefix">ID-</div>
+                        <input type="text" name="code" class="modern-input" placeholder="MKT" maxlength="10" required>
+                    </div>
+                    <p class="extra-small text-muted mt-2">This code identifies all tickets generated at this node.</p>
+                </div>
+
+                <button type="submit" class="btn-initialize shadow-lg">
+                    <i class="fa-solid fa-plus-circle"></i> PROVISION HUB
+                </button>
+            </form>
+
+            <div class="mt-auto p-4 rounded-4" style="background: #f8fafc; border: 1px dashed #cbd5e1;">
+                <h6 class="extra-small fw-900 text-navy mb-2">SYSTEM ARCHITECTURE NOTE</h6>
+                <p class="extra-small text-muted fw-500 mb-0">
+                    Registered hubs serve as broadcast anchors for the public TV monitors and the Customer Kiosk endpoints.
+                </p>
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- RIGHT: LIST COLUMN -->
+        <section class="list-container">
+            <div class="table-responsive">
+                <table class="hub-table">
+                    <thead>
+                        <tr>
+                            <th>Hub Identity</th>
+                            <th>Broadcast Status</th>
+                            <th>Queue Code</th>
+                            <th class="text-end">Lifecycle Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loc in locations %}
+                        <tr class="hub-row animate__animated animate__fadeIn">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="hub-avatar me-3">{{ loc.name[0] | upper }}</div>
+                                    <div>
+                                        <div class="fw-800 text-dark" style="font-size: 1rem;">{{ loc.name }}</div>
+                                        <div class="extra-small text-muted font-monospace">UUID_NODE: {{ 1000 + loc.id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if loc.is_online %}
+                                    <div class="status-glow status-online">
+                                        <span class="pulse-dot"></span> BROADCASTING
+                                    </div>
+                                {% else %}
+                                    <div class="status-glow status-offline">
+                                        <i class="fa-solid fa-power-off"></i> STANDBY
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="code-badge">{{ loc.code }}</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{{ url_for('edit_location', loc_id=loc.id) }}"
+                                       class="btn-action" title="Edit Hub Config">
+                                        <i class="fa-solid fa-sliders"></i>
+                                    </a>
+                                    <a href="{{ url_for('delete_location', loc_id=loc.id) }}"
+                                       class="btn-action delete"
+                                       onclick="return confirm('DECOMMISSION HUB: This will disconnect all associated terminals. Proceed?')"
+                                       title="Decommission Hub">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5">
+                                <div class="opacity-25 mb-3">
+                                    <i class="fa-solid fa-network-wired fa-4x"></i>
+                                </div>
+                                <h5 class="fw-900 text-muted">No Infrastructure Found</h5>
+                                <p class="small text-muted">Initialize your first branch node using the provisioning panel.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+</div>
 {% endblock %}

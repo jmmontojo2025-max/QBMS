@@ -32,6 +32,17 @@
             color: #1e293b;
         }
 
+        /* --- CONNECTION STATUS BADGE --- */
+        #connectionStatus {
+            position: fixed; top: 14vh; right: 3vw;
+            background: #ef4444; color: white;
+            padding: 8px 20px; border-radius: 50px;
+            font-size: 0.9rem; font-weight: 800;
+            display: none; z-index: 1000;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            animation: pulse 2s infinite;
+        }
+
         /* --- HEADER AREA --- */
         .tv-header {
             height: 12vh;
@@ -74,7 +85,6 @@
             margin-bottom: 10vh;
         }
 
-        /* LEFT: NOW SERVING (THE STAGE) */
         .now-serving-pane {
             background: white;
             border-radius: var(--card-radius);
@@ -82,6 +92,7 @@
             box-shadow: 0 20px 40px rgba(0, 45, 114, 0.1);
             position: relative;
             border: 1px solid #e2e8f0;
+            transition: background 0.3s ease;
         }
 
         .label-now-serving {
@@ -90,12 +101,15 @@
         }
 
         #nowServingNumber {
-            font-size: 40vh; font-weight: 900;
+            font-size: clamp(5rem, 13vw, 35vh);
+            font-weight: 950;
             color: var(--coolaire-navy);
-            line-height: 0.8;
-            letter-spacing: -2vh;
+            line-height: 1;
+            letter-spacing: -0.6vw;
             font-family: 'JetBrains Mono', monospace;
-            text-shadow: 10px 10px 0px rgba(0,0,0,0.02);
+            white-space: nowrap;
+            text-align: center;
+            transition: all 0.3s ease;
         }
 
         .instruction-box {
@@ -110,7 +124,9 @@
             box-shadow: 0 10px 20px rgba(118, 184, 42, 0.3);
         }
 
-        /* RIGHT: UP NEXT */
+        .instruction-box.hidden { visibility: hidden; opacity: 0; }
+
+        /* UP NEXT PANE */
         .up-next-pane {
             background: #eef2ff;
             border-radius: var(--card-radius);
@@ -132,19 +148,18 @@
             border-radius: 1.2rem;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 5px 15px rgba(0,0,0,0.03);
-            border-left: 8px solid #cbd5e1;
-            animation: slideInRight 0.5s ease forwards;
+            border-left: 8px solid var(--coolaire-navy);
         }
 
         .waiting-ticket { font-size: 3rem; font-weight: 900; color: var(--coolaire-navy); font-family: 'JetBrains Mono', monospace; }
         .waiting-label { font-size: 1rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
 
-        /* --- FOOTER ANNOUNCEMENTS --- */
+        /* --- TICKER --- */
         .ticker-wrap {
             position: fixed; bottom: 2vh; left: 2vh; right: 2vh;
             height: 8vh; background: var(--coolaire-navy-dark);
             border-radius: 1.2rem; display: flex; align-items: center; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 999;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
         .ticker-label {
@@ -154,21 +169,23 @@
         }
 
         .ticker-content {
-            white-space: nowrap; display: inline-block; animation: marquee 40s linear infinite;
-            font-size: 2.5vh; font-weight: 700; color: white; padding-left: 50px;
+            display: inline-block;
+            white-space: nowrap;
+            padding-left: 100%;
+            animation: marquee 40s linear infinite;
+            font-size: 2.5vh; font-weight: 700; color: white;
         }
 
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
         @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.6); opacity: 0; } }
 
         /* RECALL FLASH */
-        .recall-flash { animation: flash-bg 1s ease-in-out 3; }
+        .recall-flash { animation: flash-bg 0.8s ease-in-out 2; }
         @keyframes flash-bg {
             0%, 100% { background: white; }
             50% { background: var(--coolaire-yellow); }
         }
 
-        /* OVERLAY INIT */
         #tvInit {
             position: fixed; inset: 0; background: var(--coolaire-navy);
             z-index: 10000; display: flex; flex-direction: column;
@@ -178,13 +195,15 @@
 </head>
 <body>
 
-    <!-- CLICK TO UNLOCK -->
+    <div id="connectionStatus"><i class="fa-solid fa-wifi-slash me-2"></i> RECONNECTING TO HUB...</div>
+
+    <!-- INITIALIZATION OVERLAY -->
     <div id="tvInit" onclick="startDisplay()">
-        <div class="animate__animated animate__pulse animate__infinite mb-4" style="background: white; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
-            <i class="fa-solid fa-play" style="font-size: 40px; color: var(--coolaire-navy); margin-left: 5px;"></i>
+        <div class="animate__animated animate__pulse animate__infinite" style="background: white; border-radius: 50%; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 30px;">
+            <i class="fa-solid fa-play" style="font-size: 50px; color: var(--coolaire-navy); margin-left: 10px;"></i>
         </div>
-        <h1 style="font-weight: 900; font-size: 3rem;">ACTIVATE MONITOR</h1>
-        <p style="opacity: 0.6; font-weight: 600;">Click to synchronize with {{ location.name }}</p>
+        <h1 style="font-weight: 900; font-size: 3.5rem;">START DISPLAY</h1>
+        <p style="opacity: 0.7; font-size: 1.2rem;">Click to enable Audio & Live Sync</p>
     </div>
 
     <!-- HEADER -->
@@ -206,7 +225,7 @@
 
         <div class="clock-block">
             <div id="time">00:00</div>
-            <div id="date">CALENDAR SYNCING...</div>
+            <div id="date">SYNCING...</div>
         </div>
     </header>
 
@@ -215,7 +234,7 @@
         <section class="now-serving-pane shadow-lg" id="mainPane">
             <h2 class="label-now-serving">Now Serving</h2>
             <div id="nowServingNumber" class="animate__animated">---</div>
-            <div class="instruction-box animate__animated animate__pulse animate__infinite">
+            <div class="instruction-box animate__animated animate__pulse animate__infinite hidden">
                 <i class="fa-solid fa-circle-arrow-right"></i>
                 PROCEED TO SERVICE BAY
             </div>
@@ -224,19 +243,19 @@
         <section class="up-next-pane">
             <div class="pane-title">
                 <span><i class="fa-solid fa-layer-group me-2"></i> UP NEXT</span>
-                <div class="badge bg-white text-navy px-3 rounded-pill" style="font-size: 0.8rem; color: var(--coolaire-navy);">QUEUE</div>
+                <div style="font-size: 0.9rem; background: var(--coolaire-navy); color: white; padding: 5px 15px; border-radius: 20px;">LIVE QUEUE</div>
             </div>
             <div id="waitingFeed" class="queue-list">
-                <!-- Data via JS -->
+                <!-- Data populated by syncData() -->
             </div>
         </section>
     </main>
 
     <!-- FOOTER TICKER -->
     <footer class="ticker-wrap">
-        <div class="ticker-label">NEWS & INFO</div>
+        <div class="ticker-label">ANNOUNCEMENTS</div>
         <div class="ticker-content">
-            Welcome to {{ location.name }} &bull; Please prepare your Ticket Number for verification &bull; Freshness Delivered Since 1969 &bull; Mission: Responsible for making people safe and healthy by ensuring products are kept sustainably fresh from farm to table &bull; Leader in Cold Chain Solutions &bull;
+            Welcome to Coolaire {{ location.name }} Hub &bull; Please prepare your Ticket Number for verification &bull; Freshness Delivered Since 1969 &bull; Mission: Responsible for making people safe and healthy by ensuring products are kept sustainably fresh from farm to table &bull; Leader in Cold Chain Solutions &bull;
         </div>
     </footer>
 
@@ -251,6 +270,7 @@
 
         function startDisplay() {
             document.getElementById('tvInit').style.display = 'none';
+            // Unlock audio for browser
             chime.play().then(() => { chime.pause(); chime.currentTime = 0; });
 
             setInterval(syncData, 3000);
@@ -260,50 +280,69 @@
         }
 
         async function syncData() {
+            const statusBadge = document.getElementById('connectionStatus');
             try {
                 const response = await fetch('/api/get-latest-queue?loc_id={{ location.id }}');
+                if (!response.ok) throw new Error("Offline");
+
                 const data = await response.json();
+                statusBadge.style.display = 'none';
 
                 const pane = document.getElementById('mainPane');
                 const numDisplay = document.getElementById('nowServingNumber');
                 const feed = document.getElementById('waitingFeed');
+                const instruct = document.querySelector('.instruction-box');
 
-                // Alert Logic
-                const ticketChanged = data.now_serving !== "---" && data.now_serving !== lastTicket;
-                const manualRecall = data.now_serving !== "---" && data.call_count > lastCallCount;
+                // Case: Nothing is being served
+                if (!data.now_serving || data.now_serving === "---") {
+                    numDisplay.innerText = "---";
+                    instruct.classList.add('hidden');
+                    lastTicket = "";
+                } else {
+                    instruct.classList.remove('hidden');
 
-                if (ticketChanged || manualRecall) {
-                    chime.currentTime = 0;
-                    chime.play();
+                    // Alert Logic
+                    const isNew = data.now_serving !== lastTicket;
+                    const isRecall = data.call_count > lastCallCount;
 
-                    pane.classList.remove('recall-flash');
-                    numDisplay.classList.remove('animate__bounceIn');
-                    void pane.offsetWidth; // Trigger Reflow
-                    pane.classList.add('recall-flash');
-                    numDisplay.classList.add('animate__bounceIn');
+                    if (isNew || isRecall) {
+                        triggerAlert(pane, numDisplay);
+                    }
+                    numDisplay.innerText = data.now_serving;
                 }
-
-                numDisplay.innerText = data.now_serving;
 
                 // Build Waiting List
                 let html = "";
                 if(data.waiting && data.waiting.length > 0) {
                     data.waiting.slice(0, 5).forEach((t) => {
                         html += `
-                            <div class="waiting-card">
+                            <div class="waiting-card animate__animated animate__fadeInRight">
                                 <span class="waiting-ticket">${t}</span>
                                 <span class="waiting-label">Waiting</span>
-                            </div>
-                        `;
+                            </div>`;
                     });
                 } else {
-                    html = '<div style="text-align:center; margin-top:10vh; opacity:0.2;"><i class="fa-solid fa-check-double fa-5x"></i><p style="font-weight:800; font-size: 1.5rem;">ALL CLEAR</p></div>';
+                    html = '<div style="text-align:center; margin-top:10vh; opacity:0.1;"><i class="fa-solid fa-check-double fa-5x"></i><p style="font-weight:800; font-size: 1.5rem;">ALL CLEAR</p></div>';
                 }
                 feed.innerHTML = html;
 
                 lastTicket = data.now_serving;
                 lastCallCount = data.call_count;
-            } catch (e) { console.error("Sync Error", e); }
+            } catch (e) {
+                console.error("Sync Error", e);
+                statusBadge.style.display = 'block';
+            }
+        }
+
+        function triggerAlert(pane, numDisplay) {
+            chime.currentTime = 0;
+            chime.play().catch(() => {});
+
+            pane.classList.remove('recall-flash');
+            numDisplay.classList.remove('animate__bounceIn');
+            void pane.offsetWidth; // Force Reflow
+            pane.classList.add('recall-flash');
+            numDisplay.classList.add('animate__bounceIn');
         }
 
         function updateClock() {

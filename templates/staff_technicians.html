@@ -1,49 +1,264 @@
 {% extends "base_staff.html" %}
+
 {% block content %}
-<div class="row g-4 animate__animated animate__fadeIn">
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm rounded-4 p-4">
-            <h6 class="fw-800 text-primary mb-4">REGISTER TECHNICIAN</h6>
-            <form action="/staff/technicians" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="mb-3">
-                    <label class="small fw-bold text-muted">FULL NAME</label>
-                    <input type="text" name="tech_name" class="form-control" placeholder="e.g. Juan Dela Cruz" required>
-                </div>
-                <button type="submit" class="btn btn-primary w-100 fw-bold">ADD TO HUB</button>
-            </form>
-        </div>
-    </div>
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-            <div class="card-header bg-white p-4">
-                <h6 class="fw-800 mb-0">TECHNICIANS AT {{ session.get('location_name') }}</h6>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+    /* MODERN CORE VARIABLES */
+    :root {
+        --saas-navy: #002d72;
+        --saas-accent: #3b82f6;
+        --saas-success: #10b981;
+        --saas-danger: #ef4444;
+        --saas-text: #1e293b;
+        --saas-light-text: #64748b;
+        --saas-border: #f1f5f9;
+        --saas-bg: #f8fafc;
+        --saas-radius: 1rem;
+        --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    }
+
+    /* 1. LAYOUT ENGINE (AUTO-SIZE) */
+    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; }
+
+    .dashboard-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 2rem;
+        gap: 1.5rem;
+    }
+
+    /* 2. HEADER SECTION */
+    .header-section {
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff;
+        padding: 1.25rem 2.5rem;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+    }
+    .page-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; }
+
+    /* 3. DUAL COLUMN GRID */
+    .main-grid {
+        flex: 1 1 auto;
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 1.5rem;
+        min-height: 0;
+    }
+
+    /* 4. LEFT: ONBOARDING FORM */
+    .form-card {
+        background: #ffffff;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+        padding: 2.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .custom-label { font-size: 0.7rem; font-weight: 800; color: var(--saas-light-text); text-transform: uppercase; letter-spacing: 1px; }
+
+    .modern-input {
+        background: #f8fafc;
+        border: 2px solid transparent;
+        padding: 1rem;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.2s;
+        width: 100%;
+    }
+    .modern-input:focus {
+        background: #fff;
+        border-color: var(--saas-accent);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+
+    .btn-onboard {
+        background: var(--saas-navy);
+        color: white;
+        border: none;
+        padding: 1.25rem;
+        border-radius: 12px;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        transition: all 0.3s;
+    }
+    .btn-onboard:hover { background: var(--saas-accent); transform: translateY(-2px); }
+
+    /* 5. RIGHT: PERSONNEL DIRECTORY */
+    .list-container {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        background: #ffffff;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+    }
+
+    .directory-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .directory-table thead th {
+        position: sticky; top: 0; background: #f9fafb; padding: 1.25rem 2rem;
+        font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+        color: var(--saas-light-text); border-bottom: 1px solid var(--saas-border); z-index: 10;
+    }
+    .directory-table td { padding: 1.25rem 2rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
+    .tech-row:hover { background-color: #fcfdfe; }
+
+    /* MODERN COMPONENTS */
+    .tech-profile { display: flex; align-items: center; gap: 1rem; }
+    .tech-avatar {
+        width: 44px; height: 44px;
+        background: #eff6ff; color: var(--saas-accent);
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 1.1rem;
+        border: 1px solid rgba(59, 130, 246, 0.1);
+    }
+
+    /* GLOW PILLS */
+    .status-glow {
+        padding: 0.4rem 0.8rem; border-radius: 999px; font-size: 0.65rem; font-weight: 900;
+        display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(16, 185, 129, 0.1); color: var(--saas-success);
+    }
+    .status-dot { width: 6px; height: 6px; background: var(--saas-success); border-radius: 50%; box-shadow: 0 0 8px var(--saas-success); }
+
+    .btn-action-delete {
+        width: 38px; height: 38px; border-radius: 10px;
+        border: 1px solid #fee2e2;
+        background: #fff; display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s; color: var(--saas-danger);
+    }
+    .btn-action-delete:hover { background: var(--saas-danger); color: white; border-color: var(--saas-danger); }
+
+    /* ICON ANIMATIONS */
+    .icon-wrapper { position: relative; width: 48px; height: 48px; background: var(--saas-navy); color: white; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+    @keyframes lift { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
+    .header-section:hover .icon-wrapper i { animation: lift 0.4s forwards; }
+
+    /* FLUID TYPE */
+    html { font-size: clamp(14px, 0.4vw + 0.5rem, 18px); }
+    .page-title { font-size: clamp(1.4rem, 2vw, 1.8rem); }
+</style>
+
+<div class="dashboard-container animate__animated animate__fadeIn">
+
+    <!-- HEADER SECTION -->
+    <header class="header-section">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icon-wrapper shadow-sm">
+                <i class="fa-solid fa-users-gear"></i>
             </div>
-            <table class="table align-middle mb-0">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="ps-4">NAME</th>
-                        <th>STATUS</th>
-                        <th class="text-end pe-4">ACTION</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in technicians %}
-                    <tr>
-                        <td class="ps-4 fw-bold">{{ t.name }}</td>
-                        <td><span class="badge bg-success">Active</span></td>
-                        <td class="text-end pe-4">
-                            <a href="/staff/technicians/delete/{{ t.id }}" class="btn btn-sm btn-outline-danger border-0">
-                                <i class="fa-solid fa-trash"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="3" class="text-center py-5 text-muted">No technicians assigned to this branch.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div>
+                <h3 class="page-title">Personnel Management</h3>
+                <p class="small text-muted mb-0 font-monospace">TERMINAL_HUB // {{ session.get('location_name')|upper }}</p>
+            </div>
         </div>
-    </div>
+
+        <div class="badge bg-light border text-primary fw-900 rounded-pill px-4 py-2">
+            {{ technicians|length }} Active Technicians
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT GRID -->
+    <main class="main-grid">
+
+        <!-- LEFT: ONBOARDING COLUMN -->
+        <aside class="form-card">
+            <div>
+                <h5 class="fw-900 text-dark mb-1">Onboard Staff</h5>
+                <p class="small text-muted mb-0">Add a new technician to this terminal's active roster.</p>
+            </div>
+
+            <form action="/staff/technicians" method="POST" class="d-flex flex-column gap-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div>
+                    <label class="custom-label">Technician Full Name</label>
+                    <input type="text" name="tech_name" class="modern-input mt-2"
+                           placeholder="e.g. Juan Dela Cruz" required>
+                </div>
+
+                <button type="submit" class="btn-onboard shadow-lg">
+                    <i class="fa-solid fa-user-plus"></i> ONBOARD TO HUB
+                </button>
+            </form>
+
+            <div class="mt-auto p-4 rounded-4" style="background: #f8fafc; border: 1px dashed #cbd5e1;">
+                <h6 class="extra-small fw-900 text-navy mb-2">ACCESS CONTROL NOTE</h6>
+                <p class="extra-small text-muted fw-500 mb-0">
+                    Personnel registered here will be available for job assignment in the Live Dispatch Console for this location.
+                </p>
+            </div>
+        </aside>
+
+        <!-- RIGHT: DIRECTORY COLUMN -->
+        <section class="list-container">
+            <div class="table-responsive">
+                <table class="directory-table">
+                    <thead>
+                        <tr>
+                            <th>Technician Profile</th>
+                            <th>Status</th>
+                            <th class="text-end">System Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in technicians %}
+                        <tr class="tech-row animate__animated animate__fadeIn">
+                            <td>
+                                <div class="tech-profile">
+                                    <div class="tech-avatar">{{ t.name[0] | upper }}</div>
+                                    <div>
+                                        <div class="fw-800 text-dark" style="font-size: 1rem;">{{ t.name }}</div>
+                                        <div class="extra-small text-muted font-monospace">TECH_ID: {{ 5000 + t.id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="status-glow">
+                                    <span class="status-dot"></span> ACTIVE ROSTER
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end">
+                                    <a href="/staff/technicians/delete/{{ t.id }}"
+                                       class="btn-action-delete"
+                                       onclick="return confirm('OFFBOARD TECHNICIAN: Remove {{ t.name }} from the active roster?')"
+                                       title="Remove Technician">
+                                        <i class="fa-solid fa-user-minus"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center py-5">
+                                <div class="opacity-25 mb-3">
+                                    <i class="fa-solid fa-user-group fa-4x"></i>
+                                </div>
+                                <h5 class="fw-900 text-muted">No Personnel Found</h5>
+                                <p class="small text-muted">Begin by onboarding your first technician using the form on the left.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
 </div>
 {% endblock %}

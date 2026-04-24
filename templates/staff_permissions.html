@@ -1,0 +1,212 @@
+{% extends "base_staff.html" %}
+{% block content %}
+<!-- Typography & Animations -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+<div class="biz-console-wrapper animate__animated animate__fadeIn">
+
+    <!-- 1. HEADER SECTION -->
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <h3 class="fw-900 mb-1 text-dark letter-spacing-tight">Access Control Matrix</h3>
+            <p class="text-muted small mb-0">Configuring functional node authorizations for the Coolaire Infrastructure.</p>
+        </div>
+        <div class="text-end">
+            <div class="badge bg-dark text-warning border-warning border px-3 py-2 rounded-pill fw-800 shadow-sm">
+                <i class="fa-solid fa-shield-halved me-2"></i> LEVEL: SUPER_ADMIN_OVERRIDE
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. PERMISSION MATRIX CARD -->
+    <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-white">
+        <div class="card-header bg-navy text-white p-4 border-0 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="header-icon-box me-3">
+                    <i class="fa-solid fa-lock-open"></i>
+                </div>
+                <div>
+                    <h6 class="fw-800 mb-0">Feature Authorization Ledger</h6>
+                    <p class="extra-small opacity-75 mb-0 font-monospace">ENCRYPTED_SESSION // WRITE_ACCESS_GRANTED</p>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                 <div class="status-pulse-container">
+                    <span class="pulse-dot-green"></span>
+                    <span class="extra-small fw-800">LIVE_SYNC</span>
+                </div>
+            </div>
+        </div>
+
+        <form action="/staff/permissions" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 matrix-table">
+                    <thead>
+                        <tr class="bg-light bg-opacity-50">
+                            <th class="ps-5 py-4 border-0 small fw-900 text-muted">FUNCTIONAL MODULE</th>
+
+                            <!-- SUPER ADMIN (HARDCODED REFERENCE) -->
+                            <th class="text-center border-0">
+                                <div class="role-column-header">
+                                    <span class="clearance-tag tag-super-admin">SUPER_ADMIN</span>
+                                    <div class="extra-small text-muted mt-1 fw-700">Level 0</div>
+                                </div>
+                            </th>
+
+                            {% for role in roles %}
+                            <th class="text-center border-0">
+                                <div class="role-column-header">
+                                    <span class="clearance-tag tag-{{ role }}">{{ role|upper }}</span>
+                                    <div class="extra-small text-muted mt-1 fw-700">Level {{ loop.index }}</div>
+                                </div>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for feat_key, feat_name in features %}
+                        <tr class="matrix-row">
+                            <td class="ps-5 py-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="feat-icon-box me-3">
+                                        {% if 'analytics' in feat_key %}<i class="fa-solid fa-chart-line"></i>
+                                        {% elif 'notification' in feat_key %}<i class="fa-solid fa-envelope-open-text"></i>
+                                        {% elif 'records' in feat_key %}<i class="fa-solid fa-book-medical"></i>
+                                        {% elif 'audit' in feat_key %}<i class="fa-solid fa-fingerprint"></i>
+                                        {% elif 'verify' in feat_key %}<i class="fa-solid fa-user-shield"></i>
+                                        {% elif 'users' in feat_key %}<i class="fa-solid fa-users-gear"></i>
+                                        {% elif 'settings' in feat_key %}<i class="fa-solid fa-sliders"></i>
+                                        {% elif 'global' in feat_key %}<i class="fa-solid fa-globe"></i>
+                                        {% else %}<i class="fa-solid fa-cube"></i>{% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="fw-800 text-dark mb-0">{{ feat_name }}</div>
+                                        <div class="extra-small text-muted font-monospace opacity-75">KEY: {{ feat_key|upper }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- SUPER ADMIN COLUMN (Always checked, always disabled) -->
+                            <td class="text-center bg-light bg-opacity-20">
+                                <div class="perm-switch-wrapper">
+                                    <label class="switch-container readonly">
+                                        <input type="checkbox" checked disabled>
+                                        <span class="switch-slider shadow-sm"></span>
+                                    </label>
+                                </div>
+                            </td>
+
+                            {% for role in roles %}
+                            <td class="text-center">
+                                <div class="perm-switch-wrapper">
+                                    <label class="switch-container">
+                                        <input type="checkbox"
+                                               name="{{ role }}_{{ feat_key }}"
+                                               {% if current_perms.get(role, {}).get(feat_key) %}checked{% endif %}>
+                                        <span class="switch-slider shadow-sm"></span>
+                                    </label>
+                                </div>
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 3. FOOTER ACTIONS -->
+            <div class="p-4 bg-light border-top d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-white p-2 rounded-circle shadow-sm">
+                        <i class="fa-solid fa-circle-info text-primary fs-5"></i>
+                    </div>
+                    <p class="extra-small text-muted fw-600 mb-0" style="max-width: 450px;">
+                        Personnel nodes at Level 0 (Super Admin) bypass all matrix checks.
+                        Modifying Level 1-3 will update their navigation menus in real-time.
+                    </p>
+                </div>
+                <button type="submit" class="btn btn-deploy-matrix fw-950 px-5 py-3 shadow-lg">
+                    COMMIT AUTHORIZATION CHANGES <i class="fa-solid fa-cloud-arrow-up ms-2"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    :root {
+        --coolaire-navy: #002d72;
+        --coolaire-green: #76b82a;
+        --coolaire-blue-light: #eff6ff;
+    }
+
+    .bg-navy { background-color: var(--coolaire-navy) !important; }
+    .letter-spacing-tight { letter-spacing: -1.5px; }
+    .ls-1 { letter-spacing: 1px; }
+    .fw-950 { font-weight: 950; }
+
+    .header-icon-box {
+        width: 45px; height: 45px; background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+    }
+
+    /* Table Styling */
+    .matrix-table thead th { border-bottom: 2px solid #eee !important; padding: 25px 15px; }
+    .matrix-row { transition: all 0.2s; }
+    .matrix-row:hover { background-color: #f8fbff !important; }
+
+    .feat-icon-box {
+        width: 40px; height: 40px; background: var(--coolaire-blue-light);
+        color: var(--coolaire-navy); border-radius: 10px;
+        display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    }
+
+    /* Clearance Tags */
+    .clearance-tag {
+        font-size: 0.65rem; font-weight: 900; padding: 4px 12px; border-radius: 6px;
+        letter-spacing: 1px; border: 1px solid transparent;
+    }
+    .tag-super-admin { background: #000; color: #fff; border-color: var(--coolaire-green); }
+    .tag-admin { background: #0f172a; color: #ffc107; border-color: #ffc107; }
+    .tag-staff { background: #eef2ff; color: #3b82f6; border-color: #dbeafe; }
+    .tag-customer { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+
+    /* CUSTOM MODERN SWITCH */
+    .switch-container {
+        position: relative; display: inline-block; width: 48px; height: 24px;
+    }
+    .switch-container input { opacity: 0; width: 0; height: 0; }
+    .switch-slider {
+        position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #e2e8f0; transition: .4s; border-radius: 34px;
+    }
+    .switch-slider:before {
+        position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+        background-color: white; transition: .4s; border-radius: 50%;
+    }
+    input:checked + .switch-slider { background-color: var(--coolaire-green); }
+    input:checked + .switch-slider:before { transform: translateX(24px); }
+
+    /* Readonly switch for Super Admin */
+    .readonly .switch-slider { background-color: #1a1a1a; cursor: not-allowed; }
+    .readonly .switch-slider:before { background-color: var(--coolaire-green); }
+
+    .btn-deploy-matrix {
+        background: var(--coolaire-navy); color: white; border: none; border-radius: 10px;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-deploy-matrix:hover { background: var(--coolaire-green); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(118, 184, 42, 0.3); }
+
+    /* Pulse */
+    .pulse-dot-green {
+        width: 8px; height: 8px; background: #22c55e; border-radius: 50%;
+        display: inline-block; margin-right: 8px; box-shadow: 0 0 10px #22c55e;
+        animation: pulse-green 2s infinite;
+    }
+    @keyframes pulse-green { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+</style>
+{% endblock %}

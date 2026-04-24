@@ -162,12 +162,16 @@
 
 <div class="kiosk-wrapper">
     <!-- 1. HEADER -->
+<!-- 1. HEADER -->
     <header class="kiosk-header">
         <div class="d-flex align-items-center gap-4">
-            <img src="{{ url_for('static', filename='logo.png') }}" height="60" alt="Coolaire" onerror="this.src='https://placehold.co/200x60/002d72/ffffff?text=COOLAIRE'">
+            <img src="{{ url_for('static', filename='logo.png') }}" height="60" alt="Coolaire">
             <div class="vr opacity-10 mx-2" style="height: 40px;"></div>
             <div>
-                <h3 class="fw-900 mb-0 text-dark">Self-Service Terminal</h3>
+                <!-- DYNAMIC HUB LABEL -->
+                <h2 class="fw-900 mb-0 text-navy" style="color: #002d72; letter-spacing: -1px;">
+                    {{ session.get('location_name') | upper }} SERVICE CENTER
+                </h2>
                 <p class="text-muted small fw-bold mb-0 text-uppercase" id="kioskDate">Loading...</p>
             </div>
         </div>
@@ -225,17 +229,18 @@
     <!-- 3. FOOTER BENTO -->
     <footer class="kiosk-footer shadow-lg">
         <div class="qr-box">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}register&bgcolor=ffffff&color=002d72" width="90">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}register" width="90">
         </div>
         <div class="flex-grow-1">
-            <h2 class="fw-900 text-warning mb-1">Skip the Line!</h2>
-            <p class="fs-4 mb-0 opacity-75">Scan to register and book via mobile next time.</p>
+            <h2 class="fw-900 text-warning mb-1">Queue for {{ session.get('location_name') }}</h2>
+            <p class="fs-4 mb-0 opacity-75">Basil your Ticket and monitor the TV display for your number.</p>
         </div>
         <div class="text-end">
-            <div class="text-white fw-bold fs-5">{{ session.get('location_name', 'Global Hub') }}</div>
-            <div class="opacity-50 small fw-bold">NODE ID: {{ session.get('location_code', 'CCI-K01') }}</div>
+            <div class="opacity-50 small fw-bold text-uppercase">Broadcast Node: {{ session.get('location_code') }}</div>
+            <div class="opacity-50 small fw-bold">TERMINAL STATUS: ONLINE</div>
         </div>
     </footer>
+
 
     <!-- Hidden Gates for Admins (Triple tap corner to login) -->
     <a href="/login" class="admin-gate"></a>
