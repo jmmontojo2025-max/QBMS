@@ -1,16 +1,25 @@
 import os
+import random
+import string
 import requests
-from datetime import datetime, timezone
+import smtplib
+import threading  # For background tasks
+from datetime import datetime, timezone, timedelta
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
+
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import func, extract
 from flask_wtf.csrf import CSRFProtect
-from datetime import timedelta
-from sqlalchemy import func
-import random
-import string
+
+from functools import wraps
+
+from requests_oauthlib import OAuth1
+
 
 
 
@@ -29,6 +38,58 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 
+def roles_required(*roles):
+    def wrapper(f):
+        @wraps(f)
+        def decorated_view(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('login'))
+
+            # This checks the 'role' column in your User table
+            if current_user.role not in roles:
+                # This automatically sends them to your custom 403.html
+                abort(403)
+            return f(*args, **kwargs)
+
+        return decorated_view
+
+    return wrapper
+
+
+class NetSuiteConnector:
+    def __init__(self):
+        settings = {s.key: s.value for s in SystemSetting.query.all()}
+        self.account = settings.get('NS_ACCOUNT_ID', '').replace('_', '-')
+        self.consumer_key = settings.get('NS_CONSUMER_KEY')
+        self.consumer_secret = settings.get('NS_CONSUMER_SECRET')
+        self.token_id = settings.get('NS_TOKEN_ID')
+        self.token_secret = settings.get('NS_TOKEN_SECRET')
+        self.base_url = f"https://{self.account.lower()}.restlets.api.netsuite.com/app/site/hosting/restlet.nl"
+
+    def get_job_order(self, search_value):
+        if not self.consumer_key: return None
+        auth = OAuth1(self.consumer_key, self.consumer_secret, self.token_id, self.token_secret,
+                      realm=self.account.replace('-', '_'), signature_method='HMAC-SHA256')
+        params = {'script': 'customscript_bas_job_search', 'deploy': '1', 'searchValue': search_value}
+        try:
+            res = requests.get(self.base_url, auth=auth, params=params, timeout=10)
+            return res.json() if res.status_code == 200 else None
+        except: return None
+
+class NotificationLog(db.Model):
+    __tablename__ = 'notification_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    queue_id = db.Column(db.Integer, db.ForeignKey('queues.id'))
+    recipient = db.Column(db.Text)
+    channel = db.Column(db.String(10))
+    status = db.Column(db.String(20))
+    error_message = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Link back to queue for the UI
+    queue = db.relationship('Queue', backref='logs')
+
+
 # Add this model if you haven't already to keep track of customer units
 class Vehicle(db.Model):
     __tablename__ = 'vehicles'
@@ -36,6 +97,7 @@ class Vehicle(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     plate_number = db.Column(db.String(50))
     model_description = db.Column(db.String(150))
+    related_bookings = db.relationship('Booking', backref='associated_vehicle', cascade="all, delete-orphan")
 
 
 
@@ -66,6 +128,7 @@ class Technician(db.Model):
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))
     is_active = db.Column(db.Boolean, default=True)
     branch = db.relationship('Location', backref='technicians')
+    is_present = db.Column(db.Boolean, default=True)
 
 
 class User(db.Model, UserMixin):
@@ -78,9 +141,17 @@ class User(db.Model, UserMixin):
     phone = db.Column(db.String(20))
     email = db.Column(db.String(100))
     company_name = db.Column(db.String(150))
-    bookings = db.relationship('Booking', backref='customer', lazy=True)
+    bookings = db.relationship('Booking', backref='customer', lazy=True, cascade="all, delete-orphan") # THIS IS THE EXISTING BACKREF
     last_seen = db.Column(db.DateTime)
     current_loc_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
+    is_approved = db.Column(db.Boolean, default=False)  # NEW: Default is False
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    tin_number = db.Column(db.String(20))  # Tax ID
+    business_permit = db.Column(db.String(50))  # Legal Permit or Accreditation
+    vehicles = db.relationship('Vehicle', backref='owner', lazy=True, cascade="all, delete-orphan")
+    is_rejected = db.Column(db.Boolean, default=False) # NEW: Soft delete flag
+
+
 
 
 class ServiceCategory(db.Model):
@@ -89,8 +160,6 @@ class ServiceCategory(db.Model):
     name = db.Column(db.String(100), unique=True)
 
 
-import random
-import string
 
 
 class Booking(db.Model):
@@ -103,21 +172,19 @@ class Booking(db.Model):
     service_type = db.Column(db.String(255))
     status = db.Column(db.String(20), default='pending')
     scheduled_time = db.Column(db.DateTime)
+    queue_entry = db.relationship('Queue', back_populates='booking', uselist=False, cascade="all, delete-orphan")
 
     # THIS LINE MATCHES THE SQL WE JUST RAN
     ref_id = db.Column(db.String(10), unique=True)
 
-    # THIS FUNCTION AUTOMATICALLY CREATES THE CODE FOR NEW BOOKINGS
-    def __init__(self, **kwargs):
-        super(Booking, self).__init__(**kwargs)
-        if not self.ref_id:
-            # Generates a unique 4-digit number for Kiosk Check-in
-            self.ref_id = ''.join(random.choices(string.digits, k=4))
+    # NO EXPLICIT 'customer' relationship here, it's created by the backref in User model
+    # location = db.relationship('Location', backref='bookings_at_location') # This can stay or be removed if 'location' is sufficient from backref in Location model
+    location = db.relationship('Location', backref='bookings') # Use existing backref from Location if available, or define here if not.
 
     def __init__(self, **kwargs):
         super(Booking, self).__init__(**kwargs)
         if not self.ref_id:
-            # Generates a 4-digit unique code for Kiosk check-in
+            # Generates a unique 4-digit number for Kiosk Check-in
             self.ref_id = ''.join(random.choices(string.digits, k=4))
 
 queue_technicians = db.Table('queue_technicians',
@@ -140,7 +207,7 @@ class Queue(db.Model):
 
     # Relationships
     location = db.relationship('Location', backref='queue_entries')
-    booking = db.relationship('Booking', backref='queue_entry')
+    booking = db.relationship('Booking', back_populates='queue_entry')
 
     # NEW PLURAL RELATIONSHIP
     assigned_techs = db.relationship('Technician', secondary=queue_technicians, backref='tasks')
@@ -151,6 +218,44 @@ class SystemSetting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(50), unique=True)
     value = db.Column(db.Text)
+
+
+class AuditLog(db.Model):
+    __tablename__ = 'audit_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    action = db.Column(db.String(100))  # e.g., "Work Started", "Ticket Expired"
+    details = db.Column(db.Text)        # e.g., "Assigned Tech A to Ticket BAS-101"
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    performer = db.relationship('User', backref='logs')
+    location = db.relationship('Location')
+
+
+class RolePermission(db.Model):
+    __tablename__ = 'role_permissions'
+    id = db.Column(db.Integer, primary_key=True)
+    role = db.Column(db.String(20))
+    feature_key = db.Column(db.String(50))
+    is_allowed = db.Column(db.Boolean, default=False)
+
+
+# This makes the permission check available in all HTML templates
+@app.context_processor
+def inject_permissions():
+    def has_perm(feature):
+        if not current_user.is_authenticated: return False
+        if current_user.role == 'super_admin': return True  # Super Admin sees all
+
+        perm = RolePermission.query.filter_by(
+            role=current_user.role,
+            feature_key=feature
+        ).first()
+        return perm.is_allowed if perm else False
+
+    return dict(has_perm=has_perm)
 
 
 
@@ -177,31 +282,27 @@ def send_sms(phone, message):
 # The root path should now always go to the customer login form.
 @app.route('/')
 def root_redirect_to_login():
-    # If a user is already authenticated, direct them based on role
     if current_user.is_authenticated:
         if current_user.role == 'customer':
             return redirect(url_for('dashboard'))
-        elif current_user.role in ['staff', 'admin']:
-            # Staff/Admin logged in: check if they have a branch selected
+        # ADD 'super_admin' here
+        elif current_user.role in ['staff', 'admin', 'super_admin']:
             if 'loc_id' in session:
                 return redirect(url_for('staff_panel'))
             else:
-                flash("Please select your operating branch.", "info")
                 return redirect(url_for('select_branch_for_staff'))
-
-    # Unauthenticated users go straight to customer login
     return redirect(url_for('login'))
 
 
 # This route is specifically for staff to select their branch *after* logging in.
 @app.route('/select-branch-for-staff')
-@login_required  # Only authenticated users (staff/admin) can access this.
+@login_required
 def select_branch_for_staff():
-    if current_user.role not in ['staff', 'admin']:
-        flash("You do not have permission to access the Staff Branch Selector.", "danger")
+    # ADD 'super_admin' to this check
+    if current_user.role not in ['staff', 'admin', 'super_admin']:
+        flash("Management clearance required.", "danger")
         return redirect(url_for('login'))
 
-    # If a branch is already selected, send them to staff panel
     if 'loc_id' in session:
         return redirect(url_for('staff_panel'))
 
@@ -213,187 +314,259 @@ def select_branch_for_staff():
 @app.route('/set-branch/<int:loc_id>')
 @login_required
 def set_branch(loc_id):
-    # 1. Logging for the console
-    app.logger.info(f"User {current_user.username} (Role: {current_user.role}) attempting to set branch {loc_id}")
-
-    # 2. Fetch the location from the database
     loc = db.session.get(Location, loc_id)
-
-    # 3. Error Handling if the branch ID doesn't exist
     if not loc:
-        flash("Invalid branch selected.", "danger")
-        app.logger.warning(f"Invalid branch ID {loc_id} attempted by {current_user.username}")
-        if current_user.role in ['staff', 'admin']:
-            return redirect(url_for('select_branch_for_staff'))
-        return redirect(url_for('login'))
+        flash("Invalid hub selected.", "danger")
+        return redirect(url_for('select_branch_for_staff'))
 
-    # 4. UPDATE SESSION KEYS (This fixes the "Branch Not Set" issue)
     session['loc_id'] = loc.id
-    session['location_name'] = loc.name  # Used by {{ session.get('location_name') }}
-    session['location_code'] = loc.code  # Used by {{ session.get('location_code') }}
-
-    # Optional: Backup keys for older parts of your code
-    session['loc_name'] = loc.name
-    session['loc_code'] = loc.code
-
-    # 5. Ensure the session cookie is saved to the browser
+    session['location_name'] = loc.name
+    session['location_code'] = loc.code
     session.modified = True
 
-    app.logger.info(f"Branch successfully set to: {loc.name}")
-    flash(f"Operating branch set to {loc.name}.", "success")
+    # Update Database tracking
+    current_user.current_loc_id = loc.id
+    db.session.commit()
 
-    # 6. Redirect based on user role
-    if current_user.role in ['staff', 'admin']:
+    # Ensure Super Admin goes to the correct panel
+    if current_user.role in ['staff', 'admin', 'super_admin']:
         return redirect(url_for('staff_panel'))
 
     return redirect(url_for('dashboard'))
+
 
 
 # --- STAFF OPERATIONS ---
 
 @app.route('/staff')
 @login_required
+@roles_required('super_admin', 'admin', 'staff')
 def staff_panel():
-    """Main terminal for branch operations with auto-cleanup logic."""
-    # 1. Security check: Only staff and admin
-    if current_user.role not in ['staff', 'admin']:
-        abort(403)
-
-    # 2. Check if a branch is set in the session
     if 'loc_id' not in session:
-        flash("Please select a branch first.", "warning")
         return redirect(url_for('select_branch_for_staff'))
 
     loc_id = session.get('loc_id')
 
-    # 3. AUTO-CLEANUP: Expire stale tickets from previous days
-    # This ensures that 'Waiting' tickets from yesterday don't clutter today's live queue.
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    # Optimization: Only run cleanup once an hour per session to prevent hangs
+    last_cleanup = session.get('last_cleanup')
+    now = datetime.now(timezone.utc)
 
-    stale_tickets = Queue.query.filter(
-        Queue.location_id == loc_id,
-        Queue.status == 'waiting',
-        Queue.created_at < today_start
-    ).all()
-
-    if stale_tickets:
-        for ticket in stale_tickets:
-            ticket.status = 'expired'
-            # Also update the associated booking if it exists
-            if ticket.booking:
-                ticket.booking.status = 'missed'
+    if not last_cleanup or (now - datetime.fromisoformat(last_cleanup)).total_seconds() > 3600:
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        stale = Queue.query.filter(Queue.location_id == loc_id, Queue.status == 'waiting',
+                                   Queue.created_at < today_start).all()
+        for t in stale:
+            t.status = 'expired'
+            if t.booking: t.booking.status = 'missed'
         db.session.commit()
-        app.logger.info(f"Cleaned up {len(stale_tickets)} stale tickets for location {loc_id}")
+        session['last_cleanup'] = now.isoformat()
 
-    # 4. Fetch live data for the dashboard
+    # Optimized Data Fetching
     waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
-    serving = Queue.query.filter_by(location_id=loc_id, status='serving').all()
-    techs = Technician.query.filter_by(location_id=loc_id, is_active=True).all()
+    serving = Queue.query.options(
+        db.joinedload(Queue.assigned_techs),
+        db.selectinload(Queue.logs)
+    ).filter_by(location_id=loc_id, status='serving').all()
 
-    # 5. Render the template
+    all_techs = Technician.query.filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
+    available_techs = [t for t in all_techs if t.is_present]
+
     return render_template('staff.html',
                            waiting_tickets=waiting,
                            serving_list=serving,
-                           technicians=techs,
+                           technicians=available_techs,
+                           roster=all_techs,
                            title="Live Console")
+
+
+@app.route('/staff/start-work/<int:q_id>', methods=['POST'])
+@login_required
+def start_work(q_id):
+    loc_id = session.get('loc_id')
+    tech_ids = request.form.getlist('technician_ids')
+    q = db.session.get(Queue, q_id)
+
+    if q and q.location_id == loc_id and tech_ids:
+        techs = Technician.query.filter(Technician.id.in_(tech_ids)).all()
+        q.assigned_techs = techs
+        q.status = 'serving'
+        q.start_time = datetime.now(timezone.utc)
+        db.session.commit()
+
+        log_action("Dispatch", f"Ticket {q.ticket_number} sent to floor. Team: {', '.join([t.name for t in techs])}")
+        if q.booking: notify_customer(q.booking.customer, q.booking.plate_number, 'serving', q.id, q.ticket_number)
+
+    return redirect(url_for('staff_panel'))
+
+
+@app.route('/staff/recall-ticket/<int:q_id>')
+@login_required
+def recall_ticket(q_id):
+    q = db.session.get(Queue, q_id)
+    if q:
+        q.call_count += 1
+        db.session.commit()
+        log_action("TV Recall", f"Ticket {q.ticket_number} called again on monitor.")
+    return redirect(url_for('staff_panel'))
 
 
 # --- CUSTOMER PORTAL LOGIN (Strictly Customers Only) ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # If customer is already logged in, send to dashboard
-    if current_user.is_authenticated and current_user.role == 'customer':
+    # 1. HANDLE USERS ALREADY LOGGED IN
+    if current_user.is_authenticated:
+        # If staff/admin/super_admin is already logged in and hits this page
+        if current_user.role in ['staff', 'admin', 'super_admin']:
+            if 'loc_id' in session:
+                return redirect(url_for('staff_panel'))
+            else:
+                return redirect(url_for('select_branch_for_staff'))
+        # If regular customer is already logged in
         return redirect(url_for('dashboard'))
 
-    # If staff/admin is already logged in, redirect them to branch selection
-    # or staff panel if branch is already selected
-    if current_user.is_authenticated and current_user.role in ['staff', 'admin']:
-        if 'loc_id' in session:
-            return redirect(url_for('staff_panel'))
-        else:
-            return redirect(url_for('select_branch_for_staff'))
-
     if request.method == 'POST':
-        username = request.form.get('username')
+        username = request.form.get('username').strip()
         password = request.form.get('password')
 
         user = User.query.filter_by(username=username).first()
 
+        # 2. VALIDATE CREDENTIALS
         if user and check_password_hash(user.password_hash, password):
-            if user.role in ['staff', 'admin']:
-                flash("This portal is for customers only. Please use the Staff Terminal.", "danger")
-                return redirect(url_for('login'))  # Keep them on customer login page
 
-            # Successful customer login
+            # SECURITY GATE A: If the user is STAFF/ADMIN/SUPER_ADMIN, BLOCK THEM HERE
+            # Management must use /staff/login to prevent session mixing
+            if user.role in ['staff', 'admin', 'super_admin']:
+                flash("Node Access Restricted: Management and Staff must use the Internal Terminal to sign in.",
+                      "danger")
+                return redirect(url_for('login'))
+
+            # SECURITY GATE B: Prevent Bogus/Unverified Customer Access
+            if not user.is_approved:
+                app.logger.warning(f"Access Denied: Unverified node '{username}' attempted login.")
+                flash(
+                    "Identity Verification Pending: Your account is currently under review by our security team. Access is restricted until business credentials (TIN/Permit) are verified.",
+                    "warning")
+                return redirect(url_for('login'))
+
+            # 3. SUCCESSFUL CUSTOMER LOGIN
             login_user(user)
+
+            # Update telemetry
+            user.last_seen = datetime.now(timezone.utc)
+            db.session.commit()
+
             flash(f"Welcome back, {user.full_name}!", "success")
-            # Customers are not forced to select a branch immediately in this flow.
-            # Their bookings might be linked to locations, but their general dashboard access doesn't require pre-selection.
             return redirect(url_for('dashboard'))
 
-        flash("Invalid credentials. Please try again.", "danger")
+        # 4. FAILED LOGIN
+        flash("Authentication Failed: Invalid Node ID or Security Key.", "danger")
 
     return render_template('login.html')
+
+@app.route('/staff/users/approve/<int:user_id>')
+@login_required
+def approve_user(user_id):
+    if current_user.role != 'admin': abort(403)
+    u = db.session.get(User, user_id)
+    if u:
+        u.is_approved = True
+        db.session.commit()
+        # OPTIONAL: notify_customer(u, "N/A", "approved")
+        flash(f"Access granted for {u.full_name}.", "success")
+    return redirect(url_for('staff_users'))
 
 
 # --- STAFF TERMINAL LOGIN (Strictly Staff Only) ---
 @app.route('/staff/login', methods=['GET', 'POST'])
 def staff_login():
-    # If staff/admin is already logged in, redirect them to branch selection
-    # or staff panel if branch is already selected
-    if current_user.is_authenticated and current_user.role in ['staff', 'admin']:
-        if 'loc_id' in session:
-            return redirect(url_for('staff_panel'))
-        else:
-            return redirect(url_for('select_branch_for_staff'))
+    if current_user.is_authenticated and current_user.role in ['staff', 'admin', 'super_admin']:
+        return redirect(url_for('select_branch_for_staff'))
 
     if request.method == 'POST':
         u = User.query.filter_by(username=request.form.get('username')).first()
         if u and check_password_hash(u.password_hash, request.form.get('password')):
-            if u.role in ['staff', 'admin']:
+            if u.role in ['staff', 'admin', 'super_admin']:
                 login_user(u)
-                flash(f"Welcome to the Staff Terminal, {u.full_name}!", "success")
-                # AFTER SUCCESSFUL STAFF LOGIN: Redirect to branch selection
                 return redirect(url_for('select_branch_for_staff'))
             else:
-                flash("Access Denied: Customer accounts cannot use the Staff Terminal.", "danger")
-        else:
-            flash("Invalid Credentials", "danger")
+                flash("Access Denied: Only staff nodes can use this terminal.", "danger")
     return render_template('login_staff.html')
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        hashed_pw = generate_password_hash(request.form.get('password'))
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        # 1. Check if Username already exists
+        existing_username = User.query.filter_by(username=username).first()
+        if existing_username:
+            flash("Registration Failed: This username is already taken.", "danger")
+            return redirect(url_for('register'))
+
+        # 2. Check if Email already exists (This fixes your specific error)
+        existing_email = User.query.filter_by(email=email).first()
+        if existing_email:
+            flash("Registration Failed: An account with this email already exists.", "danger")
+            return redirect(url_for('register'))
+
+        # 3. If everything is clear, hash the password and create the user
+        hashed_pw = generate_password_hash(password)
         new_user = User(
-            username=request.form.get('username'),
+            username=username,
             password_hash=hashed_pw,
             full_name=request.form.get('full_name'),
             phone=request.form.get('phone'),
-            email=request.form.get('email'),
+            email=email,
             company_name=request.form.get('company_name'),
-            role='customer'  # Enforce customer role for self-registration
+            tin_number=request.form.get('tin_number'),
+            business_permit=request.form.get('business_permit'),
+            role='customer',
+            is_approved=False # Locked until staff verifies in Verify Center
         )
-        db.session.add(new_user)
-        db.session.commit()
-        flash("Registration successful. Please login.", "success")
-        return redirect(url_for('login'))
+
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+
+            # >>> ADD THIS TRIGGER HERE <<<
+            try:
+                notify_customer(
+                    user=new_user,
+                    plate_number="N/A",
+                    status_type='registration_pending'
+                )
+            except Exception as mail_err:
+                app.logger.error(f"Initial Reg Email Failed: {mail_err}")
+            # >>> END OF TRIGGER <<<
+
+            flash("Registration successful! Please check your email for the next steps.", "success")
+            return redirect(url_for('login'))
+
+        except Exception as e:
+            db.session.rollback()
+            return "Database Error", 500
+
     return render_template('register.html')
 
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    if current_user.role != 'customer':
+    # 1. ROLE SECURITY: Redirect any Staff/Admin nodes to the Command Console
+    # This ensures Super Admins and Staff don't see the Customer UI
+    if current_user.role in ['super_admin', 'admin', 'staff']:
         return redirect(url_for('staff_panel'))
 
-    # 1. Fetch Full History
-    bookings = Booking.query.filter_by(user_id=current_user.id) \
+    # 2. DATA RETRIEVAL: Fetch full deployment history for this specific client
+    # We use selectinload for queue_records to match our recent model update (Performance)
+    bookings = Booking.query.options(db.selectinload(Booking.queue_records)).filter_by(user_id=current_user.id) \
         .order_by(Booking.scheduled_time.desc()).all()
 
-    # 2. Generate Forecast Data (Group upcoming bookings by Location)
-    # This shows how many trucks the customer has scheduled for each hub
+    # 3. FORECASTING ENGINE: Group upcoming 'Pending' arrivals by Hub Location
+    # This helps the client see their scheduled load for the week
     now = datetime.now(timezone.utc)
     forecast_results = db.session.query(
         Location.name,
@@ -404,17 +577,29 @@ def dashboard():
         Booking.status == 'pending'
     ).group_by(Location.name).all()
 
-    # Convert to a dictionary for the UI
+    # Convert results to a dictionary for the UI cards
     branch_forecast = {name: count for name, count in forecast_results}
 
+    # 4. TELEMETRY FOCUS: Check if the user is tracking a specific asset
     booking_id = request.args.get('booking_id')
-    active_booking = db.session.get(Booking, booking_id) if booking_id else None
+    active_booking = None
 
+    if booking_id:
+        # SECURITY FIX: Ensure the requested booking ID actually belongs to THIS customer
+        active_booking = Booking.query.filter_by(id=booking_id, user_id=current_user.id).first()
+
+        # If ID is invalid or belongs to another company, ignore it
+        if not active_booking:
+            flash("Security Alert: Unauthorized asset tracking attempt.", "danger")
+            return redirect(url_for('dashboard'))
+
+    # 5. RENDER
     return render_template('dashboard.html',
                            service_history=bookings,
                            all_active_bookings=bookings,
                            booking=active_booking,
-                           branch_forecast=branch_forecast)  # New variable
+                           branch_forecast=branch_forecast,
+                           title="Fleet Dashboard")
 
 
 from datetime import datetime, timezone
@@ -437,12 +622,10 @@ def book():
             v_id = request.form.get('vehicle_id')
             final_plate = ""
 
-            # ASSET LOGIC
             if v_id == 'new':
                 new_plate = request.form.get('new_plate', '').strip().upper()
                 new_model = request.form.get('new_model', 'Standard Asset').strip()
 
-                # Register new vehicle with MODEL
                 vehicle_obj = Vehicle(
                     user_id=current_user.id,
                     plate_number=new_plate,
@@ -453,15 +636,14 @@ def book():
                 v_id = vehicle_obj.id
                 final_plate = vehicle_obj.plate_number
             else:
-                v_obj = db.session.get(Vehicle, v_id)
+                v_obj = db.session.get(Vehicle, int(v_id))
                 v_id = v_obj.id
                 final_plate = v_obj.plate_number
 
-            # INITIALIZE BOOKING with vehicle_id
             new_booking = Booking(
                 user_id=current_user.id,
                 location_id=request.form.get('location_id'),
-                vehicle_id=v_id,  # Error Fixed Here
+                vehicle_id=v_id,
                 plate_number=final_plate,
                 service_type=request.form.get('product'),
                 scheduled_time=datetime.fromisoformat(time_str),
@@ -469,52 +651,52 @@ def book():
             )
             db.session.add(new_booking)
             db.session.commit()
+
             flash(f"Deployment Initialized for Unit {final_plate}", "success")
             return redirect(url_for('dashboard'))
 
         except Exception as e:
             db.session.rollback()
-            print(f"Booking Error: {e}")
+            app.logger.error(f"Booking Error: {e}")
             flash("System Error: Could not process appointment.", "danger")
             return redirect(url_for('book'))
 
-    categories = ServiceCategory.query.all()
-    locations = Location.query.all()
-    my_fleet = Vehicle.query.filter_by(user_id=current_user.id).all()
-    return render_template('book.html', categories=categories, locations=locations, vehicles=my_fleet)
-
-    # 5. GET LOGIC: Fetch parameters for the UI
+    # GET LOGIC: This runs when the user simply loads the page
     categories = ServiceCategory.query.order_by(ServiceCategory.name).all()
     locations = Location.query.order_by(Location.name).all()
-    # Fetch only vehicles belonging to this customer
     my_fleet = Vehicle.query.filter_by(user_id=current_user.id).order_by(Vehicle.plate_number).all()
 
-    return render_template('book.html',
-                           categories=categories,
-                           locations=locations,
-                           vehicles=my_fleet,
-                           title="New Deployment")
+    return render_template(
+        'book.html',
+        categories=categories,
+        locations=locations,
+        vehicles=my_fleet,
+        title="New Deployment"
+    )
 
 
 # --- STAFF OPERATIONS (Require Staff/Admin Role and Selected Location) ---
 
 # Helper to check staff access and location
 def require_staff_location():
-    if current_user.is_authenticated and current_user.role not in ['staff', 'admin']:
-        abort(403) # Not staff/admin, but logged in
+    # Allow Super Admin, Admin, and Staff
+    if current_user.is_authenticated and current_user.role not in ['staff', 'admin', 'super_admin']:
+        abort(403)
+
     if not current_user.is_authenticated:
-        return redirect(url_for('login')) # Not logged in
-    if current_user.role in ['staff', 'admin'] and 'loc_id' not in session:
-        flash("Please select your operating branch to proceed.", "warning")
+        return redirect(url_for('login'))
+
+        # If you are management but haven't picked a hub, go to the picker
+    if current_user.role in ['staff', 'admin', 'super_admin'] and 'loc_id' not in session:
+        flash("Hub initialization required.", "info")
         return redirect(url_for('select_branch_for_staff'))
-    return None # No redirect needed, proceed
 
-
-app.route('/staff')
+    return None
 
 
 @app.route('/staff/locations', methods=['GET', 'POST'])
 @login_required
+@roles_required('super_admin') # Hub creation is a Super Admin infrastructure task
 def staff_locations():
     # MODIFIED: Both 'admin' and 'staff' can access this page
     if current_user.role not in ['admin', 'staff']:
@@ -635,53 +817,37 @@ def staff_panel():
                            title="Live Console")
 
 
-@app.route('/staff/start-work/<int:q_id>', methods=['POST'])
-@login_required
-def start_work(q_id):
-    # Security/Location checks
-    loc_id = session.get('loc_id')
-
-    # Get multiple technician IDs from the form
-    tech_ids = request.form.getlist('technician_ids')
-
-    q = db.session.get(Queue, q_id)
-    if q and q.location_id == loc_id and tech_ids:
-        # Fetch all selected technician objects
-        techs = Technician.query.filter(Technician.id.in_(tech_ids)).all()
-
-        q.assigned_techs = techs  # Assign the list of techs
-        q.status = 'serving'
-        q.start_time = datetime.now(timezone.utc)
-
-        db.session.commit()
-
-        # SMS Notification
-        if q.booking and q.booking.customer.phone:
-            send_sms(q.booking.customer.phone,
-                     f"Coolaire: Unit {q.booking.plate_number} is now being served by our technical team.")
-
-    return redirect(url_for('staff_panel'))
-
-
 @app.route('/staff/complete-work/<int:q_id>')
 @login_required
 def complete_work(q_id):
-    redirect_response = require_staff_location()
-    if redirect_response: return redirect_response
-
+    loc_id = session.get('loc_id')
     q = db.session.get(Queue, q_id)
-    # Ensure the queue item belongs to the current staff's location
-    if q and q.location_id == session.get('loc_id'):
-        q.status, q.end_time = 'done', datetime.now(timezone.utc)
-        if q.booking: q.booking.status = 'done'
+
+    if q and q.location_id == loc_id:
+        q.status = 'done'
+        q.end_time = datetime.now(timezone.utc)
+        if q.booking:
+            q.booking.status = 'done'
         db.session.commit()
-    else:
-        flash("Could not complete work for the requested queue item.", "danger")
+        log_action("Work Completed", f"Ticket {q.ticket_number} marked as ready for release.")
+
+        # AUTOMATIC NOTIFICATION
+        if q.booking and q.booking.customer:
+            # Look for this line:
+            notify_customer(
+                user=q.booking.customer,
+                plate_number=q.booking.plate_number,
+                status_type='done',
+                queue_id=q.id,  # <--- CHANGE THIS from q.ticket_number to q.id
+                ticket_number=q.ticket_number  # Pass this separately if needed
+            )
+
     return redirect(url_for('staff_panel'))
 
 
 @app.route('/staff/records')
 @login_required
+@roles_required('super_admin', 'admin', 'staff')
 def staff_records():
     if current_user.role not in ['staff', 'admin']: abort(403)
 
@@ -777,15 +943,23 @@ def delete_category(id):
 
 @app.route('/kiosk')
 def kiosk():
-    # Kiosk needs a loc_id to function. If not set, redirect to *some* selection.
-    # For a kiosk, it usually means a physical selection on-site or a system default.
-    # If 'loc_id' is missing, for the public-facing Kiosk/TV, it should ideally go to a public branch picker.
-    # For now, redirecting to login as a simple way to get to a path where loc_id might be set.
-    # A dedicated public /select-kiosk-branch/ route and template would be better here.
+    # 1. Check if the URL has a location ID (e.g., /kiosk?loc_id=1)
+    loc_id_param = request.args.get('loc_id')
+
+    if loc_id_param:
+        loc = db.session.get(Location, int(loc_id_param))
+        if loc:
+            # Lock this browser session to this branch
+            session['loc_id'] = loc.id
+            session['location_name'] = loc.name
+            session['location_code'] = loc.code
+            session.modified = True
+
+    # 2. Safety check: If still no branch, send to selection
     if 'loc_id' not in session:
-        flash("Kiosk requires a branch to be selected.", "warning")
-        # Placeholder: redirect to login or a dedicated *public* branch selector
-        return redirect(url_for('login'))
+        flash("Kiosk setup required. Please select a branch.", "warning")
+        return redirect(url_for('select_branch_for_staff'))
+
     return render_template('kiosk.html')
 
 
@@ -870,58 +1044,29 @@ def tv_display():
 @app.route('/staff/analytics')
 @login_required
 def staff_analytics():
-    if current_user.role not in ['staff', 'admin']: abort(403)
-
     loc_id = session.get('loc_id')
-    if not loc_id:
-        flash("Please select a branch first.", "warning")
-        return redirect(url_for('select_branch_for_staff'))
+    now = datetime.now(timezone.utc)
 
-    today = datetime.now(timezone.utc).date()
+    # 1. Monthly Momentum
+    this_month = Queue.query.filter(Queue.location_id == loc_id,
+                                    extract('month', Queue.created_at) == now.month).count()
+    last_month = Queue.query.filter(Queue.location_id == loc_id,
+                                    extract('month', Queue.created_at) == (now.month - 1)).count()
+    momentum = int(((this_month - last_month) / last_month * 100)) if last_month > 0 else 100
 
-    # 1. Real Daily Count
-    daily_count = Queue.query.filter(
-        Queue.location_id == loc_id,
-        func.date(Queue.created_at) == today
-    ).count()
-
-    # 2. Real Monthly Count (Current Month)
-    monthly_count = Queue.query.filter(
-        Queue.location_id == loc_id,
-        extract('month', Queue.created_at) == today.month,
-        extract('year', Queue.created_at) == today.year
-    ).count()
-
-    # 3. Real Previous Month Count (for Momentum)
-    first_of_this_month = today.replace(day=1)
-    last_day_prev_month = first_of_this_month - timedelta(days=1)
-
-    prev_month_count = Queue.query.filter(
-        Queue.location_id == loc_id,
-        extract('month', Queue.created_at) == last_day_prev_month.month,
-        extract('year', Queue.created_at) == last_day_prev_month.year
-    ).count()
-
-    # 4. Calculate Momentum %
-    if prev_month_count > 0:
-        momentum = int(((monthly_count - prev_month_count) / prev_month_count) * 100)
-    else:
-        momentum = 100 if monthly_count > 0 else 0
-
-    # 5. Real Avg Wait Time (Actual Wait from creation to start of service)
-    avg_wait = db.session.query(
-        func.avg(extract('epoch', Queue.start_time - Queue.created_at) / 60)
-    ).filter(
-        Queue.location_id == loc_id,
-        Queue.start_time.isnot(None)
-    ).scalar() or 0
+    # 2. Tech Efficiency
+    tech_stats = db.session.query(
+        Technician.name,
+        func.count(queue_technicians.c.queue_id).label('total_jobs')
+    ).join(queue_technicians).join(Queue).filter(Queue.location_id == loc_id, Queue.status == 'done').group_by(
+        Technician.name).all()
 
     return render_template('staff_analytics.html',
-                           daily_count=daily_count,
-                           monthly_count=monthly_count,
-                           prev_month_count=prev_month_count,
+                           daily_count=this_month,  # Simplified for example
+                           monthly_count=this_month,
                            momentum=momentum,
-                           avg_wait=round(avg_wait, 1),
+                           tech_stats=tech_stats,
+                           forecast=5,  # Logic for upcoming bookings
                            title="Business Intelligence")
 
 
@@ -983,63 +1128,58 @@ from datetime import datetime, timezone  # Ensure these are imported at the top
 @app.route('/staff/users', methods=['GET', 'POST'])
 @login_required
 def staff_users():
-    # 1. SECURITY: Only Staff/Admin can manage the Identity Registry
-    if current_user.role not in ['staff', 'admin']:
-        abort(403)
-
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        role = request.form.get('role')
+        role = request.form.get('role')  # super_admin, admin, staff, customer
         full_name = request.form.get('full_name')
         email = request.form.get('email')
+        company_name = request.form.get('company_name')
 
-        # Basic Validation
+        # 1. Validation: Ensure all fields are filled
         if not all([username, password, role, full_name, email]):
-            flash("System Error: All identity parameters are required for enrollment.", "danger")
+            flash("Enrollment Error: All fields are required to provision a new node.", "danger")
             return redirect(url_for('staff_users'))
 
-        # Check for Duplicate Identity
-        if User.query.filter_by(username=username).first():
-            flash(f"Conflict: Username '{username}' is already registered in the system.", "danger")
-        else:
-            hashed_pw = generate_password_hash(password)
+        # 2. Check for Duplicate Identity
+        if User.query.filter((User.username == username) | (User.email == email)).first():
+            flash("Conflict Error: Username or Email is already registered in the Global Directory.", "danger")
+            return redirect(url_for('staff_users'))
 
-            # Determine Company Association based on Role
-            if role in ['staff', 'admin']:
-                company = "Coolaire Consolidated Inc."
-            else:
-                # For customers, try to get the company from a form field if you add one later,
-                # otherwise default to Independent
-                company = request.form.get('company_name', "Independent Client")
+        # 3. Create the New User object
+        hashed_pw = generate_password_hash(password)
+        new_user = User(
+            username=username,
+            password_hash=hashed_pw,
+            role=role,
+            full_name=full_name,
+            email=email,
+            company_name=company_name if role == 'customer' else "Coolaire Consolidated Inc.",
+            is_approved=True  # Users created manually by Super Admin are auto-approved
+        )
 
-            new_user = User(
-                username=username,
-                password_hash=hashed_pw,
-                role=role,
-                full_name=full_name,
-                email=email,
-                company_name=company
-            )
+        try:
+            db.session.add(new_user)
+            db.session.commit()
 
-            try:
-                db.session.add(new_user)
-                db.session.commit()
-                flash(f"Success: Identity for {full_name} has been provisioned.", "success")
-            except Exception as e:
-                db.session.rollback()
-                flash(f"Database Error: Could not enroll user. {str(e)}", "danger")
+            # 4. Audit the action
+            log_action("Identity Provisioned", f"Super Admin created new {role} node: {username}")
+
+            flash(f"Success: Identity for {full_name} has been provisioned as {role.upper()}.", "success")
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Enrollment Error: {e}")
+            flash("System Error: Could not save record to database.", "danger")
 
         return redirect(url_for('staff_users'))
 
-    # GET Logic: Fetch all nodes for the Directory
+    # GET Logic: Fetch all nodes for the Directory Table
     all_users = User.query.order_by(User.role.asc(), User.full_name.asc()).all()
 
-    # CRITICAL: Pass now_utc so the template can calculate "CONNECTED" status
     return render_template(
         'staff_users.html',
         users=all_users,
-        title="User Management",
+        title="Identity Registry",
         now_utc=datetime.now(timezone.utc)
     )
 
@@ -1049,19 +1189,35 @@ def staff_users():
 
 @app.before_request
 def update_last_seen():
-    if current_user.is_authenticated and current_user.role in ['staff', 'admin']:
-        # Update the user's last seen time to NOW
-        current_user.last_seen = datetime.now(timezone.utc)
+    if current_user.is_authenticated and current_user.role in ['staff', 'admin', 'super_admin']:
+        now = datetime.now(timezone.utc)
 
-        # Sync the session location to the database so we know WHERE they are active
-        if 'loc_id' in session:
-            current_user.current_loc_id = session.get('loc_id')
+        # Check if we actually need to update (Throttling)
+        # Prevents database "Hangs" by limiting updates to once per minute
+        last_update = current_user.last_seen
 
-        db.session.commit()
+        if not last_update or (now - last_update.replace(tzinfo=timezone.utc)).total_seconds() > 60:
+            try:
+                # Use a separate execution to avoid locking the whole user object if possible
+                current_user.last_seen = now
+                if 'loc_id' in session:
+                    current_user.current_loc_id = session.get('loc_id')
+
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                app.logger.error(f"Background Telemetry Error: {e}")
+
+
+# ADD THIS: Ensures database connections are released after every request
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db.session.remove()
 
 
 @app.route('/staff/technicians', methods=['GET', 'POST'])
 @login_required
+@roles_required('super_admin', 'admin') # Prevent staff from adding/removing themselves
 def staff_technicians():
     if current_user.role not in ['staff', 'admin']:
         abort(403)
@@ -1134,10 +1290,454 @@ def revert_ticket(q_id):
     else:
         flash("Error: Could not restore ticket.", "danger")
 
-    # Redirect back to records so they can see the change
     return redirect(url_for('staff_records'))
 
 
+import threading
+from flask import current_app
+
+
+def notify_customer(user, plate_number, status_type, queue_id=None, ticket_number=None):
+    """
+    Unified engine to send SMS and Email automatically in the background.
+    Prevents the staff dashboard from freezing during SMTP/SMS API calls.
+    """
+    # 1. Capture necessary data BEFORE starting the thread.
+    # Flask 'session' and 'request' are NOT available inside a background thread.
+    loc_name = session.get('location_name', 'Coolaire Service Center')
+    root_url = request.url_root
+    user_id = user.id  # Pass ID to fetch a fresh object in the thread
+
+    # Get the actual app instance to pass into the thread
+    app_instance = current_app._get_current_object()
+
+    def run_notifications(app_ctx, u_id, l_name, base_url):
+        with app_ctx.app_context():
+            # Fetch fresh user record within this thread's database session
+            db_user = db.session.get(User, u_id)
+            if not db_user:
+                return
+
+            # Fetch Settings
+            settings = {s.key: s.value for s in SystemSetting.query.all()}
+
+            # 2. Define Messages and Context based on status_type
+            is_account_msg = False
+            if status_type == 'account_approved':
+                subject = "Account Activated: Access Granted to Coolaire Portal"
+                msg_text = f"Welcome to Coolaire, {db_user.full_name}! Your identity verification is complete. You can now log in to the Partner Portal."
+                is_account_msg = True
+            elif status_type == 'registration_pending':
+                subject = "Registration Received: Pending Verification"
+                msg_text = f"Thank you for registering, {db_user.full_name}. We have received your application for {db_user.company_name}. You will receive another email once your account is activated."
+                is_account_msg = True
+            elif status_type == 'booked':
+                subject = f"Deployment Confirmed: Unit {plate_number}"
+                msg_text = f"Coolaire: Your deployment for unit {plate_number} has been logged. Please arrive at the hub on your scheduled window."
+            elif status_type == 'serving':
+                subject = f"Service Started: Unit {plate_number}"
+                msg_text = f"Coolaire Update: Your unit {plate_number} (Ticket {ticket_number}) is now being serviced."
+            elif status_type == 'done':
+                subject = f"Service Complete: Unit {plate_number}"
+                msg_text = f"Coolaire Update: Great news! Service for unit {plate_number} is complete. Please proceed to the release bay."
+            elif status_type == 'expired':
+                subject = f"Appointment Update: Unit {plate_number}"
+                msg_text = f"Coolaire Update: We noticed you weren't able to make it for unit {plate_number}. Your ticket has been marked as expired/no-show."
+            else:
+                return
+
+            # --- PART A: SEND SMS ---
+            sms_key = settings.get('SMS_API_KEY')
+            if sms_key and db_user.phone:
+                sms_log = NotificationLog(queue_id=queue_id, recipient=db_user.phone, channel='sms')
+                try:
+                    requests.post("https://semaphore.co/api/v4/messages", data={
+                        'apikey': sms_key, 'number': db_user.phone, 'message': msg_text, 'sendername': 'COOLAIRE'
+                    }, timeout=10)
+                    sms_log.status = 'success'
+                except Exception as e:
+                    sms_log.status = 'failed'
+                    sms_log.error_message = str(e)
+                db.session.add(sms_log)
+
+            # --- PART B: SEND EMAIL ---
+            mail_user = settings.get('MAIL_HOST_USER', 'appointments@coolaireconsolidated.com')
+            mail_pass = settings.get('MAIL_HOST_PASSWORD')
+            mail_server = settings.get('MAIL_SERVER', 'mail.coolaireconsolidated.com')
+            mail_port = int(settings.get('MAIL_PORT', 465))
+
+            if mail_user and mail_pass and db_user.email:
+                email_log = NotificationLog(queue_id=queue_id, recipient=db_user.email, channel='email')
+                try:
+                    msg = MIMEMultipart('related')
+                    msg['From'] = f"Coolaire Appointments <{mail_user}>"
+                    msg['To'] = db_user.email
+                    msg['Subject'] = subject
+
+                    login_url = f"{base_url}login"
+
+                    # 3. Dynamic Info Box Styling
+                    if is_account_msg:
+                        info_box_html = f"""
+                        <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #76b82a;">
+                            <p style="margin: 0; font-size: 14px;"><strong>Account Type:</strong> Client Portal Access</p>
+                            <p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Company:</strong> {db_user.company_name}</p>
+                            <p style="margin: 15px 0 0 0; font-size: 14px;">
+                                <a href="{login_url}" style="background: #002d72; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
+                                    LOG IN TO PORTAL
+                                </a>
+                            </p>
+                        </div>"""
+                    else:
+                        info_box_html = f"""
+                        <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #002d72;">
+                            <p style="margin: 0; font-size: 14px;"><strong>Asset Plate:</strong> {plate_number}</p>
+                            <p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Location:</strong> {l_name}</p>
+                            {f'<p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Reference:</strong> {ticket_number}</p>' if ticket_number else ''}
+                        </div>"""
+
+                    # 4. Final HTML Template
+                    html = f"""
+                    <html>
+                        <body style="font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a1a; line-height: 1.6; margin: 0; padding: 0;">
+                            <div style="max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+                                <div style="background: #002d72; padding: 30px; text-align: center;">
+                                    <img src="cid:logo" alt="Coolaire Logo" style="height: 60px; width: auto;">
+                                    <p style="color: #76b82a; margin: 10px 0 0 0; font-weight: bold; text-transform: uppercase; font-size: 11px; letter-spacing: 1px;">
+                                        Number one cold chain supplier in the Philippines
+                                    </p>
+                                </div>
+                                <div style="padding: 40px 30px;">
+                                    <h2 style="color: #002d72; margin-top: 0; font-size: 20px;">System Notification</h2>
+                                    <p>Dear <strong>{db_user.full_name}</strong>,</p>
+                                    <p style="font-size: 16px; color: #334155;">{msg_text}</p>
+                                    {info_box_html}
+                                </div>
+                                <div style="background: #f1f5f9; padding: 20px; text-align: center; font-size: 11px; color: #64748b;">
+                                    This is an automated notification from the Coolaire QBMS System.<br>
+                                    &copy; {datetime.now(timezone.utc).year} Coolaire Consolidated Inc.
+                                </div>
+                            </div>
+                        </body>
+                    </html>"""
+                    msg.attach(MIMEText(html, 'html'))
+
+                    # 5. Embed Logo
+                    logo_path = os.path.join(app_ctx.root_path, 'static', 'logo.png')
+                    if os.path.exists(logo_path):
+                        with open(logo_path, 'rb') as f:
+                            img = MIMEImage(f.read())
+                            img.add_header('Content-ID', '<logo>')
+                            msg.attach(img)
+
+                    # 6. Execute Send
+                    with smtplib.SMTP_SSL(mail_server, mail_port) as server:
+                        server.login(mail_user, mail_pass)
+                        server.sendmail(mail_user, db_user.email, msg.as_string())
+                    email_log.status = 'success'
+
+                except Exception as e:
+                    email_log.status = 'failed'
+                    email_log.error_message = str(e)
+
+                db.session.add(email_log)
+
+            # Final commit for the logs within the thread
+            db.session.commit()
+
+    # Start the thread and return control to the main app immediately
+    threading.Thread(target=run_notifications, args=(app_instance, user_id, loc_name, root_url)).start()
+
+
+@app.route('/staff/notifications')
+@login_required
+@roles_required('super_admin', 'admin', 'staff')
+def staff_notifications():
+    if current_user.role not in ['staff', 'admin']: abort(403)
+    loc_id = session.get('loc_id')
+
+    # Use outerjoin so we see "Account Notifications" as well as "Ticket Notifications"
+    # We filter for logs linked to this hub OR logs with no hub (Global/Account)
+    logs = NotificationLog.query.outerjoin(Queue).filter(
+        (Queue.location_id == loc_id) | (NotificationLog.queue_id == None)
+    ).order_by(NotificationLog.created_at.desc()).limit(100).all()
+
+    return render_template('staff_notifications.html', logs=logs, title="Messaging Audit")
+
+
+@app.route('/staff/verify-center')
+@login_required
+@roles_required('super_admin', 'admin')
+def verify_center():
+    if current_user.role not in ['admin', 'staff']: abort(403)
+
+    # Get only users who are NOT yet approved
+    pending = User.query.filter_by(is_approved=False).order_by(User.created_at.asc()).all()
+    # Get recently approved for reference
+    history = User.query.filter_by(is_approved=True).order_by(User.created_at.desc()).limit(10).all()
+
+    return render_template('staff_verify_center.html',
+                           pending=pending,
+                           history=history,
+                           title="Identity Verification Center")
+
+
+@app.route('/staff/verify-action/<int:user_id>/<string:action>')
+@login_required
+def verify_action(user_id, action):
+    # 1. Security check: Only staff and admin can authorize identities
+    if current_user.role not in ['admin', 'staff']:
+        abort(403)
+
+    user_to_verify = db.session.get(User, user_id)
+    if not user_to_verify:
+        flash("System Error: The requested user record no longer exists.", "danger")
+        return redirect(url_for('verify_center'))
+
+    if action == 'approve':
+        log_action("Identity Approved",
+                   f"Access granted to {user_to_verify.full_name} ({user_to_verify.company_name}).")
+        # 2. AUTHORIZE: Set approved to True and ensure they are removed from archive
+        user_to_verify.is_approved = True
+        user_to_verify.is_rejected = False
+        db.session.commit()
+
+        # 3. AUTOMATIC NOTIFICATION: Use the 'account_approved' logic
+        try:
+            notify_customer(
+                user=user_to_verify,
+                plate_number="N/A",
+                status_type='account_approved'
+            )
+            flash(f"Success: Access GRANTED and Activation Email sent to {user_to_verify.full_name}.", "success")
+        except Exception as e:
+            app.logger.error(f"Approval Notification Failed for {user_to_verify.email}: {e}")
+            flash(f"Account approved for {user_to_verify.full_name}, but the activation email failed to send. Please check SMTP settings.", "warning")
+
+    elif action == 'reject':
+        # 4. SOFT DELETE: Move bogus/competitor identity to Archive instead of purging
+        user_to_verify.is_approved = False
+        user_to_verify.is_rejected = True
+        db.session.commit()
+
+        app.logger.info(f"Identity Blocked: {user_to_verify.full_name} was rejected by {current_user.username}")
+        flash(f"Identity REJECTED: {user_to_verify.full_name} has been moved to the Rejected Archive.", "warning")
+
+    # Redirect logic: If rejecting, stay in verify center.
+    # If approving from the Archive, this will take you back to the center.
+    return redirect(url_for('verify_center'))
+
+
+@app.route('/staff/archive')
+@login_required
+def staff_archive():
+    if current_user.role not in ['admin', 'staff']: abort(403)
+
+    # View users marked as rejected
+    rejected_users = User.query.filter_by(is_rejected=True).order_by(User.created_at.desc()).all()
+    return render_template('staff_archive.html', users=rejected_users, title="Rejected Identity Archive")
+
+
+@app.route('/staff/archive/purge/<int:user_id>')
+@login_required
+def purge_user(user_id):
+    if current_user.role != 'admin': abort(403)
+    u = db.session.get(User, user_id)
+    if u:
+        db.session.delete(u)  # This is the PERMANENT delete
+        db.session.commit()
+        flash("Record permanently purged from the system.", "danger")
+    return redirect(url_for('staff_archive'))
+
+def log_action(action, details):
+    """ Records an entry into the audit trail for the current hub """
+    try:
+        new_log = AuditLog(
+            location_id=session.get('loc_id'),
+            user_id=current_user.id if current_user.is_authenticated else None,
+            action=action,
+            details=details
+        )
+        db.session.add(new_log)
+        db.session.commit()
+    except Exception as e:
+        app.logger.error(f"Audit Log Failed: {e}")
+        db.session.rollback()
+
+
+@app.route('/staff/audit-trail')
+@login_required
+@roles_required('super_admin', 'admin') # Only management should see logs
+def staff_audit_trail():
+    if current_user.role not in ['staff', 'admin']: abort(403)
+
+    loc_id = session.get('loc_id')
+    # Fetch logs for THIS location only
+    logs = AuditLog.query.filter_by(location_id=loc_id).order_by(AuditLog.created_at.desc()).limit(500).all()
+
+    return render_template('staff_audit_trail.html', logs=logs, title="Hub Audit Trail")
+
+
+@app.route('/staff/global-bookings')
+@login_required
+@roles_required('super_admin', 'admin') # Company-wide visibility
+def global_bookings():
+    # 1. SECURITY: Only Staff and Admin nodes can access the global ledger
+    if current_user.role not in ['admin', 'staff']:
+        app.logger.warning(f"Unauthorized global access attempt by {current_user.username}")
+        abort(403)
+
+    # 2. DATA RETRIEVAL: Fetch ALL bookings in the organization
+    # We use .options(db.joinedload(...)) to pull Location, Customer, and Vehicle info in
+    # one single query. This is critical for BAS-Node performance.
+    try:
+        all_bookings = Booking.query.options(
+            db.joinedload(Booking.location),
+            db.joinedload(Booking.customer),         # 'customer' is the backref from User.bookings
+            db.joinedload(Booking.associated_vehicle) # 'associated_vehicle' is the backref from Vehicle.related_bookings
+        ).order_by(Booking.scheduled_time.desc()).all()
+
+    except Exception as e:
+        app.logger.error(f"Global Ledger Query Error: {e}")
+        flash("System Error: Could not retrieve global deployment data.", "danger")
+        all_bookings = []
+
+    # 3. RENDER: Pass the data to your forecasting template
+    return render_template(
+        'staff_global_bookings.html',
+        bookings=all_bookings,
+        title="Global Deployment Ledger"
+    )
+
+@app.route('/staff/technician/toggle/<int:tech_id>')
+@login_required
+def toggle_tech_presence(tech_id):
+    if current_user.role not in ['admin', 'staff']: abort(403)
+
+    loc_id = session.get('loc_id')
+    tech = db.session.get(Technician, tech_id)
+
+    if tech and tech.location_id == loc_id:
+        tech.is_present = not tech.is_present  # Flip status
+        db.session.commit()
+
+        status_text = "PRESENT" if tech.is_present else "ABSENT"
+        log_action("Attendance Change", f"Technician {tech.name} marked as {status_text}")
+        flash(f"{tech.name} is now marked as {status_text}.", "info")
+
+    return redirect(url_for('staff_panel'))
+
+@app.route('/staff/save-notes/<int:q_id>', methods=['POST'])
+@login_required
+def save_job_notes(q_id):
+    q = db.session.get(Queue, q_id)
+    if q and q.location_id == session.get('loc_id'):
+        q.internal_notes = request.form.get('notes')
+        db.session.commit()
+        flash("Notes updated.", "success")
+    return redirect(url_for('staff_panel'))
+
+
+def roles_required(*roles):
+    def wrapper(f):
+        @wraps(f)
+        def decorated_view(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('login'))
+            if current_user.role not in roles:
+                abort(403)
+            return f(*args, **kwargs)
+        return decorated_view
+    return wrapper
+
+
+# CUSTOM ERROR HANDLER FOR 403
+@app.errorhandler(403)
+def forbidden_error(error):
+    return render_template('errors/403.html'), 403
+
+@app.route('/api/netsuite/verify/<string:search_val>')
+@login_required
+def api_verify_netsuite(search_val):
+    ns = NetSuiteConnector()
+    data = ns.get_job_order(search_val)
+    if data and data.get('status') == 'success':
+        return jsonify(data)
+    return jsonify({"status": "error", "message": "No record found"})
+
+@app.route('/staff/sync-job-order', methods=['POST'])
+@login_required
+def sync_job_order():
+    jo_number = request.form.get('jo_number')
+    loc_id = session.get('loc_id')
+    ns = NetSuiteConnector()
+    ns_data = ns.get_job_order(jo_number)
+
+    if ns_data and ns_data.get('status') == 'success':
+        # Check if already exists
+        existing = Booking.query.filter_by(ref_id=ns_data['jo_number']).first()
+        if existing:
+            flash(f"Job Order {jo_number} is already synced.", "info")
+            return redirect(url_for('staff_panel'))
+
+        # Auto-match client or create placeholder
+        customer = User.query.filter(User.company_name.ilike(ns_data['client_name'])).first()
+        if not customer:
+            flash(f"Client {ns_data['client_name']} not found in QBMS. Please register them first.", "danger")
+            return redirect(url_for('staff_panel'))
+
+        new_booking = Booking(
+            user_id=customer.id, location_id=loc_id, plate_number=ns_data['plate_number'],
+            service_type=ns_data['erp_status'], status='pending', ref_id=ns_data['jo_number']
+        )
+        db.session.add(new_booking)
+        db.session.commit()
+        log_action("ERP Sync", f"Imported JO {jo_number} from NetSuite.")
+        flash(f"Successfully imported JO {jo_number}", "success")
+    else:
+        flash("Could not find that JO# in NetSuite.", "danger")
+    return redirect(url_for('staff_panel'))
+
+@app.route('/staff/permissions', methods=['GET', 'POST'])
+@login_required
+def manage_permissions():
+    roles = ['admin', 'staff', 'customer']
+    features = [
+        ('analytics', 'Site Analytics'),
+        ('notifications', 'Messaging Audit'),
+        ('records', 'Service History'),
+        ('audit', 'Security Audit Trail'),
+        ('verify_center', 'Identity Verification'),
+        ('users', 'User Registry'),
+        ('settings', 'System Settings'),
+        ('global_bookings', 'Global Ledger')
+    ]
+
+    if request.method == 'POST':
+        # Clear old and save new
+        for role in roles:
+            for feat_key, feat_name in features:
+                allowed = request.form.get(f"{role}_{feat_key}") == 'on'
+                perm = RolePermission.query.filter_by(role=role, feature_key=feat_key).first()
+                if perm:
+                    perm.is_allowed = allowed
+                else:
+                    db.session.add(RolePermission(role=role, feature_key=feat_key, is_allowed=allowed))
+        db.session.commit()
+        flash("Permission Matrix Updated Successfully.", "success")
+        return redirect(url_for('manage_permissions'))
+
+    # Load existing permissions into a nested dict for the UI
+    current_perms = {}
+    for p in RolePermission.query.all():
+        if p.role not in current_perms: current_perms[p.role] = {}
+        current_perms[p.role][p.feature_key] = p.is_allowed
+
+    return render_template('staff_permissions.html',
+                           roles=roles,
+                           features=features,
+                           current_perms=current_perms,
+                           title="Access Control Matrix")
 
 @app.route('/logout')
 def logout():
@@ -1151,11 +1751,16 @@ if __name__ == '__main__':
     with app.app_context():
         try:
             # Add the missing plate_number column
-            db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN plate_number VARCHAR(50)'))
-            db.session.commit()
-            print("--- Bookings Table Updated ---")
+            # Check if column exists before adding
+            inspector = db.inspect(db.engine)
+            if not inspector.has_column('bookings', 'plate_number'):
+                db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN plate_number VARCHAR(50)'))
+                db.session.commit()
+                print("--- Bookings Table Updated with plate_number ---")
+            else:
+                print("--- Column plate_number already exists in bookings table ---")
         except Exception as e:
-            print(f"--- Column might already exist: {e} ---")
+            print(f"--- Error during DB column check/add: {e} ---")
             db.session.rollback()
 
         db.create_all()
