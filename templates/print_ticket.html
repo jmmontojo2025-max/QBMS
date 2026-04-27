@@ -64,7 +64,7 @@
         .ticket-box {
             border: 5px solid #000;
             padding: 10px 0;
-            margin: 15px 0;
+            margin: 10px 0;
         }
 
         .label {
@@ -75,11 +75,37 @@
         }
 
         .ticket-num {
-            font-size: 60px; /* Adjusted size for location code prefix */
+            font-size: 55px;
             font-weight: 900;
             line-height: 1;
             font-family: 'Arial Black', sans-serif;
-            word-wrap: break-word;
+        }
+
+        /* NEW: DEPLOYMENT DETAILS BLOCK */
+        .details-box {
+            text-align: left;
+            font-size: 13px;
+            margin: 15px 0;
+            line-height: 1.5;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dotted #ccc;
+            padding: 2px 0;
+        }
+
+        .detail-label { font-weight: bold; text-transform: uppercase; }
+        .detail-value { font-weight: 900; }
+
+        .service-location-badge {
+            background: #000;
+            color: #fff;
+            padding: 2px 8px;
+            font-weight: 900;
+            display: inline-block;
+            margin-top: 5px;
         }
 
         .timestamp {
@@ -106,32 +132,17 @@
 
         /* PRINT MEDIA QUERIES */
         @media print {
-            @page {
-                margin: 0;
-                size: 80mm auto;
-            }
+            @page { margin: 0; size: 80mm auto; }
             body { background: white; }
-            .receipt-container {
-                box-shadow: none;
-                width: 74mm;
-                padding: 5mm;
-            }
+            .receipt-container { box-shadow: none; width: 74mm; padding: 5mm; }
             .no-print { display: none !important; }
         }
 
         /* KIOSK STATUS OVERLAY */
         .status-overlay {
-            position: fixed;
-            inset: 0;
-            background: #002d72;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            text-align: center;
+            position: fixed; inset: 0; background: #002d72; color: white;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; text-align: center; font-family: sans-serif;
         }
     </style>
 </head>
@@ -140,13 +151,13 @@
     <!-- VISIBLE ONLY ON KIOSK SCREEN -->
     <div class="status-overlay no-print">
         <div style="font-size: 80px; margin-bottom: 20px;">🖨️</div>
-        <h1 style="font-size: 40px; font-weight: 900; margin-bottom: 10px;">
-    {{ ticket.location.name | upper }} SERVICE CENTER</h1>
-        <h2 style="font-size: 30px; margin-bottom: 10px;">PRINTING TICKET...</h2>
-        <p style="font-size: 24px; opacity: 0.8;">Number: <strong>{{ ticket.ticket_number }}</strong></p>
-
+        <h1 style="font-size: 35px; font-weight: 900; margin-bottom: 10px;">
+            {{ ticket.location.name | upper }} HUB
+        </h1>
+        <h2 style="font-size: 28px; margin-bottom: 10px;">PRINTING TICKET...</h2>
+        <p style="font-size: 22px; opacity: 0.8;">Ticket Number: <strong>{{ ticket.ticket_number }}</strong></p>
         <div style="margin-top: 40px; border: 2px solid rgba(255,255,255,0.3); padding: 15px 40px; border-radius: 50px; font-size: 18px;">
-            Please wait for your receipt to finish printing.
+            Please take your receipt below.
         </div>
     </div>
 
@@ -160,8 +171,35 @@
 
         <div class="label">Priority Number</div>
         <div class="ticket-box">
-            <!-- Ticket number now includes prefix like CEB-W-101 -->
             <div class="ticket-num">{{ ticket.ticket_number }}</div>
+        </div>
+
+        <!-- NEW DETAILS SECTION -->
+        <div class="details-box">
+            <div class="detail-row">
+                <span class="detail-label">Plate No:</span>
+                <span class="detail-value">{{ ticket.booking.plate_number if ticket.booking else 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Client:</span>
+                <span class="detail-value">
+                    {% if ticket.booking %}
+                        {{ (ticket.booking.guest_name or ticket.booking.customer.company_name) | upper }}
+                    {% else %}
+                        WALK-IN GUEST
+                    {% endif %}
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Service:</span>
+                <span class="detail-value">{{ ticket.booking.service_type if ticket.booking else 'GENERAL' }}</span>
+            </div>
+
+            <center>
+                <div class="service-location-badge">
+                    TYPE: {{ ticket.booking.service_location | upper if ticket.booking else 'IN-PLANT' }}
+                </div>
+            </center>
         </div>
 
         <div class="timestamp">
@@ -177,33 +215,27 @@
         </div>
 
         <div class="ref-id">
-            TYPE: {{ 'APPOINTMENT' if ticket.booking_id else 'WALK-IN' }}<br>
-            ID: {{ ticket.booking.ref_id if ticket.booking else ticket.id }}
+            MODE: {{ 'APPOINTMENT' if ticket.booking.user_id else 'WALK-IN' }}<br>
+            REF: {{ ticket.booking.ref_id if ticket.booking else ticket.id }}
         </div>
 
         <div style="font-size: 8px; margin-top: 20px; opacity: 0.5;">
-            Coolaire QBMS v1.0 &bull; {{ ticket.location.code }} Terminal
+            Coolaire QBMS v1.1 &bull; {{ ticket.location.code }} Terminal
         </div>
     </div>
 
     <script>
         (function() {
-            // Trigger print dialog
             window.onload = function() {
-                setTimeout(() => {
-                    window.print();
-                }, 500);
+                setTimeout(() => { window.print(); }, 800);
             };
 
-            // Return to kiosk after printing
             window.onafterprint = function() {
                 window.location.href = "/kiosk";
             };
 
-            // Safety timeout for auto-redirect
-            setTimeout(() => {
-                window.location.href = "/kiosk";
-            }, 6000);
+            // Safety timeout
+            setTimeout(() => { window.location.href = "/kiosk"; }, 8000);
         })();
     </script>
 </body>

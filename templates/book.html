@@ -24,12 +24,12 @@
                                 <div>
                                     <h3 class="fw-900 text-navy mb-1 ls-tight fs-4 fs-md-2">Service Deployment</h3>
                                     <p class="text-muted small fw-600 mb-0 text-uppercase ls-1">
-                                        <i class="fa-solid fa-network-wired text-primary me-1 ani-heartbeat"></i> Active Node Initialization
+                                        <i class="fa-solid fa-network-wired text-primary me-1 ani-heartbeat"></i> Client Node Initialization
                                     </p>
                                 </div>
                             </div>
                             <div class="terminal-status-tag">
-                                <span class="pulse-dot-green"></span> SYSTEM_READY
+                                <span class="pulse-dot-green"></span> SECURE_CONNECTION
                             </div>
                         </div>
                         <div class="header-divider mt-3 mt-md-4"></div>
@@ -65,7 +65,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- NEW ASSET BOX (CLEAR ON SIGHT) -->
+                                    <!-- NEW ASSET BOX -->
                                     <div id="newVehicleFields" class="d-none animate__animated animate__fadeIn p-4 rounded-4 bg-white border border-primary border-2 shadow-sm mb-3">
                                         <div class="mb-3">
                                             <label class="biz-label text-primary">Plate Identification</label>
@@ -91,8 +91,24 @@
                                         <h6 class="biz-label mb-0">Hub & Service Logic</h6>
                                     </div>
 
+                                    <!-- NEW: SERVICE LOCATION SELECTOR -->
+                                    <div class="mb-4">
+                                        <label class="biz-label">Deployment Mode</label>
+                                        <div class="d-flex gap-2">
+                                            <input type="radio" class="btn-check" name="service_location" id="locIn" value="In-Plant" checked autocomplete="off">
+                                            <label class="btn btn-outline-navy flex-fill py-3 rounded-3 fw-bold" for="locIn">
+                                                <i class="fa-solid fa-warehouse me-2"></i> IN-PLANT
+                                            </label>
+
+                                            <input type="radio" class="btn-check" name="service_location" id="locOut" value="Out-Plant" autocomplete="off">
+                                            <label class="btn btn-outline-navy flex-fill py-3 rounded-3 fw-bold" for="locOut">
+                                                <i class="fa-solid fa-truck-fast me-2"></i> OUT-PLANT
+                                            </label>
+                                        </div>
+                                    </div>
+
                                     <div class="mb-3">
-                                        <label class="biz-label">Service Hub (Location)</label>
+                                        <label class="biz-label">Target Service Hub</label>
                                         <div class="biz-input-group border">
                                             <span class="input-icon"><i class="fa-solid fa-location-crosshairs text-primary ani-pulse-icon"></i></span>
                                             <select name="location_id" id="locSelect" class="form-select biz-select border-0" required>
@@ -105,7 +121,7 @@
                                     </div>
 
                                     <div class="mb-3">
-                                        <label class="biz-label">Services:</label>
+                                        <label class="biz-label">Required Service</label>
                                         <div class="biz-input-group border">
                                             <span class="input-icon"><i class="fa-solid fa-screwdriver-wrench text-primary gear-spin"></i></span>
                                             <select name="product" id="prodSelect" class="form-select biz-select border-0" required>
@@ -141,13 +157,14 @@
                                         <div class="col-12 col-md-8 text-center text-md-start">
                                             <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-2">
                                                 <i class="fa-solid fa-ticket-simple text-warning fs-4 ani-heartbeat"></i>
-                                                <h6 class="fw-800 extra-small text-uppercase ls-1 text-warning mb-0">Configuration Validated</h6>
+                                                <h6 class="fw-800 extra-small text-uppercase ls-1 text-warning mb-0">Deployment Validated</h6>
                                             </div>
                                             <p id="summaryText" class="mb-0 small fw-500 font-monospace text-uppercase ls-1"></p>
+                                            <p id="locationText" class="mb-0 extra-small text-info opacity-75 mt-1 fw-bold"></p>
                                         </div>
                                         <div class="col-12 col-md-4 mt-3 mt-md-0">
                                             <button type="submit" class="btn btn-confirm-final w-100 py-3 rounded-3 shadow hover-lift">
-                                                INITIALIZE <i class="fa-solid fa-check-double ms-1"></i>
+                                                CONFIRM ORDER <i class="fa-solid fa-check-double ms-1"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -156,7 +173,7 @@
 
                             <div class="mt-4 mt-md-5" id="mainSubmitContainer">
                                 <button type="button" class="btn btn-navy-submit w-100 py-3 py-md-4 rounded-3 shadow-lg opacity-50" disabled>
-                                    INITIALIZING PARAMETERS...
+                                    AWAITING PARAMETERS...
                                 </button>
                             </div>
                         </form>
@@ -174,8 +191,12 @@
         --coolaire-yellow: #ffc107;
     }
 
+    .btn-outline-navy { border: 2px solid var(--coolaire-navy); color: var(--coolaire-navy); }
+    .btn-check:checked + .btn-outline-navy { background-color: var(--coolaire-navy); color: white; }
+
     .booking-terminal-wrapper { min-height: calc(100vh - 120px); }
     .text-navy { color: var(--coolaire-navy); }
+    .bg-navy { background-color: var(--coolaire-navy); }
     .fw-900 { font-weight: 900; }
     .ls-tight { letter-spacing: -1.5px; }
     .ls-1 { letter-spacing: 1px; }
@@ -190,7 +211,6 @@
     .biz-input-group { display: flex; align-items: center; background: #f8fafc; border-radius: 12px; padding: 4px 15px; transition: 0.3s; }
     .biz-input-group:focus-within { background: white; border-color: var(--coolaire-navy) !important; box-shadow: 0 0 0 4px rgba(0,45,114,0.05); }
     .input-icon { width: 25px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 1.1rem; }
-    .input-icon i { color: var(--coolaire-navy) !important; } /* FORCE ICON VISIBILITY */
 
     .biz-select, .biz-input { background: transparent !important; border: none !important; box-shadow: none !important; padding: 12px 0; font-weight: 700; color: #1e293b; font-size: 0.9rem; width: 100%; }
 
@@ -198,9 +218,7 @@
 
     .btn-navy-submit { background: var(--coolaire-navy); color: white !important; font-weight: 800; border: none; transition: 0.3s; }
     .btn-confirm-final { background-color: var(--coolaire-yellow); color: #000 !important; font-weight: 900; border: none; transition: 0.3s; }
-    .btn-confirm-final:hover { background-color: #eab308; transform: translateY(-2px); }
 
-    /* ANIMATIONS */
     .icon-scan-wrapper { position: relative; }
     .radar-ping { position: absolute; inset: 0; border: 2px solid var(--coolaire-navy); border-radius: 1rem; animation: radar-expand 2s infinite; }
     @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.6); opacity: 0; } }
@@ -209,15 +227,10 @@
     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
     .gear-spin { animation: fa-spin 6s linear infinite; }
     .ani-heartbeat { animation: heartbeat 1.5s ease-in-out infinite; }
-    @keyframes heartbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-    .ani-pulse-icon { animation: pulse-icon 2s infinite; }
-    @keyframes pulse-icon { 0%, 100% { transform: scale(1); } 50% { transform: opacity 0.5; } }
-
     .terminal-status-tag { background: #f0fdf4; padding: 6px 15px; border-radius: 50px; font-size: 0.6rem; font-weight: 900; color: #166534; border: 1px solid #dcfce7; }
 
     @media (max-width: 768px) {
         .border-end-md { border-right: none !important; border-bottom: 1px solid #f1f5f9; padding-bottom: 2rem; margin-bottom: 1rem; }
-        .biz-input { font-size: 0.85rem; }
     }
 </style>
 
@@ -232,10 +245,16 @@
         minTime: "08:00", maxTime: "17:00", minuteIncrement: 30, onChange: updateSummary
     });
 
+    // Listen to radio changes
+    document.querySelectorAll('input[name="service_location"]').forEach(r => {
+        r.addEventListener('change', updateSummary);
+    });
+
     document.getElementById('vSelect').addEventListener('change', function() {
         document.getElementById('newVehicleFields').classList.toggle('d-none', this.value !== 'new');
         updateSummary();
     });
+
     document.getElementById('locSelect').addEventListener('change', updateSummary);
     document.getElementById('prodSelect').addEventListener('change', updateSummary);
     document.getElementById('newPlate').addEventListener('input', updateSummary);
@@ -245,6 +264,7 @@
         const vSelect = document.getElementById('vSelect');
         const locSelect = document.getElementById('locSelect');
         const prodSelect = document.getElementById('prodSelect');
+        const mode = document.querySelector('input[name="service_location"]:checked').value;
         const d = datePicker.input.value;
         const t = timePicker.input.value;
         const finalInput = document.getElementById('finalDateTime');
@@ -266,7 +286,9 @@
         if (d && t && plateStr && branch && prodSelect.value) {
             summaryBox.classList.remove('d-none');
             mainBtn.classList.add('d-none');
-            document.getElementById('summaryText').innerText = `NODE:[${plateStr}] // HUB:${branch} // ARRIVAL:${d} @ ${t}`;
+
+            document.getElementById('summaryText').innerText = `UNIT:[${plateStr}] // SERVICE:${prodSelect.value}`;
+            document.getElementById('locationText').innerText = `DEPLOYMENT: ${mode.toUpperCase()} AT ${branch.toUpperCase()} HUB // WINDOW: ${d} @ ${t}`;
 
             const dObj = datePicker.selectedDates[0];
             const tObj = timePicker.selectedDates[0];

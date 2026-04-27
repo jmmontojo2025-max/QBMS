@@ -48,7 +48,6 @@
         font-size: clamp(2rem, 5vh, 4rem);
         font-weight: 900;
         color: var(--coolaire-blue);
-        font-variant-numeric: tabular-nums;
         line-height: 1;
     }
 
@@ -64,11 +63,10 @@
         position: relative;
         overflow: hidden;
         border: 1px solid rgba(0,0,0,0.05);
-        transition: transform 0.2s ease;
     }
 
     .card-appointment { border-top: 15px solid var(--coolaire-blue); }
-    .card-walkin { border-top: 15px solid var(--coolaire-yellow); }
+    .card-walkin { border-top: 15 : 15px solid var(--coolaire-yellow); }
 
     /* INPUT STYLING */
     .kiosk-input-massive {
@@ -82,15 +80,23 @@
         border-radius: 2rem;
         padding: 3vh !important;
         width: 100%;
-        margin-bottom: 3vh;
-        transition: all 0.3s ease;
     }
 
-    .kiosk-input-massive:focus {
-        background: white !important;
-        border-color: var(--coolaire-blue) !important;
-        box-shadow: 0 0 0 10px rgba(0, 45, 114, 0.05);
-        outline: none;
+    /* MODAL STYLING */
+    .modal-content { border-radius: 3rem; border: none; }
+    .modal-input-kiosk {
+        font-size: 2.5rem !important;
+        padding: 1.5rem !important;
+        border-radius: 1.5rem !important;
+        border: 3px solid #e2e8f0 !important;
+        font-weight: 700;
+    }
+    .modal-label-kiosk {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--coolaire-blue);
+        margin-bottom: 10px;
+        display: block;
     }
 
     /* BUTTONS */
@@ -102,7 +108,6 @@
         padding: 3vh;
         border-radius: 2rem;
         border: none;
-        box-shadow: 0 20px 40px rgba(0, 45, 114, 0.2);
     }
 
     .btn-kiosk-outline {
@@ -114,7 +119,6 @@
         flex-direction: column;
         align-items: center;
         gap: 20px;
-        transition: all 0.2s;
         text-decoration: none;
         cursor: pointer;
     }
@@ -128,7 +132,6 @@
         color: white; text-align: center;
     }
 
-    /* BENTO FOOTER */
     .kiosk-footer {
         background: #0f172a;
         border-radius: 2.5rem;
@@ -137,39 +140,24 @@
         align-items: center;
         gap: 2vw;
         color: white;
-        margin-top: auto;
-    }
-
-    .qr-box {
-        background: white;
-        padding: 12px;
-        border-radius: 1.5rem;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    }
-
-    .admin-gate {
-        position: absolute; bottom: 0; right: 0;
-        width: 60px; height: 60px; opacity: 0; z-index: 100;
     }
 </style>
 
 <!-- DISPENSING OVERLAY -->
 <div class="kiosk-overlay animate__animated animate__fadeIn" id="printOverlay">
     <div class="spinner-grow text-warning mb-5" style="width: 8rem; height: 8rem;"></div>
-    <h1 class="display-1 fw-950 mb-3" id="overlayTitle">GENERATING TICKET</h1>
-    <p class="fs-2 opacity-75" id="overlaySub">Connecting to thermal printer...</p>
+    <h1 class="display-1 fw-950 mb-3" id="overlayTitle">PROCESSING...</h1>
+    <p class="fs-2 opacity-75" id="overlaySub">Updating local node registry...</p>
 </div>
 
 <div class="kiosk-wrapper">
     <!-- 1. HEADER -->
-<!-- 1. HEADER -->
     <header class="kiosk-header">
         <div class="d-flex align-items-center gap-4">
             <img src="{{ url_for('static', filename='logo.png') }}" height="60" alt="Coolaire">
             <div class="vr opacity-10 mx-2" style="height: 40px;"></div>
             <div>
-                <!-- DYNAMIC HUB LABEL -->
-                <h2 class="fw-900 mb-0 text-navy" style="color: #002d72; letter-spacing: -1px;">
+                <h2 class="fw-900 mb-0" style="color: #002d72; letter-spacing: -1px;">
                     {{ session.get('location_name') | upper }} SERVICE CENTER
                 </h2>
                 <p class="text-muted small fw-bold mb-0 text-uppercase" id="kioskDate">Loading...</p>
@@ -183,18 +171,18 @@
         <!-- MODE A: APPOINTMENT -->
         <div class="col-lg-6">
             <div class="kiosk-card card-appointment animate__animated animate__fadeInLeft">
-                <div class="text-center">
-                    <div class="bg-primary bg-opacity-10 d-inline-flex p-4 rounded-circle mb-4">
+                <div class="text-center h-100 d-flex flex-column justify-content-center">
+                    <div class="bg-primary bg-opacity-10 d-inline-flex p-4 rounded-circle mb-4 mx-auto">
                         <i class="fa-solid fa-calendar-check fa-5x text-primary"></i>
                     </div>
                     <h1 class="display-3 fw-950 text-dark mb-2">Booked Units</h1>
                     <p class="fs-3 text-muted mb-5">Enter your 4-digit Reference Code</p>
 
-                    <form action="/check-in" method="POST" class="kiosk-form">
+                    <form action="/check-in" method="POST" class="kiosk-form-ajax">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="number" name="booking_id" id="mainInput"
-                               class="kiosk-input-massive" placeholder="----"
-                               inputmode="numeric" required autofocus autocomplete="off">
+                        <input type="number" name="booking_id"
+                               class="kiosk-input-massive mb-4" placeholder="----"
+                               inputmode="numeric" required autocomplete="off">
 
                         <button type="submit" class="btn btn-kiosk-primary w-100 shadow-lg">
                             CHECK-IN <i class="fa-solid fa-arrow-right ms-3"></i>
@@ -204,46 +192,93 @@
             </div>
         </div>
 
-        <!-- MODE B: WALK-IN -->
+        <!-- MODE B: WALK-IN (NOW OPENS MODAL) -->
         <div class="col-lg-6">
             <div class="kiosk-card card-walkin justify-content-center animate__animated animate__fadeInRight">
-                <div class="text-center d-flex flex-column h-100">
+                <div class="text-center h-100 d-flex flex-column justify-content-center">
                     <div class="bg-warning bg-opacity-10 d-inline-flex p-4 rounded-circle mb-4 mx-auto">
                         <i class="fa-solid fa-person-walking fa-5x text-warning"></i>
                     </div>
                     <h1 class="display-3 fw-950 text-dark mb-2">Walk-In</h1>
-                    <p class="fs-3 text-muted mb-5">No appointment? Join the queue below.</p>
+                    <p class="fs-3 text-muted mb-5">No appointment? Register your unit here.</p>
 
-                    <form action="/walk-in" method="POST" class="mt-auto">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-kiosk-outline w-100">
-                            <i class="fa-solid fa-ticket fa-5x text-muted opacity-50"></i>
-                            <span class="display-4 fw-900 text-dark">DISPENSE TICKET</span>
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-kiosk-outline w-100" data-bs-toggle="modal" data-bs-target="#walkInModal">
+                        <i class="fa-solid fa-pen-to-square fa-5x text-muted opacity-50"></i>
+                        <span class="display-4 fw-900 text-dark">START REGISTRATION</span>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 3. FOOTER BENTO -->
+    <!-- 3. FOOTER -->
     <footer class="kiosk-footer shadow-lg">
-        <div class="qr-box">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}register" width="90">
+        <div class="qr-box bg-white p-2 rounded-4">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}register" width="80">
         </div>
-        <div class="flex-grow-1">
-            <h2 class="fw-900 text-warning mb-1">Queue for {{ session.get('location_name') }}</h2>
-            <p class="fs-4 mb-0 opacity-75">Basil your Ticket and monitor the TV display for your number.</p>
+        <div class="flex-grow-1 ms-3">
+            <h2 class="fw-900 text-warning mb-1">Join the Queue</h2>
+            <p class="fs-4 mb-0 opacity-75">Scan the QR code to book your next appointment online.</p>
         </div>
         <div class="text-end">
-            <div class="opacity-50 small fw-bold text-uppercase">Broadcast Node: {{ session.get('location_code') }}</div>
-            <div class="opacity-50 small fw-bold">TERMINAL STATUS: ONLINE</div>
+            <div class="opacity-50 small fw-bold text-uppercase">Broadcast: {{ session.get('location_code') }}</div>
+            <div class="opacity-75 small fw-bold">NODE STATUS: ACTIVE</div>
         </div>
     </footer>
+</div>
 
+<!-- WALK-IN REGISTRATION MODAL -->
+<div class="modal fade" id="walkInModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header p-5 border-0 bg-light rounded-top-5">
+                <h1 class="display-4 fw-950 text-navy mb-0">Unit Registration</h1>
+                <button type="button" class="btn-close fs-2" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-5">
+                <form action="/walk-in" method="POST" class="kiosk-form-ajax">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <!-- Hidden Gates for Admins (Triple tap corner to login) -->
-    <a href="/login" class="admin-gate"></a>
+                    <!-- Customer Name -->
+                    <div class="mb-4">
+                        <label class="modal-label-kiosk">Customer / Company Name</label>
+                        <input type="text" name="customer_name" class="form-control modal-input-kiosk" placeholder="Enter Full Name" required>
+                    </div>
+
+                    <div class="row g-4 mb-5">
+                        <!-- Plate Number -->
+                        <div class="col-md-6">
+                            <label class="modal-label-kiosk">Plate Number</label>
+                            <input type="text" name="plate_number" class="form-control modal-input-kiosk text-uppercase" placeholder="ABC 123" required>
+                        </div>
+
+                        <!-- Service Category Dropdown -->
+                        <div class="col-md-6">
+                            <label class="modal-label-kiosk">Service Required</label>
+                            <select name="service_type" class="form-select modal-input-kiosk" required>
+                                <option value="" disabled selected>Select Category</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.name }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Read-only Service Location display -->
+                    <div class="mb-5 p-4 bg-info bg-opacity-10 rounded-4 border border-info border-opacity-25">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="fs-3 fw-bold text-navy"><i class="fa-solid fa-warehouse me-3"></i>Service Location</span>
+                            <span class="badge bg-navy fs-4 px-4 py-2">IN-PLANT</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-kiosk-primary w-100 py-4 fs-1">
+                        DISPENSE TICKET <i class="fa-solid fa-ticket ms-3"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -256,14 +291,14 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. KIOSK FOCUS ENFORCEMENT
-    const mainInput = document.getElementById('mainInput');
-    document.addEventListener('click', () => { if(mainInput) mainInput.focus(); });
-
-    // 3. AJAX SUBMISSION & PRINT REDIRECTION
-    document.querySelectorAll('form').forEach(form => {
+    // 2. AJAX SUBMISSION
+    document.querySelectorAll('.kiosk-form-ajax').forEach(form => {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            // Hide modal if active
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('walkInModal'));
+            if(modalInstance) modalInstance.hide();
 
             const overlay = document.getElementById('printOverlay');
             const title = document.getElementById('overlayTitle');
@@ -274,7 +309,7 @@
 
             overlay.style.display = 'flex';
             title.innerText = "PROCESSING...";
-            sub.innerText = "Connecting to queue system...";
+            sub.innerText = "Syncing with Hub Controller...";
 
             try {
                 const response = await fetch(this.action, {
@@ -285,33 +320,29 @@
 
                 const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(data.message || 'System Error');
-                }
+                if (!response.ok) throw new Error(data.message || 'System Error');
 
-                // SUCCESS: SHOW TICKET NUMBER THEN REDIRECT TO PRINT
+                // SUCCESS
                 title.innerText = "TICKET: " + data.ticket;
-                sub.innerText = "Dispensing thermal slip... Please take your ticket.";
+                sub.innerText = "Dispensing thermal slip. Please wait...";
 
                 setTimeout(() => {
-                    // This triggers the print_ticket route we added in app.py
                     window.location.href = "/print-ticket/" + data.q_id;
                 }, 2000);
 
             } catch (err) {
-                title.innerText = "ACCESS DENIED";
+                title.innerText = "FAILED";
                 sub.innerText = err.message;
                 this.reset();
                 setTimeout(() => {
                     overlay.style.display = 'none';
                     this.dataset.busy = "false";
-                    if(mainInput) mainInput.focus();
                 }, 3000);
             }
         });
     });
 
-    // Auto-refresh Kiosk every hour to clear cache
+    // Auto-refresh Kiosk every hour
     setTimeout(() => { window.location.reload(); }, 3600000);
 </script>
 {% endblock %}
