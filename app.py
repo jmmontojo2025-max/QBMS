@@ -46,7 +46,7 @@ def roles_required(*roles):
                 return redirect(url_for('login'))
 
             # This checks the 'role' column in your User table
-            if current_user.role not in roles:
+            if current_user.role not in ['admin', 'staff', 'super_admin']:
                 # This automatically sends them to your custom 403.html
                 abort(403)
             return f(*args, **kwargs)
@@ -172,8 +172,7 @@ class Booking(db.Model):
     service_type = db.Column(db.String(255))
     status = db.Column(db.String(20), default='pending')
     scheduled_time = db.Column(db.DateTime)
-    queue_entry = db.relationship('Queue', back_populates='booking', uselist=False, cascade="all, delete-orphan")
-
+    queue_records = db.relationship('Queue', back_populates='booking', cascade="all, delete-orphan")
     # THIS LINE MATCHES THE SQL WE JUST RAN
     ref_id = db.Column(db.String(10), unique=True)
 
@@ -207,7 +206,7 @@ class Queue(db.Model):
 
     # Relationships
     location = db.relationship('Location', backref='queue_entries')
-    booking = db.relationship('Booking', back_populates='queue_entry')
+    booking = db.relationship('Booking', back_populates='queue_records')
 
     # NEW PLURAL RELATIONSHIP
     assigned_techs = db.relationship('Technician', secondary=queue_technicians, backref='tasks')
@@ -242,6 +241,41 @@ class RolePermission(db.Model):
     is_allowed = db.Column(db.Boolean, default=False)
 
 
+# --- STAFF OPERATIONS (Require Staff/Admin Role and Selected Location) ---
+
+# Helper to check staff access and location
+def require_staff_location():
+    # Allow Super Admin, Admin, and Staff
+    if current_user.is_authenticated and current_user.role not in ['staff', 'admin', 'super_admin']:
+        abort(403)
+
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+
+        # If you are management but haven't picked a hub, go to the picker
+    if current_user.role in ['staff', 'admin', 'super_admin'] and 'loc_id' not in session:
+        flash("Hub initialization required.", "info")
+        return redirect(url_for('select_branch_for_staff'))
+
+    return None
+
+def permission_required(feature_key):
+    def wrapper(f):
+        @wraps(f)
+        def decorated_view(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('login'))
+
+            if not check_permission(feature_key):
+                abort(403)
+
+            return f(*args, **kwargs)
+
+        return decorated_view
+
+    return wrapper
+
+
 # This makes the permission check available in all HTML templates
 @app.context_processor
 def inject_permissions():
@@ -255,8 +289,28 @@ def inject_permissions():
         ).first()
         return perm.is_allowed if perm else False
 
-    return dict(has_perm=has_perm)
+    return dict(has_perm=check_permission)
 
+
+def check_permission(feature_key):
+    """The only function that checks the Matrix."""
+    if not current_user.is_authenticated:
+        return False
+
+    # 1. Super Admin Bypass
+    if current_user.role == 'super_admin':
+        return True
+
+    # 2. Case-Insensitive Check
+    # This ensures 'Staff' and 'staff' both work
+    user_role = current_user.role.lower().strip()
+
+    perm = RolePermission.query.filter_by(
+        role=user_role,
+        feature_key=feature_key.lower().strip()
+    ).first()
+
+    return perm.is_allowed if perm else False
 
 
 # --- HELPERS ---
@@ -381,6 +435,7 @@ def staff_panel():
 
 @app.route('/staff/start-work/<int:q_id>', methods=['POST'])
 @login_required
+@permission_required('start-work') # Add this!
 def start_work(q_id):
     loc_id = session.get('loc_id')
     tech_ids = request.form.getlist('technician_ids')
@@ -401,6 +456,7 @@ def start_work(q_id):
 
 @app.route('/staff/recall-ticket/<int:q_id>')
 @login_required
+@permission_required('recall-ticket') # Add this!
 def recall_ticket(q_id):
     q = db.session.get(Queue, q_id)
     if q:
@@ -466,7 +522,7 @@ def login():
 @app.route('/staff/users/approve/<int:user_id>')
 @login_required
 def approve_user(user_id):
-    if current_user.role != 'admin': abort(403)
+    if current_user.role != ['admin','super_admin']: abort(403)
     u = db.session.get(User, user_id)
     if u:
         u.is_approved = True
@@ -675,33 +731,10 @@ def book():
     )
 
 
-# --- STAFF OPERATIONS (Require Staff/Admin Role and Selected Location) ---
-
-# Helper to check staff access and location
-def require_staff_location():
-    # Allow Super Admin, Admin, and Staff
-    if current_user.is_authenticated and current_user.role not in ['staff', 'admin', 'super_admin']:
-        abort(403)
-
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))
-
-        # If you are management but haven't picked a hub, go to the picker
-    if current_user.role in ['staff', 'admin', 'super_admin'] and 'loc_id' not in session:
-        flash("Hub initialization required.", "info")
-        return redirect(url_for('select_branch_for_staff'))
-
-    return None
-
-
 @app.route('/staff/locations', methods=['GET', 'POST'])
 @login_required
-@roles_required('super_admin') # Hub creation is a Super Admin infrastructure task
+@permission_required('locations')
 def staff_locations():
-    # MODIFIED: Both 'admin' and 'staff' can access this page
-    if current_user.role not in ['admin', 'staff']:
-        abort(403)
-
     # Handle POST request to add a new location
     if request.method == 'POST':
         # MODIFIED: Allow both 'admin' and 'staff' to add locations
@@ -733,10 +766,9 @@ def staff_locations():
 
 @app.route('/staff/locations/edit/<int:loc_id>', methods=['GET', 'POST'])
 @login_required
+@permission_required('locations_edit')
+
 def edit_location(loc_id):
-    # MODIFIED: Allow both 'admin' and 'staff' to edit locations
-    if current_user.role not in ['admin', 'staff']:
-        abort(403)
 
     location_to_edit = db.session.get(Location, loc_id)
     if not location_to_edit:
@@ -767,10 +799,9 @@ def edit_location(loc_id):
 
 @app.route('/staff/locations/delete/<int:loc_id>')
 @login_required
+@permission_required('locations')
+
 def delete_location(loc_id):
-    # MODIFIED: Allow both 'admin' and 'staff' to delete locations
-    if current_user.role not in ['admin', 'staff']:
-        abort(403)
 
     location_to_delete = db.session.get(Location, loc_id)
     if not location_to_delete:
@@ -819,6 +850,9 @@ def staff_panel():
 
 @app.route('/staff/complete-work/<int:q_id>')
 @login_required
+@permission_required('complete-work')
+
+
 def complete_work(q_id):
     loc_id = session.get('loc_id')
     q = db.session.get(Queue, q_id)
@@ -847,9 +881,8 @@ def complete_work(q_id):
 
 @app.route('/staff/records')
 @login_required
-@roles_required('super_admin', 'admin', 'staff')
+@permission_required('records') # <--- Use the Matrix Key
 def staff_records():
-    if current_user.role not in ['staff', 'admin']: abort(403)
 
     loc_id = session.get('loc_id')
     if not loc_id:
@@ -867,6 +900,8 @@ def staff_records():
 
 @app.route('/staff/settings', methods=['GET', 'POST'])
 @login_required
+@permission_required('settings')
+
 def staff_settings():
     redirect_response = require_staff_location()
     if redirect_response: return redirect_response  # This route is general settings, not loc_id specific, but still staff-only.
@@ -900,6 +935,7 @@ def staff_settings():
 # --- STAFF SERVICE CATEGORY MANAGEMENT ---
 @app.route('/staff/categories', methods=['GET', 'POST'])
 @login_required
+@permission_required('staff_categories')
 def staff_categories():
     redirect_response = require_staff_location()
     if redirect_response: return redirect_response
@@ -922,6 +958,7 @@ def staff_categories():
 
 @app.route('/staff/categories/delete/<int:id>')
 @login_required
+@permission_required('staff_categories')
 def delete_category(id):
     redirect_response = require_staff_location()
     if redirect_response: return redirect_response
@@ -1043,6 +1080,8 @@ def tv_display():
 
 @app.route('/staff/analytics')
 @login_required
+@permission_required('analytics')
+
 def staff_analytics():
     loc_id = session.get('loc_id')
     now = datetime.now(timezone.utc)
@@ -1127,6 +1166,8 @@ from datetime import datetime, timezone  # Ensure these are imported at the top
 
 @app.route('/staff/users', methods=['GET', 'POST'])
 @login_required
+@permission_required('users')
+
 def staff_users():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -1217,10 +1258,8 @@ def shutdown_session(exception=None):
 
 @app.route('/staff/technicians', methods=['GET', 'POST'])
 @login_required
-@roles_required('super_admin', 'admin') # Prevent staff from adding/removing themselves
+@permission_required('technicians')
 def staff_technicians():
-    if current_user.role not in ['staff', 'admin']:
-        abort(403)
 
     loc_id = session.get('loc_id')
     if not loc_id:
@@ -1242,6 +1281,7 @@ def staff_technicians():
 
 @app.route('/staff/technicians/delete/<int:id>')
 @login_required
+@permission_required('technicians')
 def delete_technician(id):
     tech = db.session.get(Technician, id)
     # Security check: Ensure tech belongs to current staff's branch
@@ -1451,9 +1491,8 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
 
 @app.route('/staff/notifications')
 @login_required
-@roles_required('super_admin', 'admin', 'staff')
+@permission_required('notifications') # <--- Use the Matrix Key
 def staff_notifications():
-    if current_user.role not in ['staff', 'admin']: abort(403)
     loc_id = session.get('loc_id')
 
     # Use outerjoin so we see "Account Notifications" as well as "Ticket Notifications"
@@ -1467,9 +1506,8 @@ def staff_notifications():
 
 @app.route('/staff/verify-center')
 @login_required
-@roles_required('super_admin', 'admin')
+@permission_required('verify_center')
 def verify_center():
-    if current_user.role not in ['admin', 'staff']: abort(403)
 
     # Get only users who are NOT yet approved
     pending = User.query.filter_by(is_approved=False).order_by(User.created_at.asc()).all()
@@ -1484,10 +1522,9 @@ def verify_center():
 
 @app.route('/staff/verify-action/<int:user_id>/<string:action>')
 @login_required
+@permission_required('verify_center')
 def verify_action(user_id, action):
-    # 1. Security check: Only staff and admin can authorize identities
-    if current_user.role not in ['admin', 'staff']:
-        abort(403)
+
 
     user_to_verify = db.session.get(User, user_id)
     if not user_to_verify:
@@ -1530,8 +1567,9 @@ def verify_action(user_id, action):
 
 @app.route('/staff/archive')
 @login_required
+@permission_required('staff_archived')
+
 def staff_archive():
-    if current_user.role not in ['admin', 'staff']: abort(403)
 
     # View users marked as rejected
     rejected_users = User.query.filter_by(is_rejected=True).order_by(User.created_at.desc()).all()
@@ -1540,6 +1578,7 @@ def staff_archive():
 
 @app.route('/staff/archive/purge/<int:user_id>')
 @login_required
+@permission_required('staff_archived')
 def purge_user(user_id):
     if current_user.role != 'admin': abort(403)
     u = db.session.get(User, user_id)
@@ -1567,9 +1606,8 @@ def log_action(action, details):
 
 @app.route('/staff/audit-trail')
 @login_required
-@roles_required('super_admin', 'admin') # Only management should see logs
+@permission_required('audit')
 def staff_audit_trail():
-    if current_user.role not in ['staff', 'admin']: abort(403)
 
     loc_id = session.get('loc_id')
     # Fetch logs for THIS location only
@@ -1580,13 +1618,8 @@ def staff_audit_trail():
 
 @app.route('/staff/global-bookings')
 @login_required
-@roles_required('super_admin', 'admin') # Company-wide visibility
+@permission_required('global_bookings')
 def global_bookings():
-    # 1. SECURITY: Only Staff and Admin nodes can access the global ledger
-    if current_user.role not in ['admin', 'staff']:
-        app.logger.warning(f"Unauthorized global access attempt by {current_user.username}")
-        abort(403)
-
     # 2. DATA RETRIEVAL: Fetch ALL bookings in the organization
     # We use .options(db.joinedload(...)) to pull Location, Customer, and Vehicle info in
     # one single query. This is critical for BAS-Node performance.
@@ -1611,8 +1644,9 @@ def global_bookings():
 
 @app.route('/staff/technician/toggle/<int:tech_id>')
 @login_required
+@permission_required('technicians')
+
 def toggle_tech_presence(tech_id):
-    if current_user.role not in ['admin', 'staff']: abort(403)
 
     loc_id = session.get('loc_id')
     tech = db.session.get(Technician, tech_id)
@@ -1644,6 +1678,12 @@ def roles_required(*roles):
         def decorated_view(*args, **kwargs):
             if not current_user.is_authenticated:
                 return redirect(url_for('login'))
+
+            # SUPER ADMIN BYPASS: Always allow super_admin
+            if current_user.role == 'super_admin':
+                return f(*args, **kwargs)
+
+            # Check if user has one of the allowed roles
             if current_user.role not in roles:
                 abort(403)
             return f(*args, **kwargs)
@@ -1700,6 +1740,7 @@ def sync_job_order():
 
 @app.route('/staff/permissions', methods=['GET', 'POST'])
 @login_required
+@permission_required('settings')
 def manage_permissions():
     roles = ['admin', 'staff', 'customer']
     features = [
@@ -1710,7 +1751,9 @@ def manage_permissions():
         ('verify_center', 'Identity Verification'),
         ('users', 'User Registry'),
         ('settings', 'System Settings'),
-        ('global_bookings', 'Global Ledger')
+        ('global_bookings', 'Global Ledger'),
+        ('technicians', 'Manage Technicians'), # Add this
+        ('locations', 'Manage Branches')      # Add this
     ]
 
     if request.method == 'POST':
@@ -1738,6 +1781,12 @@ def manage_permissions():
                            features=features,
                            current_perms=current_perms,
                            title="Access Control Matrix")
+
+
+
+
+
+
 
 @app.route('/logout')
 def logout():
