@@ -5,7 +5,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
-    /* MODERN CORE VARIABLES */
     :root {
         --saas-navy: #002d72;
         --saas-accent: #3b82f6;
@@ -19,283 +18,183 @@
         --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
     }
 
-    /* 1. LAYOUT ENGINE (AUTO-SIZE) */
-    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; }
+    /* FIX: Ensure container fits screen but allows internal scroll */
+    html, body { height: 100%; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; }
 
     .dashboard-container {
         height: 100vh;
         display: flex;
         flex-direction: column;
-        padding: 2rem;
-        gap: 1.5rem;
+        padding: 1.5rem;
+        gap: 1rem;
+        box-sizing: border-box;
     }
 
-    /* 2. HEADER SECTION */
     .header-section {
         flex: 0 0 auto;
         display: flex;
         justify-content: space-between;
         align-items: center;
         background: #fff;
-        padding: 1.25rem 2.5rem;
+        padding: 1rem 2rem;
         border-radius: var(--saas-radius);
         border: 1px solid var(--saas-border);
         box-shadow: var(--saas-shadow);
     }
-    .page-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; }
 
-    /* 3. DUAL COLUMN GRID */
+    /* FIX: Flexible Grid - If left col is hidden, right col fills space */
     .main-grid {
-        flex: 1 1 auto;
+        flex: 1;
         display: grid;
-        grid-template-columns: 380px 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
         gap: 1.5rem;
-        min-height: 0;
+        min-height: 0; /* Critical for inner scrolling */
     }
 
-    /* 4. LEFT: INITIALIZATION FORM */
     .form-card {
         background: #ffffff;
         border-radius: var(--saas-radius);
         border: 1px solid var(--saas-border);
         box-shadow: var(--saas-shadow);
-        padding: 2rem;
+        padding: 1.5rem;
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: 1rem;
+        height: fit-content;
     }
 
-    .custom-label { font-size: 0.7rem; font-weight: 800; color: var(--saas-light-text); text-transform: uppercase; letter-spacing: 1px; }
-
-    .modern-input-group {
-        display: flex;
-        background: #f8fafc;
-        border-radius: 12px;
-        overflow: hidden;
-        border: 2px solid transparent;
-        transition: all 0.2s;
-    }
-    .modern-input-group:focus-within {
-        border-color: var(--saas-accent);
-        background: #fff;
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-    }
-    .input-prefix { background: #e2e8f0; padding: 0 1rem; display: flex; align-items: center; font-weight: 800; font-size: 0.8rem; color: var(--saas-light-text); }
-    .modern-input { border: none; background: transparent; padding: 1rem; width: 100%; font-weight: 600; outline: none; }
-
-    .btn-initialize {
-        background: var(--saas-navy);
-        color: white;
-        border: none;
-        padding: 1.25rem;
-        border-radius: 12px;
-        font-weight: 900;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.75rem;
-        transition: all 0.3s;
-    }
-    .btn-initialize:hover { background: var(--saas-accent); transform: translateY(-2px); }
-
-    /* 5. RIGHT: HUB NETWORK LIST */
     .list-container {
-        flex: 1 1 auto;
-        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
         background: #ffffff;
         border-radius: var(--saas-radius);
         border: 1px solid var(--saas-border);
         box-shadow: var(--saas-shadow);
+        overflow: hidden; /* Keep header sticky */
     }
 
-    .list-header {
-        position: sticky; top: 0; background: #fff; z-index: 10;
-        padding: 1.5rem 2rem;
+    .table-wrapper {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .hub-table { width: 100%; border-collapse: collapse; }
+    .hub-table th {
+        position: sticky; top: 0; background: #f9fafb; z-index: 5;
+        padding: 1rem; font-size: 0.7rem; font-weight: 800;
+        text-transform: uppercase; color: var(--saas-light-text);
         border-bottom: 2px solid var(--saas-border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
     }
+    .hub-table td { padding: 1rem; border-bottom: 1px solid var(--saas-border); }
 
-    .hub-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    .hub-table th { padding: 1rem 2rem; background: #f9fafb; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--saas-light-text); border-bottom: 1px solid var(--saas-border); }
-    .hub-table td { padding: 1.25rem 2rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
-    .hub-row:hover { background-color: #fcfdfe; }
-
-    /* MODERN COMPONENTS */
-    .hub-avatar {
-        width: 42px; height: 42px;
-        background: #f1f5f9; color: var(--saas-navy);
-        border-radius: 12px;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: 900; font-size: 1.2rem;
-        border: 1px solid var(--saas-border);
-    }
-
-    /* GLOW PILLS */
     .status-glow {
-        padding: 0.5rem 1rem; border-radius: 999px; font-size: 0.65rem; font-weight: 900;
-        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.4rem 0.8rem; border-radius: 999px; font-size: 0.65rem; font-weight: 900;
+        display: inline-flex; align-items: center; gap: 0.4rem;
     }
     .status-online { background: rgba(16, 185, 129, 0.1); color: var(--saas-success); }
     .status-offline { background: #f1f5f9; color: var(--saas-light-text); }
 
     .pulse-dot {
         width: 8px; height: 8px; background: var(--saas-success); border-radius: 50%;
-        box-shadow: 0 0 10px var(--saas-success);
         animation: status-pulse 2s infinite;
     }
-    @keyframes status-pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.6; } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes status-pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
     .code-badge {
         background: #0f172a; color: white; padding: 4px 10px; border-radius: 6px;
-        font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700;
+        font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
     }
 
-    .btn-action {
-        width: 38px; height: 38px; border-radius: 10px;
-        border: 1px solid var(--saas-border);
-        background: #fff; display: flex; align-items: center; justify-content: center;
-        transition: all 0.2s; color: var(--saas-light-text);
+    .btn-initialize {
+        background: var(--saas-navy); color: white; border: none; padding: 1rem;
+        border-radius: 12px; font-weight: 800; width: 100%;
     }
-    .btn-action:hover { background: var(--saas-navy); color: white; border-color: var(--saas-navy); }
-    .btn-action.delete:hover { background: var(--saas-danger); border-color: var(--saas-danger); }
-
-    /* RADAR ANIMATION */
-    .icon-wrapper { position: relative; width: 48px; height: 48px; background: var(--saas-navy); color: white; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
-    .radar-ping { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px solid var(--saas-navy); border-radius: 14px; animation: radar-expand 2.5s infinite; }
-    @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.8); opacity: 0; } }
-
-    /* FLUID TYPE */
-    html { font-size: clamp(14px, 0.4vw + 0.5rem, 18px); }
-    .page-title { font-size: clamp(1.4rem, 2vw, 1.8rem); }
 </style>
 
-<div class="dashboard-container animate__animated animate__fadeIn">
+<div class="dashboard-container">
 
-    <!-- HEADER SECTION -->
+    <!-- HEADER -->
     <header class="header-section">
         <div class="d-flex align-items-center gap-3">
-            <div class="icon-wrapper">
-                <div class="radar-ping"></div>
-                <i class="fa-solid fa-tower-observation position-relative"></i>
-            </div>
+            <i class="fa-solid fa-tower-observation fa-2x text-primary"></i>
             <div>
-                <h3 class="page-title">Network Hub Management</h3>
-                <p class="small text-muted mb-0 font-monospace">INFRASTRUCTURE_NODES // ACTIVE</p>
+                <h3 class="m-0 fw-bold" style="color: var(--saas-navy);">Hub Network</h3>
+                <p class="small text-muted m-0">INFRASTRUCTURE_NODES // ACTIVE</p>
             </div>
         </div>
-
-        <div class="badge bg-light border text-primary fw-900 rounded-pill px-4 py-2">
-            {{ locations|length }} Broadcast Nodes
-        </div>
+        <div class="badge bg-primary rounded-pill px-4">{{ locations|length }} Nodes</div>
     </header>
 
-    <!-- MAIN CONTENT GRID -->
     <main class="main-grid">
 
-        <!-- LEFT: INITIALIZATION COLUMN -->
-        {% if current_user_role in ['admin', 'staff'] %}
-        <aside class="form-card">
-            <div>
-                <h5 class="fw-900 text-dark mb-1">Initialize Hub</h5>
-                <p class="small text-muted mb-0">Provision a new physical terminal broadcast node.</p>
-            </div>
+        <!-- LEFT: FORM (Only shows if has permission or is super_admin) -->
+        {% if has_perm('locations') %}
+        <aside class="form-card animate__animated animate__fadeInLeft">
+            <h5 class="fw-900 mb-1">Provision New Hub</h5>
+            <p class="small text-muted mb-3">Add a physical terminal broadcast node.</p>
 
-            <form action="{{ url_for('staff_locations') }}" method="POST" class="d-flex flex-column gap-4">
+            <form action="{{ url_for('staff_locations') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                <div>
-                    <label class="custom-label">Station Identity</label>
-                    <div class="modern-input-group mt-2">
-                        <input type="text" name="name" class="modern-input" placeholder="e.g. Makati North Center" required>
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted text-uppercase">Branch Name</label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. Manila Hub" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted text-uppercase">Queue Prefix (Code)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light fw-bold">ID-</span>
+                        <input type="text" name="code" class="form-control" placeholder="MNL" maxlength="10" required>
                     </div>
                 </div>
 
-                <div>
-                    <label class="custom-label">Broadcast Prefix</label>
-                    <div class="modern-input-group mt-2">
-                        <div class="input-prefix">ID-</div>
-                        <input type="text" name="code" class="modern-input" placeholder="MKT" maxlength="10" required>
-                    </div>
-                    <p class="extra-small text-muted mt-2">This code identifies all tickets generated at this node.</p>
-                </div>
-
-                <button type="submit" class="btn-initialize shadow-lg">
-                    <i class="fa-solid fa-plus-circle"></i> PROVISION HUB
+                <button type="submit" class="btn-initialize">
+                    <i class="fa-solid fa-plus-circle me-2"></i> ACTIVATE NODE
                 </button>
             </form>
-
-            <div class="mt-auto p-4 rounded-4" style="background: #f8fafc; border: 1px dashed #cbd5e1;">
-                <h6 class="extra-small fw-900 text-navy mb-2">SYSTEM ARCHITECTURE NOTE</h6>
-                <p class="extra-small text-muted fw-500 mb-0">
-                    Registered hubs serve as broadcast anchors for the public TV monitors and the Customer Kiosk endpoints.
-                </p>
-            </div>
         </aside>
         {% endif %}
 
-        <!-- RIGHT: LIST COLUMN -->
-        <section class="list-container">
-            <div class="table-responsive">
+        <!-- RIGHT: TABLE -->
+        <section class="list-container animate__animated animate__fadeIn">
+            <div class="table-wrapper">
                 <table class="hub-table">
                     <thead>
                         <tr>
-                            <th>Hub Identity</th>
-                            <th>Broadcast Status</th>
-                            <th>Queue Code</th>
-                            <th class="text-end">Lifecycle Actions</th>
+                            <th>Identity</th>
+                            <th>Status</th>
+                            <th>Code</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for loc in locations %}
-                        <tr class="hub-row animate__animated animate__fadeIn">
+                        <tr>
                             <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="hub-avatar me-3">{{ loc.name[0] | upper }}</div>
-                                    <div>
-                                        <div class="fw-800 text-dark" style="font-size: 1rem;">{{ loc.name }}</div>
-                                        <div class="extra-small text-muted font-monospace">UUID_NODE: {{ 1000 + loc.id }}</div>
-                                    </div>
-                                </div>
+                                <div class="fw-bold text-dark">{{ loc.name }}</div>
+                                <div class="extra-small text-muted">ID: {{ 1000 + loc.id }}</div>
                             </td>
                             <td>
                                 {% if loc.is_online %}
-                                    <div class="status-glow status-online">
-                                        <span class="pulse-dot"></span> BROADCASTING
-                                    </div>
+                                    <div class="status-glow status-online"><span class="pulse-dot"></span> LIVE</div>
                                 {% else %}
-                                    <div class="status-glow status-offline">
-                                        <i class="fa-solid fa-power-off"></i> STANDBY
-                                    </div>
+                                    <div class="status-glow status-offline">OFFLINE</div>
                                 {% endif %}
                             </td>
-                            <td>
-                                <span class="code-badge">{{ loc.code }}</span>
-                            </td>
+                            <td><span class="code-badge">{{ loc.code }}</span></td>
                             <td class="text-end">
-                                <div class="d-flex justify-content-end gap-2">
-                                    <a href="{{ url_for('edit_location', loc_id=loc.id) }}"
-                                       class="btn-action" title="Edit Hub Config">
-                                        <i class="fa-solid fa-sliders"></i>
-                                    </a>
-                                    <a href="{{ url_for('delete_location', loc_id=loc.id) }}"
-                                       class="btn-action delete"
-                                       onclick="return confirm('DECOMMISSION HUB: This will disconnect all associated terminals. Proceed?')"
-                                       title="Decommission Hub">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </a>
-                                </div>
+                                <a href="{{ url_for('edit_location', loc_id=loc.id) }}" class="btn btn-sm btn-light border"><i class="fa-solid fa-edit"></i></a>
+                                <a href="{{ url_for('delete_location', loc_id=loc.id) }}"
+                                   class="btn btn-sm btn-danger"
+                                   onclick="return confirm('Delete hub?')"><i class="fa-solid fa-trash"></i></a>
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="4" class="text-center py-5">
-                                <div class="opacity-25 mb-3">
-                                    <i class="fa-solid fa-network-wired fa-4x"></i>
-                                </div>
-                                <h5 class="fw-900 text-muted">No Infrastructure Found</h5>
-                                <p class="small text-muted">Initialize your first branch node using the provisioning panel.</p>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-network-wired fa-3x mb-3 opacity-25"></i>
+                                <p>No hubs found in the network registry.</p>
                             </td>
                         </tr>
                         {% endfor %}
