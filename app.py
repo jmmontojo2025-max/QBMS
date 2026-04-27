@@ -165,16 +165,18 @@ class ServiceCategory(db.Model):
 class Booking(db.Model):
     __tablename__ = 'bookings'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) # Changed to nullable
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))
-    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicles.id'))
+    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicles.id'), nullable=True)
     plate_number = db.Column(db.String(50))
+    guest_name = db.Column(db.String(150)) # Added this
     service_type = db.Column(db.String(255))
+    service_location = db.Column(db.String(50), default='In-Plant') # Added this
     status = db.Column(db.String(20), default='pending')
-    scheduled_time = db.Column(db.DateTime)
-    queue_records = db.relationship('Queue', back_populates='booking', cascade="all, delete-orphan")
-    # THIS LINE MATCHES THE SQL WE JUST RAN
+    scheduled_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     ref_id = db.Column(db.String(10), unique=True)
+    queue_records = db.relationship('Queue', back_populates='booking', cascade="all, delete-orphan")
+
 
     # NO EXPLICIT 'customer' relationship here, it's created by the backref in User model
     # location = db.relationship('Location', backref='bookings_at_location') # This can stay or be removed if 'location' is sufficient from backref in Location model
@@ -664,71 +666,24 @@ from datetime import datetime, timezone
 @app.route('/book', methods=['GET', 'POST'])
 @login_required
 def book():
-    if current_user.role != 'customer':
-        flash("Access Denied: Staff must use the internal terminal.", "danger")
-        return redirect(url_for('staff_panel'))
-
     if request.method == 'POST':
-        time_str = request.form.get('time')
-        if not time_str:
-            flash("Error: Please select a valid date and arrival window.", "danger")
-            return redirect(url_for('book'))
+        # ... logic for vehicle selection ...
+        new_booking = Booking(
+            user_id=current_user.id,
+            location_id=request.form.get('location_id'),
+            plate_number=request.form.get('plate_number'),
+            service_type=request.form.get('product'),
+            service_location=request.form.get('service_location'),  # Choice from Radio buttons
+            scheduled_time=datetime.fromisoformat(request.form.get('time')),
+            status='pending'
+        )
+        db.session.add(new_booking)
+        db.session.commit()
+        return redirect(url_for('dashboard'))
 
-        try:
-            v_id = request.form.get('vehicle_id')
-            final_plate = ""
-
-            if v_id == 'new':
-                new_plate = request.form.get('new_plate', '').strip().upper()
-                new_model = request.form.get('new_model', 'Standard Asset').strip()
-
-                vehicle_obj = Vehicle(
-                    user_id=current_user.id,
-                    plate_number=new_plate,
-                    model_description=new_model
-                )
-                db.session.add(vehicle_obj)
-                db.session.flush()
-                v_id = vehicle_obj.id
-                final_plate = vehicle_obj.plate_number
-            else:
-                v_obj = db.session.get(Vehicle, int(v_id))
-                v_id = v_obj.id
-                final_plate = v_obj.plate_number
-
-            new_booking = Booking(
-                user_id=current_user.id,
-                location_id=request.form.get('location_id'),
-                vehicle_id=v_id,
-                plate_number=final_plate,
-                service_type=request.form.get('product'),
-                scheduled_time=datetime.fromisoformat(time_str),
-                status='pending'
-            )
-            db.session.add(new_booking)
-            db.session.commit()
-
-            flash(f"Deployment Initialized for Unit {final_plate}", "success")
-            return redirect(url_for('dashboard'))
-
-        except Exception as e:
-            db.session.rollback()
-            app.logger.error(f"Booking Error: {e}")
-            flash("System Error: Could not process appointment.", "danger")
-            return redirect(url_for('book'))
-
-    # GET LOGIC: This runs when the user simply loads the page
-    categories = ServiceCategory.query.order_by(ServiceCategory.name).all()
-    locations = Location.query.order_by(Location.name).all()
-    my_fleet = Vehicle.query.filter_by(user_id=current_user.id).order_by(Vehicle.plate_number).all()
-
-    return render_template(
-        'book.html',
-        categories=categories,
-        locations=locations,
-        vehicles=my_fleet,
-        title="New Deployment"
-    )
+    categories = ServiceCategory.query.all()
+    locations = Location.query.all()
+    return render_template('book.html', categories=categories, locations=locations)
 
 
 @app.route('/staff/locations', methods=['GET', 'POST'])
@@ -980,24 +935,22 @@ def delete_category(id):
 
 @app.route('/kiosk')
 def kiosk():
-    # 1. Check if the URL has a location ID (e.g., /kiosk?loc_id=1)
     loc_id_param = request.args.get('loc_id')
-
     if loc_id_param:
         loc = db.session.get(Location, int(loc_id_param))
         if loc:
-            # Lock this browser session to this branch
             session['loc_id'] = loc.id
             session['location_name'] = loc.name
             session['location_code'] = loc.code
             session.modified = True
 
-    # 2. Safety check: If still no branch, send to selection
     if 'loc_id' not in session:
-        flash("Kiosk setup required. Please select a branch.", "warning")
         return redirect(url_for('select_branch_for_staff'))
 
-    return render_template('kiosk.html')
+    # Get categories for the Walk-in Modal
+    categories = ServiceCategory.query.order_by(ServiceCategory.name).all()
+    return render_template('kiosk.html', categories=categories)
+
 
 
 @app.route('/check-in', methods=['POST'])
@@ -1035,20 +988,47 @@ def check_in():
 @csrf.exempt
 def walk_in():
     loc_id = session.get('loc_id')
-    if not loc_id:
-        return jsonify({"status": "error", "message": "Branch not set"}), 400
+    guest_name = request.form.get('customer_name')
+    plate_number = request.form.get('plate_number', '').strip().upper()
+    service_type = request.form.get('service_type')
 
-    today = datetime.now(timezone.utc).date()
-    count = Queue.query.filter_by(location_id=loc_id).filter(func.date(Queue.created_at) == today).count()
+    if not all([guest_name, plate_number, service_type]):
+        return jsonify({"status": "error", "message": "All fields are required"}), 400
 
-    # Format: MKT-W-101
-    ticket_no = f"{session.get('location_code', 'CCI')}-W-{101 + count}"
+    try:
+        # Create Booking as In-Plant Guest
+        new_booking = Booking(
+            user_id=None,
+            location_id=loc_id,
+            plate_number=plate_number,
+            guest_name=guest_name,
+            service_type=service_type,
+            service_location='In-Plant', # Walk-ins are ALWAYS In-Plant
+            status='arrived',
+            ref_id='W-' + ''.join(random.choices(string.digits, k=4))
+        )
+        db.session.add(new_booking)
+        db.session.flush()
 
-    new_q = Queue(ticket_number=ticket_no, location_id=loc_id, status='waiting')
-    db.session.add(new_q)
-    db.session.commit()
+        # Generate Ticket
+        today = datetime.now(timezone.utc).date()
+        count = Queue.query.filter_by(location_id=loc_id).filter(func.date(Queue.created_at) == today).count()
+        ticket_no = f"{session.get('location_code', 'CCI')}-W-{101 + count}"
 
-    return jsonify({"status": "success", "ticket": ticket_no, "q_id": new_q.id})
+        new_q = Queue(
+            ticket_number=ticket_no,
+            location_id=loc_id,
+            booking_id=new_booking.id,
+            status='waiting'
+        )
+        db.session.add(new_q)
+        db.session.commit()
+
+        return jsonify({"status": "success", "ticket": ticket_no, "q_id": new_q.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 
 # THIS IS THE ROUTE THAT TRIGGERS THE PRINTER TEMPLATE
@@ -1798,19 +1778,36 @@ def logout():
 
 if __name__ == '__main__':
     with app.app_context():
+        # 1. Create all tables based on your Models
+        db.create_all()
+
         try:
-            # Add the missing plate_number column
-            # Check if column exists before adding
+            # 2. Use a safer way to check for missing columns
             inspector = db.inspect(db.engine)
-            if not inspector.has_column('bookings', 'plate_number'):
+            existing_columns = [c['name'] for c in inspector.get_columns('bookings')]
+
+            # Check and add 'plate_number'
+            if 'plate_number' not in existing_columns:
                 db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN plate_number VARCHAR(50)'))
                 db.session.commit()
-                print("--- Bookings Table Updated with plate_number ---")
-            else:
-                print("--- Column plate_number already exists in bookings table ---")
+                print("--- Database Updated: Added plate_number ---")
+
+            # Check and add 'guest_name' (for Walk-ins)
+            if 'guest_name' not in existing_columns:
+                db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN guest_name VARCHAR(150)'))
+                db.session.commit()
+                print("--- Database Updated: Added guest_name ---")
+
+            # Check and add 'service_location' (In-Plant/Out-Plant)
+            if 'service_location' not in existing_columns:
+                db.session.execute(
+                    db.text("ALTER TABLE bookings ADD COLUMN service_location VARCHAR(50) DEFAULT 'In-Plant'"))
+                db.session.commit()
+                print("--- Database Updated: Added service_location ---")
+
         except Exception as e:
-            print(f"--- Error during DB column check/add: {e} ---")
+            print(f"--- Database Migration Note: {e} ---")
             db.session.rollback()
 
-        db.create_all()
-    app.run(debug=True)
+    # 3. Run the app on Port 5000
+    app.run(debug=True, port=5000)
