@@ -20,6 +20,7 @@ from functools import wraps
 
 from requests_oauthlib import OAuth1
 
+import json # Ensure this is at the top of app.py
 
 
 
@@ -107,6 +108,8 @@ class Location(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
     code = db.Column(db.String(10), unique=True)
+    capacity = db.Column(db.Integer, default=20) # Add this line
+
 
     @property
     def is_online(self):
@@ -265,17 +268,12 @@ def permission_required(feature_key):
     def wrapper(f):
         @wraps(f)
         def decorated_view(*args, **kwargs):
-            if not current_user.is_authenticated:
-                return redirect(url_for('login'))
-
-            if not check_permission(feature_key):
-                abort(403)
-
+            if not current_user.is_authenticated: return redirect(url_for('login'))
+            if not check_permission(feature_key): abort(403)
             return f(*args, **kwargs)
-
         return decorated_view
-
     return wrapper
+
 
 
 # This makes the permission check available in all HTML templates
@@ -295,23 +293,11 @@ def inject_permissions():
 
 
 def check_permission(feature_key):
-    """The only function that checks the Matrix."""
-    if not current_user.is_authenticated:
-        return False
+    if not current_user.is_authenticated: return False
+    if current_user.role == 'super_admin': return True
 
-    # 1. Super Admin Bypass
-    if current_user.role == 'super_admin':
-        return True
-
-    # 2. Case-Insensitive Check
-    # This ensures 'Staff' and 'staff' both work
     user_role = current_user.role.lower().strip()
-
-    perm = RolePermission.query.filter_by(
-        role=user_role,
-        feature_key=feature_key.lower().strip()
-    ).first()
-
+    perm = RolePermission.query.filter_by(role=user_role, feature_key=feature_key.lower().strip()).first()
     return perm.is_allowed if perm else False
 
 
@@ -402,11 +388,16 @@ def staff_panel():
         return redirect(url_for('select_branch_for_staff'))
 
     loc_id = session.get('loc_id')
-
-    # Optimization: Only run cleanup once an hour per session to prevent hangs
-    last_cleanup = session.get('last_cleanup')
     now = datetime.now(timezone.utc)
 
+    # 1. Fetch Hub Details
+    current_location = db.session.get(Location, loc_id)
+    if not current_location:
+        return redirect(url_for('select_branch_for_staff'))
+    max_capacity = current_location.capacity
+
+    # 2. Cleanup stale tickets (Hourly)
+    last_cleanup = session.get('last_cleanup')
     if not last_cleanup or (now - datetime.fromisoformat(last_cleanup)).total_seconds() > 3600:
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         stale = Queue.query.filter(Queue.location_id == loc_id, Queue.status == 'waiting',
@@ -417,27 +408,150 @@ def staff_panel():
         db.session.commit()
         session['last_cleanup'] = now.isoformat()
 
-    # Optimized Data Fetching
-    waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
+    # 3. Fetch Active Work and CREATE BUSY MAP
     serving = Queue.query.options(
         db.joinedload(Queue.assigned_techs),
-        db.selectinload(Queue.logs)
+        db.joinedload(Queue.booking)
     ).filter_by(location_id=loc_id, status='serving').all()
 
-    all_techs = Technician.query.filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
-    available_techs = [t for t in all_techs if t.is_present]
+    # --- THIS IS THE FIX ---
+    busy_map = {}
+    for q in serving:
+        for t_assigned in q.assigned_techs:
+            busy_map[t_assigned.id] = {
+                'ticket': q.ticket_number,
+                'plate': q.booking.plate_number if q.booking else 'WALK-IN',
+                'site': q.booking.service_location if q.booking else 'In-Plant'
+            }
+    # -----------------------
 
+    # 4. Fetch All Technicians
+    all_techs = Technician.query.filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
+
+    # 5. Filter Available Technicians (Not in the busy_map)
+    available_techs = [t for t in all_techs if t.is_present and t.id not in busy_map]
+
+    waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
+    current_occupancy = len(serving) + len(waiting)
+    capacity_percent = int((current_occupancy / max_capacity) * 100) if max_capacity > 0 else 0
+
+    # 6. Pass busy_map to the render_template
     return render_template('staff.html',
                            waiting_tickets=waiting,
                            serving_list=serving,
                            technicians=available_techs,
                            roster=all_techs,
+                           busy_map=busy_map, # <--- SENDING THE VARIABLE TO HTML
+                           max_capacity=max_capacity,
+                           current_occupancy=current_occupancy,
+                           capacity_percent=capacity_percent,
                            title="Live Console")
+
+
+@app.route('/admin/workflow')
+@login_required
+@roles_required('super_admin', 'admin') # Strictly Admin only
+def admin_workflow():
+    if 'loc_id' not in session:
+        return redirect(url_for('select_branch_for_staff'))
+
+    loc_id = session.get('loc_id')
+    now = datetime.now(timezone.utc)
+
+    # 1. Hub & Capacity
+    current_location = db.session.get(Location, loc_id)
+    max_capacity = current_location.capacity if current_location else 20
+
+    # 2. Fetch Active Workfloor
+    serving = Queue.query.options(
+        db.joinedload(Queue.assigned_techs),
+        db.joinedload(Queue.booking)
+    ).filter_by(location_id=loc_id, status='serving').all()
+
+    # 3. Create Busy Map for Roster Details
+    busy_map = {}
+    for q in serving:
+        for t_assigned in q.assigned_techs:
+            busy_map[t_assigned.id] = {
+                'ticket': q.ticket_number,
+                'plate': q.booking.plate_number if q.booking else 'WALK-IN',
+                'site': q.booking.service_location if q.booking else 'In-Plant'
+            }
+
+    # 4. Fetch Technicians
+    all_techs = Technician.query.options(
+        db.selectinload(Technician.tasks).joinedload(Queue.booking)
+    ).filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
+
+    # 5. Filter Available for Dispatch Dropdown
+    available_techs = [t for t in all_techs if t.is_present and t.id not in busy_map]
+
+    # 6. Fetch Queue & Stats
+    waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
+    current_occupancy = len(serving) + len(waiting)
+    capacity_percent = int((current_occupancy / max_capacity) * 100) if max_capacity > 0 else 0
+
+    return render_template('admin_workflow.html', # Note the new template name
+                           waiting_tickets=waiting,
+                           serving_list=serving,
+                           technicians=available_techs,
+                           roster=all_techs,
+                           busy_map=busy_map,
+                           max_capacity=max_capacity,
+                           current_occupancy=current_occupancy,
+                           capacity_percent=capacity_percent,
+                           title="Admin Workflow Control")
+
+
+
+@app.route('/staff/manual-checkin', methods=['POST'])
+@login_required
+def staff_manual_checkin():
+    loc_id = session.get('loc_id')
+    loc_code = session.get('location_code', 'CCI')
+    manifest_data = request.form.get('staff_manifest_data')
+
+    if not manifest_data:
+        return redirect(url_for('staff_panel'))
+
+    manifest = json.loads(manifest_data)
+
+    try:
+        for item in manifest:
+            # 1. Create Booking
+            new_booking = Booking(
+                user_id=None,
+                location_id=loc_id,
+                plate_number=item['plate'].strip().upper(),
+                guest_name=f"[PHONE] {item['client']}",
+                service_type=item['service'],
+                service_location=item['site'],
+                status='arrived'
+            )
+            db.session.add(new_booking)
+            db.session.flush()
+
+            # 2. Generate Ticket
+            today = datetime.now(timezone.utc).date()
+            count = Queue.query.filter_by(location_id=loc_id).filter(func.date(Queue.created_at) == today).count()
+            ticket_no = f"{loc_code}-M-{101 + count}"
+
+            # 3. Add to Queue
+            new_q = Queue(ticket_number=ticket_no, location_id=loc_id, booking_id=new_booking.id, status='waiting')
+            db.session.add(new_q)
+
+        db.session.commit()
+        flash(f"Successfully processed {len(manifest)} phone bookings.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("System error in bulk check-in.", "danger")
+
+    return redirect(url_for('staff_panel'))
 
 
 @app.route('/staff/start-work/<int:q_id>', methods=['POST'])
 @login_required
-@permission_required('start-work') # Add this!
+@permission_required('start-work')
 def start_work(q_id):
     loc_id = session.get('loc_id')
     tech_ids = request.form.getlist('technician_ids')
@@ -447,11 +561,13 @@ def start_work(q_id):
         techs = Technician.query.filter(Technician.id.in_(tech_ids)).all()
         q.assigned_techs = techs
         q.status = 'serving'
-        q.start_time = datetime.now(timezone.utc)
+        # Note: We don't set start_time here anymore because it's manually typed later
         db.session.commit()
 
-        log_action("Dispatch", f"Ticket {q.ticket_number} sent to floor. Team: {', '.join([t.name for t in techs])}")
-        if q.booking: notify_customer(q.booking.customer, q.booking.plate_number, 'serving', q.id, q.ticket_number)
+        log_action("Dispatch", f"Ticket {q.ticket_number} sent to floor.")
+
+        if q.booking and q.booking.customer:
+            notify_customer(q.booking.customer, q.booking.plate_number, 'serving', q.id, q.ticket_number)
 
     return redirect(url_for('staff_panel'))
 
@@ -667,90 +783,90 @@ from datetime import datetime, timezone
 @login_required
 def book():
     if request.method == 'POST':
-        # ... logic for vehicle selection ...
-        new_booking = Booking(
-            user_id=current_user.id,
-            location_id=request.form.get('location_id'),
-            plate_number=request.form.get('plate_number'),
-            service_type=request.form.get('product'),
-            service_location=request.form.get('service_location'),  # Choice from Radio buttons
-            scheduled_time=datetime.fromisoformat(request.form.get('time')),
-            status='pending'
-        )
-        db.session.add(new_booking)
-        db.session.commit()
-        return redirect(url_for('dashboard'))
+        # Get the JSON manifest from the hidden field
+        manifest_data = request.form.get('manifest_data')
+        if not manifest_data:
+            flash("No assets added to manifest.", "warning")
+            return redirect(url_for('book'))
+
+        manifest = json.loads(manifest_data)
+
+        try:
+            for item in manifest:
+                # 1. Handle New Vehicle Provisioning
+                v_id = item.get('vehicle_id')
+                if v_id == 'new':
+                    new_v = Vehicle(
+                        user_id=current_user.id,
+                        plate_number=item['new_plate'].strip().upper(),
+                        model_description=item['new_model']
+                    )
+                    db.session.add(new_v)
+                    db.session.flush()
+                    v_id = new_v.id
+
+                # 2. Create Booking
+                new_booking = Booking(
+                    user_id=current_user.id,
+                    location_id=item['location_id'],
+                    vehicle_id=v_id,
+                    plate_number=item['plate_display'].split(' ')[0],
+                    service_type=item['product'],
+                    service_location=item['service_location'],
+                    scheduled_time=datetime.fromisoformat(item['time']),
+                    status='pending'
+                )
+                db.session.add(new_booking)
+
+            db.session.commit()
+            flash(f"Successfully deployed {len(manifest)} assets.", "success")
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Booking error: {e}")
+            flash("Error processing manifest.", "danger")
 
     categories = ServiceCategory.query.all()
     locations = Location.query.all()
-    return render_template('book.html', categories=categories, locations=locations)
+    # Pull user's vehicles for the dropdown
+    user_vehicles = Vehicle.query.filter_by(user_id=current_user.id).all()
+    return render_template('book.html', categories=categories, locations=locations, vehicles=user_vehicles)
 
 
 @app.route('/staff/locations', methods=['GET', 'POST'])
 @login_required
 @permission_required('locations')
 def staff_locations():
-    # Handle POST request to add a new location
     if request.method == 'POST':
-        # MODIFIED: Allow both 'admin' and 'staff' to add locations
-        # if current_user.role not in ['admin', 'staff']: # Original condition
-        #    flash("You do not have administrative privileges to add locations.", "danger")
-        #    return redirect(url_for('staff_locations'))
-
         name = request.form.get('name').strip()
         code = request.form.get('code').strip().upper()
+        capacity = request.form.get('capacity', 20) # Get capacity from form
 
-        if not name or not code:
-            flash("Branch Name and Code are required.", "danger")
-        else:
-            existing_location = Location.query.filter((Location.name == name) | (Location.code == code)).first()
-            if existing_location:
-                flash("A branch with this name or code already exists.", "danger")
-            else:
-                new_location = Location(name=name, code=code)
-                db.session.add(new_location)
-                db.session.commit()
-                flash(f"Branch '{name}' ({code}) added successfully!", "success")
+        new_location = Location(name=name, code=code, capacity=int(capacity))
+        db.session.add(new_location)
+        db.session.commit()
+        flash(f"Branch '{name}' added with capacity {capacity}.", "success")
         return redirect(url_for('staff_locations'))
 
-    # Handle GET request to display all locations
     all_locations = Location.query.order_by(Location.name).all()
-    # Pass the current user's role to the template
-    return render_template('staff_locations.html', locations=all_locations, title="Manage Branches", current_user_role=current_user.role)
+    return render_template('staff_locations.html', locations=all_locations)
+
 
 
 @app.route('/staff/locations/edit/<int:loc_id>', methods=['GET', 'POST'])
 @login_required
 @permission_required('locations_edit')
-
 def edit_location(loc_id):
-
-    location_to_edit = db.session.get(Location, loc_id)
-    if not location_to_edit:
-        flash("Location not found.", "danger")
-        return redirect(url_for('staff_locations'))
-
+    loc = db.session.get(Location, loc_id)
     if request.method == 'POST':
-        name = request.form.get('name').strip()
-        code = request.form.get('code').strip().upper()
-
-        if not name or not code:
-            flash("Branch Name and Code are required.", "danger")
-        else:
-            existing_location = Location.query.filter(
-                ((Location.name == name) | (Location.code == code)) & (Location.id != loc_id)
-            ).first()
-            if existing_location:
-                flash("Another branch with this name or code already exists.", "danger")
-            else:
-                location_to_edit.name = name
-                location_to_edit.code = code
-                db.session.commit()
-                flash(f"Branch '{name}' ({code}) updated successfully.", "success")
+        loc.name = request.form.get('name')
+        loc.code = request.form.get('code').upper()
+        loc.capacity = int(request.form.get('capacity', 20)) # Update capacity
+        db.session.commit()
+        flash("Branch updated successfully.", "success")
         return redirect(url_for('staff_locations'))
+    return render_template('staff_location_edit.html', location=loc)
 
-    # GET request: Display the edit form
-    return render_template('staff_location_edit.html', location=location_to_edit, title="Edit Branch")
 
 @app.route('/staff/locations/delete/<int:loc_id>')
 @login_required
@@ -796,6 +912,7 @@ def staff_panel():
 
     waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
     serving = Queue.query.filter_by(location_id=loc_id, status='serving').all()
+    current_occupancy = len(serving)
     techs = Technician.query.filter_by(location_id=loc_id, is_active=True).all()
 
     app.logger.info(f"Rendering staff.html for {current_user.username} (Location: {session.get('loc_name')})")
@@ -803,35 +920,31 @@ def staff_panel():
                            title="Live Console")
 
 
-@app.route('/staff/complete-work/<int:q_id>')
+@app.route('/staff/complete-work/<int:q_id>', methods=['POST'])  # MUST BE POST
 @login_required
-@permission_required('complete-work')
-
-
 def complete_work(q_id):
-    loc_id = session.get('loc_id')
+    # Capture the HH:MM values from the HTML form
+    start_str = request.form.get('manual_start')
+    end_str = request.form.get('manual_end')
+
+    if not start_str or not end_str:
+        flash("Error: Start and End times are required.", "danger")
+        return redirect(url_for('staff_panel'))
+
     q = db.session.get(Queue, q_id)
+    if q:
+        today = datetime.now(timezone.utc).date()
+        # Convert the HH:MM strings into actual database time objects
+        q.start_time = datetime.combine(today, datetime.strptime(start_str, '%H:%M').time())
+        q.end_time = datetime.combine(today, datetime.strptime(end_str, '%H:%M').time())
 
-    if q and q.location_id == loc_id:
         q.status = 'done'
-        q.end_time = datetime.now(timezone.utc)
-        if q.booking:
-            q.booking.status = 'done'
+        if q.booking: q.booking.status = 'done'
         db.session.commit()
-        log_action("Work Completed", f"Ticket {q.ticket_number} marked as ready for release.")
-
-        # AUTOMATIC NOTIFICATION
-        if q.booking and q.booking.customer:
-            # Look for this line:
-            notify_customer(
-                user=q.booking.customer,
-                plate_number=q.booking.plate_number,
-                status_type='done',
-                queue_id=q.id,  # <--- CHANGE THIS from q.ticket_number to q.id
-                ticket_number=q.ticket_number  # Pass this separately if needed
-            )
+        flash(f"Ticket {q.ticket_number} marked complete.", "success")
 
     return redirect(url_for('staff_panel'))
+
 
 
 @app.route('/staff/records')
@@ -992,35 +1105,25 @@ def walk_in():
     plate_number = request.form.get('plate_number', '').strip().upper()
     service_type = request.form.get('service_type')
 
-    if not all([guest_name, plate_number, service_type]):
-        return jsonify({"status": "error", "message": "All fields are required"}), 400
-
     try:
-        # Create Booking as In-Plant Guest
         new_booking = Booking(
-            user_id=None,
+            user_id=None, # Explicitly None for Walk-ins
             location_id=loc_id,
             plate_number=plate_number,
             guest_name=guest_name,
             service_type=service_type,
-            service_location='In-Plant', # Walk-ins are ALWAYS In-Plant
+            service_location='In-Plant',
             status='arrived',
             ref_id='W-' + ''.join(random.choices(string.digits, k=4))
         )
         db.session.add(new_booking)
         db.session.flush()
 
-        # Generate Ticket
         today = datetime.now(timezone.utc).date()
         count = Queue.query.filter_by(location_id=loc_id).filter(func.date(Queue.created_at) == today).count()
         ticket_no = f"{session.get('location_code', 'CCI')}-W-{101 + count}"
 
-        new_q = Queue(
-            ticket_number=ticket_no,
-            location_id=loc_id,
-            booking_id=new_booking.id,
-            status='waiting'
-        )
+        new_q = Queue(ticket_number=ticket_no, location_id=loc_id, booking_id=new_booking.id, status='waiting')
         db.session.add(new_q)
         db.session.commit()
 
@@ -1029,14 +1132,10 @@ def walk_in():
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
 
-
-
-# THIS IS THE ROUTE THAT TRIGGERS THE PRINTER TEMPLATE
 @app.route('/print-ticket/<int:q_id>')
 def print_ticket_view(q_id):
     queue_item = db.session.get(Queue, q_id)
-    if not queue_item:
-        return "Ticket not found", 404
+    if not queue_item: return "Ticket not found", 404
     return render_template('print_ticket.html', ticket=queue_item)
 
 
@@ -1210,24 +1309,45 @@ def staff_users():
 
 @app.before_request
 def update_last_seen():
+    """
+    Updates staff telemetry (Last Seen and Current Hub).
+    Throttled to once every 60 seconds to optimize DB performance and prevent hangs.
+    """
+    # 1. Only track Management (Staff/Admin/Super Admin)
     if current_user.is_authenticated and current_user.role in ['staff', 'admin', 'super_admin']:
         now = datetime.now(timezone.utc)
 
-        # Check if we actually need to update (Throttling)
-        # Prevents database "Hangs" by limiting updates to once per minute
+        # 2. Retrieve the last time the DB was updated for this user
         last_update = current_user.last_seen
 
-        if not last_update or (now - last_update.replace(tzinfo=timezone.utc)).total_seconds() > 60:
+        # 3. THROTTLING LOGIC
+        # We only proceed if last_seen is empty or if more than 60 seconds have passed
+        should_update = False
+        if not last_update:
+            should_update = True
+        else:
+            # Handle timezone safety (ensure both are UTC for comparison)
+            if last_update.tzinfo is None:
+                last_update = last_update.replace(tzinfo=timezone.utc)
+
+            if (now - last_update).total_seconds() > 60:
+                should_update = True
+
+        if should_update:
             try:
-                # Use a separate execution to avoid locking the whole user object if possible
+                # Update the timestamp
                 current_user.last_seen = now
+
+                # Update the location ID currently assigned in the session
                 if 'loc_id' in session:
                     current_user.current_loc_id = session.get('loc_id')
 
+                # Perform the DB commit
                 db.session.commit()
             except Exception as e:
+                # Safety rollback to prevent DB locking
                 db.session.rollback()
-                app.logger.error(f"Background Telemetry Error: {e}")
+                app.logger.error(f"Telemetry Update Error: {e}")
 
 
 # ADD THIS: Ensures database connections are released after every request
@@ -1295,22 +1415,13 @@ def expire_ticket(q_id):
 def revert_ticket(q_id):
     loc_id = session.get('loc_id')
     q = db.session.get(Queue, q_id)
-
-    # Security: Ensure ticket exists and belongs to this branch
     if q and q.location_id == loc_id:
-        # Move back to waiting
         q.status = 'waiting'
-
-        # If it was a booking, move it back to pending
-        if q.booking:
-            q.booking.status = 'pending'
-
+        if q.booking: q.booking.status = 'pending'
         db.session.commit()
-        flash(f"Ticket {q.ticket_number} has been restored to the active queue.", "success")
-    else:
-        flash("Error: Could not restore ticket.", "danger")
-
+        flash(f"Ticket {q.ticket_number} returned to queue.", "success")
     return redirect(url_for('staff_records'))
+
 
 
 import threading
@@ -1320,15 +1431,19 @@ from flask import current_app
 def notify_customer(user, plate_number, status_type, queue_id=None, ticket_number=None):
     """
     Unified engine to send SMS and Email automatically in the background.
-    Prevents the staff dashboard from freezing during SMTP/SMS API calls.
+    Safely ignores Walk-ins (user=None) and prevents the dashboard from freezing.
     """
-    # 1. Capture necessary data BEFORE starting the thread.
-    # Flask 'session' and 'request' are NOT available inside a background thread.
+    # 1. CRITICAL: If user is None (Walk-in Guest), exit immediately
+    if user is None:
+        return
+
+    # 2. CAPTURE CONTEXT: Threads cannot access 'session' or 'request' objects.
+    # We capture all required data into local variables before starting the thread.
     loc_name = session.get('location_name', 'Coolaire Service Center')
     root_url = request.url_root
-    user_id = user.id  # Pass ID to fetch a fresh object in the thread
+    user_id = user.id  # Pass ID to fetch a fresh object inside the thread session
 
-    # Get the actual app instance to pass into the thread
+    # Get the actual Flask app instance to pass into the thread
     app_instance = current_app._get_current_object()
 
     def run_notifications(app_ctx, u_id, l_name, base_url):
@@ -1338,35 +1453,35 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
             if not db_user:
                 return
 
-            # Fetch Settings
+            # Fetch System Settings for APIs and SMTP
             settings = {s.key: s.value for s in SystemSetting.query.all()}
 
-            # 2. Define Messages and Context based on status_type
+            # 3. DEFINE MESSAGE CONTENT BASED ON STATUS
+            subject = "Coolaire System Update"
+            msg_text = ""
             is_account_msg = False
-            if status_type == 'account_approved':
-                subject = "Account Activated: Access Granted to Coolaire Portal"
-                msg_text = f"Welcome to Coolaire, {db_user.full_name}! Your identity verification is complete. You can now log in to the Partner Portal."
+
+            if status_type == 'registration_pending':
+                subject = "Coolaire Registration: Pending Verification"
+                msg_text = f"Hello {db_user.full_name}, we have received your application for {db_user.company_name}. Access is currently under review."
                 is_account_msg = True
-            elif status_type == 'registration_pending':
-                subject = "Registration Received: Pending Verification"
-                msg_text = f"Thank you for registering, {db_user.full_name}. We have received your application for {db_user.company_name}. You will receive another email once your account is activated."
+            elif status_type == 'account_approved':
+                subject = "Coolaire Account: Access Granted"
+                msg_text = f"Great news, {db_user.full_name}! Your account for {db_user.company_name} is now active. You may now use the Partner Portal."
                 is_account_msg = True
-            elif status_type == 'booked':
-                subject = f"Deployment Confirmed: Unit {plate_number}"
-                msg_text = f"Coolaire: Your deployment for unit {plate_number} has been logged. Please arrive at the hub on your scheduled window."
             elif status_type == 'serving':
-                subject = f"Service Started: Unit {plate_number}"
-                msg_text = f"Coolaire Update: Your unit {plate_number} (Ticket {ticket_number}) is now being serviced."
+                subject = f"Service Started: {plate_number}"
+                msg_text = f"Coolaire Update: Your unit {plate_number} (Ticket {ticket_number}) is now being serviced on the floor."
             elif status_type == 'done':
-                subject = f"Service Complete: Unit {plate_number}"
-                msg_text = f"Coolaire Update: Great news! Service for unit {plate_number} is complete. Please proceed to the release bay."
+                subject = f"Service Complete: {plate_number}"
+                msg_text = f"Coolaire Update: Great news! Service for unit {plate_number} is finished. Please proceed to the release bay."
             elif status_type == 'expired':
-                subject = f"Appointment Update: Unit {plate_number}"
-                msg_text = f"Coolaire Update: We noticed you weren't able to make it for unit {plate_number}. Your ticket has been marked as expired/no-show."
+                subject = "Appointment Status: Expired"
+                msg_text = f"Coolaire Update: We noticed you weren't able to make it for unit {plate_number}. The ticket has been marked as no-show."
             else:
                 return
 
-            # --- PART A: SEND SMS ---
+            # --- PART A: SMS (SEMAPHORE) ---
             sms_key = settings.get('SMS_API_KEY')
             if sms_key and db_user.phone:
                 sms_log = NotificationLog(queue_id=queue_id, recipient=db_user.phone, channel='sms')
@@ -1380,8 +1495,8 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
                     sms_log.error_message = str(e)
                 db.session.add(sms_log)
 
-            # --- PART B: SEND EMAIL ---
-            mail_user = settings.get('MAIL_HOST_USER', 'appointments@coolaireconsolidated.com')
+            # --- PART B: EMAIL (SMTP) ---
+            mail_user = settings.get('MAIL_HOST_USER')
             mail_pass = settings.get('MAIL_HOST_PASSWORD')
             mail_server = settings.get('MAIL_SERVER', 'mail.coolaireconsolidated.com')
             mail_port = int(settings.get('MAIL_PORT', 465))
@@ -1390,59 +1505,41 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
                 email_log = NotificationLog(queue_id=queue_id, recipient=db_user.email, channel='email')
                 try:
                     msg = MIMEMultipart('related')
-                    msg['From'] = f"Coolaire Appointments <{mail_user}>"
+                    msg['From'] = f"Coolaire Service <{mail_user}>"
                     msg['To'] = db_user.email
                     msg['Subject'] = subject
 
-                    login_url = f"{base_url}login"
+                    # Style the info box based on message type
+                    info_box_html = f"""
+                    <div style="margin-top: 20px; padding: 15px; background: #f8fafc; border-left: 4px solid #002d72; border-radius: 4px;">
+                        <p style="margin: 0; font-size: 14px;"><strong>Target Asset:</strong> {plate_number}</p>
+                        <p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Location:</strong> {l_name}</p>
+                        {f'<p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Reference:</strong> {ticket_number}</p>' if ticket_number else ''}
+                    </div>"""
 
-                    # 3. Dynamic Info Box Styling
-                    if is_account_msg:
-                        info_box_html = f"""
-                        <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #76b82a;">
-                            <p style="margin: 0; font-size: 14px;"><strong>Account Type:</strong> Client Portal Access</p>
-                            <p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Company:</strong> {db_user.company_name}</p>
-                            <p style="margin: 15px 0 0 0; font-size: 14px;">
-                                <a href="{login_url}" style="background: #002d72; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
-                                    LOG IN TO PORTAL
-                                </a>
-                            </p>
-                        </div>"""
-                    else:
-                        info_box_html = f"""
-                        <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 6px; border-left: 4px solid #002d72;">
-                            <p style="margin: 0; font-size: 14px;"><strong>Asset Plate:</strong> {plate_number}</p>
-                            <p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Location:</strong> {l_name}</p>
-                            {f'<p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Reference:</strong> {ticket_number}</p>' if ticket_number else ''}
-                        </div>"""
-
-                    # 4. Final HTML Template
                     html = f"""
                     <html>
-                        <body style="font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a1a; line-height: 1.6; margin: 0; padding: 0;">
-                            <div style="max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
-                                <div style="background: #002d72; padding: 30px; text-align: center;">
-                                    <img src="cid:logo" alt="Coolaire Logo" style="height: 60px; width: auto;">
-                                    <p style="color: #76b82a; margin: 10px 0 0 0; font-weight: bold; text-transform: uppercase; font-size: 11px; letter-spacing: 1px;">
-                                        Number one cold chain supplier in the Philippines
-                                    </p>
+                        <body style="font-family: sans-serif; color: #333; line-height: 1.6;">
+                            <div style="max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+                                <div style="background: #002d72; padding: 25px; text-align: center;">
+                                    <img src="cid:logo" alt="Coolaire" style="height: 50px;">
                                 </div>
-                                <div style="padding: 40px 30px;">
-                                    <h2 style="color: #002d72; margin-top: 0; font-size: 20px;">System Notification</h2>
+                                <div style="padding: 30px;">
+                                    <h2 style="color: #002d72; margin-top: 0;">System Notification</h2>
                                     <p>Dear <strong>{db_user.full_name}</strong>,</p>
-                                    <p style="font-size: 16px; color: #334155;">{msg_text}</p>
+                                    <p>{msg_text}</p>
                                     {info_box_html}
+                                    <p style="margin-top: 30px; font-size: 13px; color: #666;">If you have any questions, please contact our service team.</p>
                                 </div>
-                                <div style="background: #f1f5f9; padding: 20px; text-align: center; font-size: 11px; color: #64748b;">
-                                    This is an automated notification from the Coolaire QBMS System.<br>
-                                    &copy; {datetime.now(timezone.utc).year} Coolaire Consolidated Inc.
+                                <div style="background: #f1f1f1; padding: 15px; text-align: center; font-size: 11px; color: #888;">
+                                    &copy; {datetime.now().year} Coolaire Consolidated Inc.
                                 </div>
                             </div>
                         </body>
                     </html>"""
                     msg.attach(MIMEText(html, 'html'))
 
-                    # 5. Embed Logo
+                    # Embed Logo
                     logo_path = os.path.join(app_ctx.root_path, 'static', 'logo.png')
                     if os.path.exists(logo_path):
                         with open(logo_path, 'rb') as f:
@@ -1450,7 +1547,7 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
                             img.add_header('Content-ID', '<logo>')
                             msg.attach(img)
 
-                    # 6. Execute Send
+                    # SMTP Execution
                     with smtplib.SMTP_SSL(mail_server, mail_port) as server:
                         server.login(mail_user, mail_pass)
                         server.sendmail(mail_user, db_user.email, msg.as_string())
@@ -1462,10 +1559,9 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
 
                 db.session.add(email_log)
 
-            # Final commit for the logs within the thread
             db.session.commit()
 
-    # Start the thread and return control to the main app immediately
+    # Start the background task
     threading.Thread(target=run_notifications, args=(app_instance, user_id, loc_name, root_url)).start()
 
 
@@ -1625,21 +1721,14 @@ def global_bookings():
 @app.route('/staff/technician/toggle/<int:tech_id>')
 @login_required
 @permission_required('technicians')
-
 def toggle_tech_presence(tech_id):
-
     loc_id = session.get('loc_id')
     tech = db.session.get(Technician, tech_id)
-
     if tech and tech.location_id == loc_id:
-        tech.is_present = not tech.is_present  # Flip status
+        tech.is_present = not tech.is_present
         db.session.commit()
-
-        status_text = "PRESENT" if tech.is_present else "ABSENT"
-        log_action("Attendance Change", f"Technician {tech.name} marked as {status_text}")
-        flash(f"{tech.name} is now marked as {status_text}.", "info")
-
     return redirect(url_for('staff_panel'))
+
 
 @app.route('/staff/save-notes/<int:q_id>', methods=['POST'])
 @login_required
