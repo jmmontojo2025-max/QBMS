@@ -57,17 +57,27 @@
                         </div>
 
                         <!-- BRANCH CODE -->
-                        <div class="mb-5">
+                        <div class="mb-4">
                             <label class="biz-label">Terminal Identification Code</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted fw-bold">ID-</span>
                                 <input type="text" class="form-control biz-input border-start-0 font-monospace" id="branchCode" name="code"
                                        value="{{ location.code }}" maxlength="10" placeholder="MKT" required>
                             </div>
+                        </div>
+
+                        <!-- HUB CAPACITY (NEW) -->
+                        <div class="mb-5">
+                            <label class="biz-label">Maximum Unit Capacity</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-truck-ramp-box"></i></span>
+                                <input type="number" class="form-control biz-input border-start-0" id="hubCapacity" name="capacity"
+                                       value="{{ location.capacity }}" min="1" placeholder="20" required>
+                            </div>
                             <div class="alert alert-info border-0 bg-light mt-3 rounded-3 d-flex align-items-center">
                                 <i class="fa-solid fa-circle-info text-primary fs-4 me-3"></i>
                                 <span class="extra-small fw-600 text-secondary">
-                                    Changing this code will update the prefix for all future queue tickets generated at this hub.
+                                    This limits how many units can be in "On-Going" status. BASA is typically set to 15.
                                 </span>
                             </div>
                         </div>
@@ -89,8 +99,8 @@
             <div class="text-center mt-4">
                 <div class="p-3 bg-light rounded-pill d-inline-block px-4">
                     <span class="extra-small fw-bold text-muted text-uppercase ls-1">
-                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Last Modified:
-                        <span class="text-dark">{{ location.id + 20 }} hours ago</span>
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Infrastructure Node ID:
+                        <span class="text-dark">#{{ 1000 + location.id }}</span>
                     </span>
                 </div>
             </div>

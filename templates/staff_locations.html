@@ -18,7 +18,6 @@
         --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
     }
 
-    /* FIX: Ensure container fits screen but allows internal scroll */
     html, body { height: 100%; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; }
 
     .dashboard-container {
@@ -42,13 +41,12 @@
         box-shadow: var(--saas-shadow);
     }
 
-    /* FIX: Flexible Grid - If left col is hidden, right col fills space */
     .main-grid {
         flex: 1;
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
         gap: 1.5rem;
-        min-height: 0; /* Critical for inner scrolling */
+        min-height: 0;
     }
 
     .form-card {
@@ -70,7 +68,7 @@
         border-radius: var(--saas-radius);
         border: 1px solid var(--saas-border);
         box-shadow: var(--saas-shadow);
-        overflow: hidden; /* Keep header sticky */
+        overflow: hidden;
     }
 
     .table-wrapper {
@@ -105,6 +103,11 @@
         font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
     }
 
+    .capacity-badge {
+        background: #eff6ff; color: #1d4ed8; padding: 4px 10px; border-radius: 6px;
+        font-weight: 700; font-size: 0.8rem; border: 1px solid #dbeafe;
+    }
+
     .btn-initialize {
         background: var(--saas-navy); color: white; border: none; padding: 1rem;
         border-radius: 12px; font-weight: 800; width: 100%;
@@ -127,7 +130,7 @@
 
     <main class="main-grid">
 
-        <!-- LEFT: FORM (Only shows if has permission or is super_admin) -->
+        <!-- LEFT: FORM (Update to include Capacity) -->
         {% if has_perm('locations') %}
         <aside class="form-card animate__animated animate__fadeInLeft">
             <h5 class="fw-900 mb-1">Provision New Hub</h5>
@@ -141,11 +144,14 @@
                     <input type="text" name="name" class="form-control" placeholder="e.g. Manila Hub" required>
                 </div>
 
-                <div class="mb-3">
-                    <label class="small fw-bold text-muted text-uppercase">Queue Prefix (Code)</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light fw-bold">ID-</span>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="small fw-bold text-muted text-uppercase">Code Prefix</label>
                         <input type="text" name="code" class="form-control" placeholder="MNL" maxlength="10" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="small fw-bold text-muted text-uppercase">Max Capacity</label>
+                        <input type="number" name="capacity" class="form-control" placeholder="20" value="20" min="1" required>
                     </div>
                 </div>
 
@@ -156,7 +162,7 @@
         </aside>
         {% endif %}
 
-        <!-- RIGHT: TABLE -->
+        <!-- RIGHT: TABLE (Updated with Capacity Column) -->
         <section class="list-container animate__animated animate__fadeIn">
             <div class="table-wrapper">
                 <table class="hub-table">
@@ -165,6 +171,7 @@
                             <th>Identity</th>
                             <th>Status</th>
                             <th>Code</th>
+                            <th>Capacity</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -173,7 +180,7 @@
                         <tr>
                             <td>
                                 <div class="fw-bold text-dark">{{ loc.name }}</div>
-                                <div class="extra-small text-muted">ID: {{ 1000 + loc.id }}</div>
+                                <div class="extra-small text-muted">Node ID: {{ 1000 + loc.id }}</div>
                             </td>
                             <td>
                                 {% if loc.is_online %}
@@ -183,6 +190,7 @@
                                 {% endif %}
                             </td>
                             <td><span class="code-badge">{{ loc.code }}</span></td>
+                            <td><span class="capacity-badge"><i class="fa-solid fa-truck-ramp-box me-1"></i> {{ loc.capacity }}</span></td>
                             <td class="text-end">
                                 <a href="{{ url_for('edit_location', loc_id=loc.id) }}" class="btn btn-sm btn-light border"><i class="fa-solid fa-edit"></i></a>
                                 <a href="{{ url_for('delete_location', loc_id=loc.id) }}"
@@ -192,7 +200,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="4" class="text-center py-5 text-muted">
+                            <td colspan="5" class="text-center py-5 text-muted">
                                 <i class="fa-solid fa-network-wired fa-3x mb-3 opacity-25"></i>
                                 <p>No hubs found in the network registry.</p>
                             </td>

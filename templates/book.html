@@ -12,7 +12,7 @@
                 <div class="card border-0 rounded-4 overflow-hidden shadow-2xl main-booking-card">
 
                     <!-- 1. TERMINAL HEADER -->
-                    <div class="card-header bg-white p-3 p-md-5 border-0">
+                    <div class="card-header bg-white p-3 p-md-5 border-0 pb-0">
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="icon-scan-wrapper d-none d-sm-block">
@@ -24,7 +24,7 @@
                                 <div>
                                     <h3 class="fw-900 text-navy mb-1 ls-tight fs-4 fs-md-2">Service Deployment</h3>
                                     <p class="text-muted small fw-600 mb-0 text-uppercase ls-1">
-                                        <i class="fa-solid fa-network-wired text-primary me-1 ani-heartbeat"></i> Client Node Initialization
+                                        <i class="fa-solid fa-network-wired text-primary me-1 ani-heartbeat"></i> Fleet Manifest Manager
                                     </p>
                                 </div>
                             </div>
@@ -32,14 +32,49 @@
                                 <span class="pulse-dot-green"></span> SECURE_CONNECTION
                             </div>
                         </div>
+
+                        <!-- NEW: DEPLOYMENT MANIFEST TABLE -->
+                        <div id="manifestWrapper" class="d-none mt-5 animate__animated animate__fadeInDown">
+                            <div class="d-flex justify-content-between align-items-end mb-3">
+                                <h6 class="biz-label text-primary mb-0"><i class="fa-solid fa-list-check me-2"></i>Current Deployment Manifest</h6>
+                                <span class="badge bg-navy px-3" id="manifestCount">0 Assets</span>
+                            </div>
+                            <div class="table-responsive rounded-4 border shadow-sm bg-light">
+                                <table class="table table-hover align-middle mb-0" id="manifestTable">
+                                    <thead class="bg-white">
+                                        <tr style="font-size: 0.65rem;" class="text-uppercase text-muted">
+                                            <th class="ps-4 py-3">Asset Identification</th>
+                                            <th>Target Hub</th>
+                                            <th>Service Node</th>
+                                            <th>Mode</th>
+                                            <th>Schedule</th>
+                                            <th class="text-end pe-4">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="manifestBody" style="font-size: 0.85rem; font-weight: 700; background: white;">
+                                        <!-- Rows injected by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-4">
+                                <form action="/book" method="POST" id="finalSubmitForm">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="manifest_data" id="manifestJsonInput">
+                                    <button type="submit" class="btn btn-confirm-final w-100 py-3 rounded-3 shadow hover-lift">
+                                        DEPLOY ALL ASSETS IN MANIFEST <i class="fa-solid fa-paper-plane ms-2"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="text-center mt-3">
+                                <p class="extra-small fw-bold text-muted text-uppercase">-- Add more assets below or confirm deployment --</p>
+                            </div>
+                        </div>
+
                         <div class="header-divider mt-3 mt-md-4"></div>
                     </div>
 
-                    <div class="card-body bg-white p-3 p-md-5 pt-0">
-                        <form action="/book" method="POST" id="bookingForm">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="time" id="finalDateTime">
-
+                    <div class="card-body bg-white p-3 p-md-5 pt-4">
+                        <div id="bookingForm">
                             <div class="row g-4 g-md-5">
 
                                 <!-- COLUMN 01: ASSET ASSIGNMENT -->
@@ -53,7 +88,7 @@
                                         <label class="biz-label">Fleet Registry Search</label>
                                         <div class="biz-input-group border">
                                             <span class="input-icon"><i class="fa-solid fa-truck-container text-primary ani-float"></i></span>
-                                            <select name="vehicle_id" id="vSelect" class="form-select biz-select border-0" required>
+                                            <select id="vSelect" class="form-select biz-select border-0" required>
                                                 <option value="" disabled selected>Select asset...</option>
                                                 {% for v in vehicles %}
                                                     <option value="{{ v.id }}" data-plate="{{ v.plate_number }} ({{ v.model_description }})">
@@ -71,14 +106,14 @@
                                             <label class="biz-label text-primary">Plate Identification</label>
                                             <div class="biz-input-group border bg-light">
                                                 <span class="input-icon"><i class="fa-solid fa-id-card-clip text-primary"></i></span>
-                                                <input type="text" name="new_plate" id="newPlate" class="form-control biz-input" placeholder="ABC-1234">
+                                                <input type="text" id="newPlate" class="form-control biz-input" placeholder="ABC-1234">
                                             </div>
                                         </div>
                                         <div>
                                             <label class="biz-label text-primary">Asset Model / Type</label>
                                             <div class="biz-input-group border bg-light">
                                                 <span class="input-icon"><i class="fa-solid fa-tags text-primary"></i></span>
-                                                <input type="text" name="new_model" id="newModel" class="form-control biz-input" placeholder="e.g. Isuzu HI-ACE">
+                                                <input type="text" id="newModel" class="form-control biz-input" placeholder="e.g. Isuzu HI-ACE">
                                             </div>
                                         </div>
                                     </div>
@@ -91,7 +126,6 @@
                                         <h6 class="biz-label mb-0">Hub & Service Logic</h6>
                                     </div>
 
-                                    <!-- NEW: SERVICE LOCATION SELECTOR -->
                                     <div class="mb-4">
                                         <label class="biz-label">Deployment Mode</label>
                                         <div class="d-flex gap-2">
@@ -111,7 +145,7 @@
                                         <label class="biz-label">Target Service Hub</label>
                                         <div class="biz-input-group border">
                                             <span class="input-icon"><i class="fa-solid fa-location-crosshairs text-primary ani-pulse-icon"></i></span>
-                                            <select name="location_id" id="locSelect" class="form-select biz-select border-0" required>
+                                            <select id="locSelect" class="form-select biz-select border-0" required>
                                                 <option value="" disabled selected>Select terminal...</option>
                                                 {% for loc in locations %}
                                                     <option value="{{ loc.id }}">{{ loc.name }}</option>
@@ -124,7 +158,7 @@
                                         <label class="biz-label">Required Service</label>
                                         <div class="biz-input-group border">
                                             <span class="input-icon"><i class="fa-solid fa-screwdriver-wrench text-primary gear-spin"></i></span>
-                                            <select name="product" id="prodSelect" class="form-select biz-select border-0" required>
+                                            <select id="prodSelect" class="form-select biz-select border-0" required>
                                                 <option value="" disabled selected>Select service type...</option>
                                                 {% for category in categories %}
                                                     <option value="{{ category.name }}">{{ category.name }}</option>
@@ -150,33 +184,12 @@
                                 </div>
                             </div>
 
-                            <!-- INTERACTIVE DIGITAL TICKET -->
-                            <div id="bookingSummary" class="d-none animate__animated animate__fadeInUp mt-4 mt-md-5">
-                                <div class="summary-ticket p-3 p-md-4 rounded-4 border-0 text-white shadow-lg">
-                                    <div class="row align-items-center">
-                                        <div class="col-12 col-md-8 text-center text-md-start">
-                                            <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-2">
-                                                <i class="fa-solid fa-ticket-simple text-warning fs-4 ani-heartbeat"></i>
-                                                <h6 class="fw-800 extra-small text-uppercase ls-1 text-warning mb-0">Deployment Validated</h6>
-                                            </div>
-                                            <p id="summaryText" class="mb-0 small fw-500 font-monospace text-uppercase ls-1"></p>
-                                            <p id="locationText" class="mb-0 extra-small text-info opacity-75 mt-1 fw-bold"></p>
-                                        </div>
-                                        <div class="col-12 col-md-4 mt-3 mt-md-0">
-                                            <button type="submit" class="btn btn-confirm-final w-100 py-3 rounded-3 shadow hover-lift">
-                                                CONFIRM ORDER <i class="fa-solid fa-check-double ms-1"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 mt-md-5" id="mainSubmitContainer">
-                                <button type="button" class="btn btn-navy-submit w-100 py-3 py-md-4 rounded-3 shadow-lg opacity-50" disabled>
-                                    AWAITING PARAMETERS...
+                            <div class="mt-4 mt-md-5">
+                                <button type="button" onclick="addToManifest()" class="btn btn-navy-submit w-100 py-3 py-md-4 rounded-3 shadow-lg fw-900">
+                                    ADD ASSET TO DEPLOYMENT LIST <i class="fa-solid fa-plus-circle ms-2"></i>
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -214,10 +227,11 @@
 
     .biz-select, .biz-input { background: transparent !important; border: none !important; box-shadow: none !important; padding: 12px 0; font-weight: 700; color: #1e293b; font-size: 0.9rem; width: 100%; }
 
-    .summary-ticket { background: linear-gradient(135deg, var(--coolaire-navy) 0%, #001d4a 100%); border-left: 6px solid var(--coolaire-yellow) !important; }
-
     .btn-navy-submit { background: var(--coolaire-navy); color: white !important; font-weight: 800; border: none; transition: 0.3s; }
+    .btn-navy-submit:hover { background: #001d4a; transform: translateY(-2px); }
+
     .btn-confirm-final { background-color: var(--coolaire-yellow); color: #000 !important; font-weight: 900; border: none; transition: 0.3s; }
+    .btn-confirm-final:hover { background-color: #eab000; transform: scale(1.01); }
 
     .icon-scan-wrapper { position: relative; }
     .radar-ping { position: absolute; inset: 0; border: 2px solid var(--coolaire-navy); border-radius: 1rem; animation: radar-expand 2s infinite; }
@@ -238,69 +252,102 @@
 <script>
     const datePicker = flatpickr("#datePicker", {
         minDate: "today", disable: [(date) => date.getDay() === 0],
-        dateFormat: "F j, Y", onChange: updateSummary
+        dateFormat: "F j, Y"
     });
     const timePicker = flatpickr("#timePicker", {
         enableTime: true, noCalendar: true, dateFormat: "h:i K",
-        minTime: "08:00", maxTime: "17:00", minuteIncrement: 30, onChange: updateSummary
-    });
-
-    // Listen to radio changes
-    document.querySelectorAll('input[name="service_location"]').forEach(r => {
-        r.addEventListener('change', updateSummary);
+        minTime: "08:00", maxTime: "17:00", minuteIncrement: 30
     });
 
     document.getElementById('vSelect').addEventListener('change', function() {
         document.getElementById('newVehicleFields').classList.toggle('d-none', this.value !== 'new');
-        updateSummary();
     });
 
-    document.getElementById('locSelect').addEventListener('change', updateSummary);
-    document.getElementById('prodSelect').addEventListener('change', updateSummary);
-    document.getElementById('newPlate').addEventListener('input', updateSummary);
-    document.getElementById('newModel').addEventListener('input', updateSummary);
+    let manifest = [];
 
-    function updateSummary() {
+    function addToManifest() {
         const vSelect = document.getElementById('vSelect');
         const locSelect = document.getElementById('locSelect');
         const prodSelect = document.getElementById('prodSelect');
-        const mode = document.querySelector('input[name="service_location"]:checked').value;
-        const d = datePicker.input.value;
-        const t = timePicker.input.value;
-        const finalInput = document.getElementById('finalDateTime');
+        const modeInput = document.querySelector('input[name="service_location"]:checked');
+        const dStr = datePicker.input.value;
+        const tStr = timePicker.input.value;
 
-        let plateStr = "";
-        let branch = locSelect.selectedIndex > 0 ? locSelect.options[locSelect.selectedIndex].text : "";
-
-        if (vSelect.value === 'new') {
-            const p = document.getElementById('newPlate').value.trim().toUpperCase();
-            const m = document.getElementById('newModel').value.trim().toUpperCase();
-            plateStr = p + (m ? ` (${m})` : "");
-        } else if (vSelect.selectedIndex > 0) {
-            plateStr = vSelect.options[vSelect.selectedIndex].getAttribute('data-plate');
+        // Validation
+        if (!vSelect.value || !locSelect.value || !prodSelect.value || !dStr || !tStr) {
+            alert("Protocol Error: All deployment parameters must be initialized.");
+            return;
         }
 
-        const summaryBox = document.getElementById('bookingSummary');
-        const mainBtn = document.getElementById('mainSubmitContainer');
-
-        if (d && t && plateStr && branch && prodSelect.value) {
-            summaryBox.classList.remove('d-none');
-            mainBtn.classList.add('d-none');
-
-            document.getElementById('summaryText').innerText = `UNIT:[${plateStr}] // SERVICE:${prodSelect.value}`;
-            document.getElementById('locationText').innerText = `DEPLOYMENT: ${mode.toUpperCase()} AT ${branch.toUpperCase()} HUB // WINDOW: ${d} @ ${t}`;
-
-            const dObj = datePicker.selectedDates[0];
-            const tObj = timePicker.selectedDates[0];
-            if(dObj && tObj) {
-                const isoStr = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}T${String(tObj.getHours()).padStart(2,'0')}:${String(tObj.getMinutes()).padStart(2,'0')}`;
-                finalInput.value = isoStr;
-            }
-        } else {
-            summaryBox.classList.add('d-none');
-            mainBtn.classList.remove('d-none');
-            finalInput.value = "";
+        if (vSelect.value === 'new' && !document.getElementById('newPlate').value.trim()) {
+            alert("Identification Error: New asset requires a plate number.");
+            return;
         }
+
+        // Logic for Display
+        let plateDisplay = vSelect.value === 'new' ?
+            document.getElementById('newPlate').value.toUpperCase() :
+            vSelect.options[vSelect.selectedIndex].text;
+
+        // Logic for ISO Time (for Database)
+        const dObj = datePicker.selectedDates[0];
+        const tObj = timePicker.selectedDates[0];
+        const isoTime = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}T${String(tObj.getHours()).padStart(2,'0')}:${String(tObj.getMinutes()).padStart(2,'0')}`;
+
+        const entry = {
+            vehicle_id: vSelect.value,
+            new_plate: document.getElementById('newPlate').value,
+            new_model: document.getElementById('newModel').value,
+            plate_display: plateDisplay,
+            location_id: locSelect.value,
+            location_name: locSelect.options[locSelect.selectedIndex].text,
+            product: prodSelect.value,
+            service_location: modeInput.value,
+            time: isoTime,
+            time_display: `${dStr} @ ${tStr}`
+        };
+
+        manifest.push(entry);
+        renderManifest();
+
+        // Reset only Asset part for user convenience
+        vSelect.selectedIndex = 0;
+        document.getElementById('newVehicleFields').classList.add('d-none');
+        document.getElementById('newPlate').value = "";
+        document.getElementById('newModel').value = "";
+    }
+
+    function renderManifest() {
+        const wrapper = document.getElementById('manifestWrapper');
+        const body = document.getElementById('manifestBody');
+        const countTag = document.getElementById('manifestCount');
+        const jsonInput = document.getElementById('manifestJsonInput');
+
+        body.innerHTML = "";
+        manifest.forEach((item, index) => {
+            body.innerHTML += `
+                <tr>
+                    <td class="ps-4 text-navy fw-bold">${item.plate_display}</td>
+                    <td>${item.location_name}</td>
+                    <td><span class="badge bg-light text-dark border">${item.product}</span></td>
+                    <td><span class="badge ${item.service_location === 'In-Plant' ? 'bg-info' : 'bg-danger'}">${item.service_location}</span></td>
+                    <td class="small text-muted">${item.time_display}</td>
+                    <td class="text-end pe-4">
+                        <button type="button" onclick="removeFromManifest(${index})" class="btn btn-sm btn-outline-danger border-0">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+        });
+
+        jsonInput.value = JSON.stringify(manifest);
+        countTag.innerText = `${manifest.length} Assets Identified`;
+        wrapper.classList.toggle('d-none', manifest.length === 0);
+    }
+
+    function removeFromManifest(index) {
+        manifest.splice(index, 1);
+        renderManifest();
     }
 </script>
 {% endblock %}

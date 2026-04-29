@@ -9,7 +9,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Arial', sans-serif;
             background-color: #f1f5f9;
             display: flex;
             align-items: center;
@@ -22,51 +22,35 @@
         .receipt-container {
             width: 80mm;
             background: #fff;
-            padding: 30px 15px;
+            padding: 25px 10px;
             text-align: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
         .header-brand {
-            font-size: 28px;
-            font-weight: 950;
+            font-size: 30px;
+            font-weight: 900;
             letter-spacing: -1px;
             margin-bottom: 2px;
-            font-family: 'Arial', sans-serif;
         }
 
         .header-branch {
             font-size: 14px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            background: #000;
-            color: #fff;
-            padding: 4px 0;
+            border: 2px solid #000;
+            display: inline-block;
+            padding: 2px 8px;
             margin-bottom: 10px;
         }
 
-        .header-sub {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 15px;
-            opacity: 0.8;
-        }
-
         .divider {
-            border-top: 2px dashed #000;
-            margin: 15px 0;
+            border-top: 3px dashed #000;
+            margin: 12px 0;
             width: 100%;
         }
 
         /* TICKET DATA BLOCK */
-        .ticket-box {
-            border: 5px solid #000;
-            padding: 10px 0;
-            margin: 10px 0;
-        }
-
         .label {
             font-size: 14px;
             font-weight: 800;
@@ -74,50 +58,69 @@
             margin-bottom: 5px;
         }
 
+        .ticket-box {
+            border: 6px solid #000;
+            padding: 10px 0;
+            margin: 5px 0;
+        }
+
         .ticket-num {
-            font-size: 55px;
+            font-size: 60px;
             font-weight: 900;
             line-height: 1;
             font-family: 'Arial Black', sans-serif;
         }
 
-        /* NEW: DEPLOYMENT DETAILS BLOCK */
+        /* UPDATED: SMALLER SERVICE LOCATION BOX */
+        .service-focus-container {
+            border: 3px double #000; /* Double border for visibility */
+            margin: 12px 0;
+            padding: 8px 5px;
+        }
+
+        .service-focus-label {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 1px;
+        }
+
+        .service-focus-value {
+            font-size: 18px; /* SMALLER SIZE AS REQUESTED */
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* DETAILS BLOCK */
         .details-box {
             text-align: left;
             font-size: 13px;
-            margin: 15px 0;
-            line-height: 1.5;
+            margin: 10px 0;
+            line-height: 1.6;
         }
 
         .detail-row {
             display: flex;
             justify-content: space-between;
-            border-bottom: 1px dotted #ccc;
+            border-bottom: 1px solid #000;
             padding: 2px 0;
         }
 
-        .detail-label { font-weight: bold; text-transform: uppercase; }
-        .detail-value { font-weight: 900; }
-
-        .service-location-badge {
-            background: #000;
-            color: #fff;
-            padding: 2px 8px;
-            font-weight: 900;
-            display: inline-block;
-            margin-top: 5px;
-        }
+        .detail-label { font-weight: bold; text-transform: uppercase; font-size: 11px; }
+        .detail-value { font-weight: 900; font-size: 13px;}
 
         .timestamp {
             font-size: 12px;
-            margin: 10px 0;
-            font-weight: bold;
+            margin: 12px 0;
+            font-weight: 900;
         }
 
         .footer-note {
             font-size: 11px;
-            margin-top: 20px;
-            line-height: 1.4;
+            margin-top: 15px;
+            line-height: 1.3;
             font-weight: 900;
             text-transform: uppercase;
         }
@@ -125,9 +128,10 @@
         .ref-id {
             font-size: 10px;
             margin-top: 15px;
-            padding: 5px;
+            padding: 4px;
             border: 1px solid #000;
             display: inline-block;
+            font-weight: bold;
         }
 
         /* PRINT MEDIA QUERIES */
@@ -156,25 +160,29 @@
         </h1>
         <h2 style="font-size: 28px; margin-bottom: 10px;">PRINTING TICKET...</h2>
         <p style="font-size: 22px; opacity: 0.8;">Ticket Number: <strong>{{ ticket.ticket_number }}</strong></p>
-        <div style="margin-top: 40px; border: 2px solid rgba(255,255,255,0.3); padding: 15px 40px; border-radius: 50px; font-size: 18px;">
-            Please take your receipt below.
-        </div>
     </div>
 
     <!-- THE ACTUAL THERMAL RECEIPT -->
     <div class="receipt-container">
         <div class="header-brand">COOLAIRE</div>
         <div class="header-branch">{{ ticket.location.name }} HUB</div>
-        <div class="header-sub">Cold Chain Solutions Specialist</div>
 
         <div class="divider"></div>
 
-        <div class="label">Priority Number</div>
+        <div class="label">Priority No.</div>
         <div class="ticket-box">
             <div class="ticket-num">{{ ticket.ticket_number }}</div>
         </div>
 
-        <!-- NEW DETAILS SECTION -->
+        <!-- SMALLER SERVICE LOCATION BOX -->
+        <div class="service-focus-container">
+            <span class="service-focus-label">Service Type:</span>
+            <span class="service-focus-value">
+                {{ ticket.booking.service_location | upper if ticket.booking else 'IN-PLANT' }}
+            </span>
+        </div>
+
+        <!-- DETAILS SECTION -->
         <div class="details-box">
             <div class="detail-row">
                 <span class="detail-label">Plate No:</span>
@@ -184,7 +192,7 @@
                 <span class="detail-label">Client:</span>
                 <span class="detail-value">
                     {% if ticket.booking %}
-                        {{ (ticket.booking.guest_name or ticket.booking.customer.company_name) | upper }}
+                        {{ (ticket.booking.guest_name or ticket.booking.customer.company_name) | upper | truncate(20) }}
                     {% else %}
                         WALK-IN GUEST
                     {% endif %}
@@ -194,12 +202,6 @@
                 <span class="detail-label">Service:</span>
                 <span class="detail-value">{{ ticket.booking.service_type if ticket.booking else 'GENERAL' }}</span>
             </div>
-
-            <center>
-                <div class="service-location-badge">
-                    TYPE: {{ ticket.booking.service_location | upper if ticket.booking else 'IN-PLANT' }}
-                </div>
-            </center>
         </div>
 
         <div class="timestamp">
@@ -209,33 +211,30 @@
         <div class="divider"></div>
 
         <div class="footer-note">
-            PLEASE PROCEED TO THE<br>
-            {{ ticket.location.name | upper }} SERVICE LOUNGE<br>
-            AND MONITOR THE TV DISPLAY.
+            PLEASE WAIT IN THE<br>
+            SERVICE LOUNGE AREA.<br>
+            THANK YOU!
         </div>
 
         <div class="ref-id">
-            MODE: {{ 'APPOINTMENT' if ticket.booking.user_id else 'WALK-IN' }}<br>
-            REF: {{ ticket.booking.ref_id if ticket.booking else ticket.id }}
+            MODE: {{ 'APPOINTMENT' if (ticket.booking and ticket.booking.user_id) else 'WALK-IN' }}<br>
+            REF: {{ ticket.booking.ref_id if (ticket.booking and ticket.booking.ref_id) else ticket.id }}
         </div>
 
-        <div style="font-size: 8px; margin-top: 20px; opacity: 0.5;">
-            Coolaire QBMS v1.1 &bull; {{ ticket.location.code }} Terminal
+        <div style="font-size: 9px; margin-top: 15px; font-weight: bold;">
+            {{ ticket.location.code }} Terminal &bull; QBMS v1.1
         </div>
-    </div>
+    </div >
 
     <script>
         (function() {
             window.onload = function() {
-                setTimeout(() => { window.print(); }, 800);
+                setTimeout(() => { window.print(); }, 1000);
             };
-
             window.onafterprint = function() {
                 window.location.href = "/kiosk";
             };
-
-            // Safety timeout
-            setTimeout(() => { window.location.href = "/kiosk"; }, 8000);
+            setTimeout(() => { window.location.href = "/kiosk"; }, 10000);
         })();
     </script>
 </body>
