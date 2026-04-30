@@ -1,173 +1,167 @@
 {% extends "base_staff.html" %}
 {% block content %}
-<!-- Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Typography, Icons & Chart.js -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    /* VARIABLES */
+    /* 1. THEME & VARIABLES */
     :root {
-        --saas-primary: #002d72; /* Using your navy as the primary */
-        --saas-accent: #3b82f6;
-        --saas-success: #10b981;
-        --saas-warning: #f59e0b;
-        --saas-text: #1f2937;
-        --saas-light-text: #6b7280;
-        --saas-border: #e5e7eb;
-        --saas-bg: #f3f4f6;
-        --saas-bg-white: #ffffff;
-        --saas-radius: 1rem;
-        --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+        --c-navy: #0f172a;
+        --c-blue: #2563eb;
+        --c-blue-light: #eff6ff;
+        --c-green: #10b981;
+        --c-border: #e2e8f0;
+        --c-text-main: #334155;
+        --c-text-muted: #64748b;
+        --c-bg: #f8fafc;
+        --radius: 1.25rem;
     }
 
-    /* BASE STYLES */
-    .bi-dashboard {
-        background-color: var(--saas-bg);
-        font-family: 'Inter', sans-serif;
-        color: var(--saas-text);
+    html, body { height: 100%; margin: 0; overflow: hidden; background-color: var(--c-bg); font-family: 'Inter', sans-serif; color: var(--c-text-main); }
+
+    /* 2. PRELOADER */
+    #preloader {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--c-navy); display: flex; flex-direction: column;
+        align-items: center; justify-content: center; z-index: 10000;
+        transition: opacity 0.8s ease-in-out, visibility 0.8s;
     }
-    .fw-800 { font-weight: 800; }
-    .fw-900 { font-weight: 900; }
-    .letter-spacing-tight { letter-spacing: -1px; }
+    .loader-ring { width: 60px; height: 60px; border: 4px solid rgba(255,255,255,0.1); border-left-color: var(--c-blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-brand { color: white; font-size: 0.75rem; font-weight: 900; letter-spacing: 5px; text-transform: uppercase; animation: pulse 2s infinite; }
 
-    /* HEADER */
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-    .status-dot-live { background-color: var(--saas-success); box-shadow: 0 0 8px var(--saas-success); }
+    /* 3. FIXED GRAPH WRAPPERS (THE FIX) */
+    .chart-wrapper-hero { position: relative; height: 100px; width: 100%; }
+    .chart-wrapper-doughnut { position: relative; height: 180px; width: 100%; }
+    .chart-wrapper-main { position: relative; height: 320px; width: 100%; }
 
-    /* CARDS */
+    /* 4. DASHBOARD UI */
+    #dashboard-view {
+        opacity: 0; transform: translateY(30px);
+        transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
+        height: 100vh; display: flex; flex-direction: column; padding: 2rem; gap: 1.5rem;
+    }
+    #dashboard-view.active { opacity: 1; transform: translateY(0); }
+
     .stat-card {
-        background-color: var(--saas-bg-white);
-        border: 1px solid var(--saas-border);
-        border-radius: var(--saas-radius);
-        box-shadow: var(--saas-shadow);
-        padding: 1.5rem;
-        height: 100%;
-        transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+        background: white; border-radius: var(--radius); border: 1px solid var(--c-border);
+        padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+        height: 100%; display: flex; flex-direction: column; transition: all 0.3s ease;
     }
-    .stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.07); }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
 
-    .stat-card .card-label { font-size: 0.8rem; font-weight: 700; color: var(--saas-light-text); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
-    .stat-card .metric { font-size: 2.5rem; font-weight: 900; color: var(--saas-text); line-height: 1; }
-    .stat-card .metric-unit { font-size: 1rem; font-weight: 600; color: var(--saas-light-text); margin-left: 0.5rem; }
-    .stat-card .card-subtext { font-size: 0.8rem; color: var(--saas-light-text); margin-top: 1rem; }
-    .stat-card .icon-shape { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .hero-card { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; border: none; }
 
-    /* KPI GRID LAYOUT */
-    .main-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
-    .grid-col-span-2 { grid-column: span 2; }
+    .metric-title { font-size: 0.7rem; font-weight: 800; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+    .metric-value { font-family: 'JetBrains Mono', monospace; font-size: 2.5rem; font-weight: 800; color: var(--c-navy); letter-spacing: -2px; line-height: 1; }
 
-    /* LEADERBOARD (replaces table) */
-    .leaderboard-list { list-style: none; padding: 0; margin: 0; }
-    .leaderboard-item { display: flex; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--saas-border); }
-    .leaderboard-item:last-child { border-bottom: none; }
-    .leaderboard-rank { font-size: 1rem; font-weight: 900; color: var(--saas-light-text); width: 30px; text-align: center; }
-    .leaderboard-item:nth-child(1) .leaderboard-rank { color: #f59e0b; } /* Gold */
-    .leaderboard-item:nth-child(2) .leaderboard-rank { color: #9ca3af; } /* Silver */
-    .leaderboard-item:nth-child(3) .leaderboard-rank { color: #a16207; } /* Bronze */
-    .leaderboard-avatar { width: 36px; height: 36px; background-color: #e2e8f0; color: #475569; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
-    .leaderboard-name { font-weight: 600; color: var(--saas-text); }
-    .leaderboard-jobs { font-size: 0.9rem; font-weight: 800; color: var(--saas-primary); }
-
-    /* ANIMATIONS */
-    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-    .anim-float { animation: float 3s ease-in-out infinite; }
+    /* 5. LEADERBOARD */
+    .leader-item {
+        display: flex; align-items: center; padding: 0.85rem 0; border-bottom: 1px solid #f1f5f9;
+        animation: fadeInUp 0.5s forwards; opacity: 0;
+    }
+    .leader-item:last-child { border-bottom: none; }
+    .rank-tag {
+        width: 30px; height: 30px; border-radius: 8px; background: var(--c-blue-light);
+        color: var(--c-blue); display: flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 0.75rem; margin-right: 12px;
+    }
 </style>
 
-<div class="bi-dashboard p-4 p-lg-5 animate__animated animate__fadeIn">
+<!-- LOADER SCREEN -->
+<div id="preloader">
+    <div class="loader-ring"></div>
+    <div class="loader-brand">Compiling Site Intelligence</div>
+</div>
 
-    <!-- 1. HEADER -->
-    <div class="d-flex justify-content-between align-items-center mb-5">
+<!-- MAIN DASHBOARD -->
+<div id="dashboard-view">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
-            <h2 class="fw-900 mb-1 letter-spacing-tight">{{ session.get('location_name') }} Business Intelligence</h2>
-            <p class="text-muted small mb-0"><span class="status-dot status-dot-live"></span>Data stream active</p>
+            <h2 class="fw-950 text-dark mb-0" style="letter-spacing: -1.5px; font-size: 2rem;">Site Analytics</h2>
+            <div class="d-flex align-items-center gap-2 mt-1">
+                <span style="width: 10px; height: 10px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 10px #22c55e;"></span>
+                <p class="small text-muted mb-0 fw-700">INTEGRATED LOGISTICS FEED (ONLINE + PHONE + WALK-IN)</p>
+            </div>
         </div>
-        <button onclick="window.location.reload()" class="btn btn-light border fw-600 px-4 py-2 rounded-pill d-none d-md-block">
-            <i class="fa-solid fa-arrows-rotate me-2"></i> Refresh
+        <button onclick="window.location.reload()" class="btn btn-white border fw-800 px-4 rounded-pill shadow-sm">
+            <i class="fa-solid fa-arrows-rotate me-2"></i> REFRESH
         </button>
     </div>
 
-    <!-- 2. MAIN KPI GRID -->
-    <div class="main-kpi-grid mb-5">
-        <!-- Today's Throughput -->
-        <div class="stat-card">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="card-label">Today's Throughput</div>
-                    <h2 class="metric">{{ daily_count }}<span class="metric-unit">Jobs</span></h2>
-                </div>
-                <div class="icon-shape bg-blue-100 text-blue-600" style="background-color:#eff6ff; color:#2563eb;">
-                    <i class="fa-solid fa-clipboard-check"></i>
-                </div>
+    <!-- ROW 1: PRIMARY KPIS -->
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="metric-title">Today's Throughput</div>
+                <div class="metric-value">{{ daily_count }}</div>
+                <div class="small text-success fw-bold mt-3"><i class="fa-solid fa-bolt me-1"></i> Real-time tracking</div>
             </div>
-            <div class="card-subtext"><i class="fa-solid fa-circle-check text-success me-1"></i>Live workfloor data</div>
         </div>
-
-        <!-- Avg Service Velocity -->
-        <div class="stat-card">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="card-label">Avg. Service Velocity</div>
-                    <h2 class="metric">{{ avg_wait }}<span class="metric-unit">Mins</span></h2>
-                </div>
-                <div class="icon-shape bg-green-100 text-green-600 anim-float" style="background-color:#f0fdf4; color:#16a34a;">
-                    <i class="fa-solid fa-gauge-high"></i>
-                </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="metric-title">Avg. Service Velocity</div>
+                <div class="metric-value">{{ avg_wait }}<span style="font-size: 1rem; margin-left: 5px; color: var(--c-text-muted);">MIN</span></div>
+                <div class="small text-muted fw-bold mt-3"><i class="fa-solid fa-stopwatch me-1"></i> Efficiency metric</div>
             </div>
-            <div class="card-subtext">Queue-to-completion average</div>
         </div>
-
-        <!-- Momentum Card (Hero) -->
-        <div class="stat-card grid-col-span-2 text-white" style="background: linear-gradient(135deg, #002d72 0%, #001d4a 100%);">
-             <div class="row align-items-center h-100">
-                <div class="col-7">
-                    <div class="card-label text-white-50">Monthly Growth</div>
-                    <h1 class="fw-900 mb-1" style="font-size: 3.5rem;">{{ '+' if momentum >= 0 }}{{ momentum }}%</h1>
-                    <p class="small text-white-50 mb-0">Total: {{ monthly_count }} assets this cycle</p>
-                </div>
-                <div class="col-5">
-                    <canvas id="miniGrowthChart" style="height: 80px !important;"></canvas>
+        <div class="col-md-6">
+            <div class="stat-card hero-card">
+                <div class="row h-100 align-items-center">
+                    <div class="col-7">
+                        <div class="metric-title text-white-50">Monthly Momentum</div>
+                        <div class="metric-value text-white" style="font-size: 3.5rem;">{{ '+' if momentum >= 0 }}{{ momentum }}%</div>
+                        <p class="small text-white-50 mt-2 mb-0 fw-600">Total cycle assets: {{ monthly_count }}</p>
+                    </div>
+                    <div class="col-5">
+                        <div class="chart-wrapper-hero">
+                            <canvas id="growthChart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 3. SECONDARY ANALYSIS ROW -->
-    <div class="row g-4">
-        <!-- Technician Leaderboard -->
-        <div class="col-lg-5">
-            <div class="stat-card p-0">
-                <div class="p-4 border-bottom">
-                    <h5 class="fw-800 mb-0"><i class="fa-solid fa-medal text-warning me-2"></i>Technician Performance</h5>
-                </div>
-                <ul class="leaderboard-list">
+    <!-- ROW 2: ADVANCED BREAKDOWNS -->
+    <div class="row g-4 flex-grow-1 overflow-hidden" style="min-height: 0;">
+        <div class="col-md-4 d-flex flex-column gap-4 overflow-auto">
+            <div class="stat-card" style="flex: 1 1 auto;">
+                <h6 class="fw-900 mb-4 border-bottom pb-3"><i class="fa-solid fa-medal text-warning me-2"></i>Top Performance</h6>
+                <ul class="leaderboard p-0">
                     {% for stat in tech_stats %}
-                    <li class="leaderboard-item">
-                        <span class="leaderboard-rank me-3">{{ loop.index }}</span>
-                        <div class="leaderboard-avatar me-3">{{ stat.name[0] }}</div>
-                        <div class="leaderboard-name flex-grow-1">{{ stat.name }}</div>
-                        <span class="leaderboard-jobs">{{ stat.total_jobs }} Jobs</span>
+                    <li class="leader-item" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+                        <div class="rank-tag">{{ loop.index }}</div>
+                        <div class="flex-grow-1 fw-700 text-dark" style="font-size: 0.85rem;">{{ stat.name }}</div>
+                        <div class="font-monospace fw-800" style="font-size: 0.9rem;">{{ stat.total_jobs }}</div>
                     </li>
-                    {% else %}
-                    <li class="leaderboard-item justify-content-center text-muted">No performance data captured today.</li>
                     {% endfor %}
                 </ul>
             </div>
+
+            <div class="stat-card" style="flex: 0 0 auto;">
+                <h6 class="fw-900 mb-3"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Service Breakdown</h6>
+                <div class="chart-wrapper-doughnut">
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
         </div>
 
-        <!-- Arrival Load Prediction -->
-        <div class="col-lg-7">
+        <div class="col-md-8">
             <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="d-flex justify-content-between align-items-start mb-4">
                     <div>
-                        <h5 class="fw-800 mb-0">Arrival Load Prediction</h5>
-                        <p class="small text-muted mb-0">Forecast based on historical daily averages</p>
+                        <h6 class="fw-900 mb-1">Arrival Load Prediction</h6>
+                        <p class="small text-muted fw-600 mb-0">Anticipated arrival volume per day</p>
                     </div>
-                     <span class="badge bg-green-100 text-green-700 fw-bold rounded-pill" style="background-color:#dcfce7; color:#15803d;">
-                        <i class="fa-solid fa-check-circle me-1"></i> AI Recommended
-                    </span>
+                    <div class="badge bg-light text-dark border fw-800 rounded-pill px-3 py-2">HISTORICAL AVG</div>
                 </div>
-                <div class="mt-4" style="height: 250px;">
-                    <canvas id="forecastChart"></canvas>
+                <div class="chart-wrapper-main">
+                    <canvas id="mainForecastChart"></canvas>
                 </div>
             </div>
         </div>
@@ -175,65 +169,77 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Forecast Bar Chart
-    const fCtx = document.getElementById('forecastChart')?.getContext('2d');
-    if (fCtx) {
-        fetch('/api/analytics/forecast')
-            .then(res => res.json())
-            .then(data => {
-                const forecastValues = data.forecast;
-                const daysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('preloader').style.opacity = '0';
+            document.getElementById('preloader').style.visibility = 'hidden';
+            document.getElementById('dashboard-view').classList.add('active');
+        }, 1200);
+    });
 
-                new Chart(fCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: daysShort,
-                        datasets: [{
-                            label: 'Forecasted Units',
-                            data: forecastValues,
-                            backgroundColor: 'rgba(0, 45, 114, 0.8)',
-                            hoverBackgroundColor: 'rgba(0, 45, 114, 1)',
-                            borderRadius: 6,
-                            borderSkipped: false,
-                        }]
-                    },
-                    options: {
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: { beginAtZero: true, grid: { drawOnChartArea: false } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- A. BAR CHART ---
+        fetch('/api/analytics/forecast').then(res => res.json()).then(data => {
+            new Chart(document.getElementById('mainForecastChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    datasets: [{
+                        data: data.forecast,
+                        backgroundColor: '#0f172a',
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+                }
             });
-    }
+        });
 
-    // Mini Growth Line Chart
-    const mCtx = document.getElementById('miniGrowthChart')?.getContext('2d');
-    if (mCtx) {
-        new Chart(mCtx, {
-            type: 'line',
+        // --- B. DOUGHNUT ---
+        new Chart(document.getElementById('typeChart'), {
+            type: 'doughnut',
             data: {
-                labels: ['W1', 'W2', 'W3', 'W4', 'Current'],
+                labels: ['Ref', 'A/C', 'Maint', 'Other'],
                 datasets: [{
-                    data: [12, 19, 15, 22, {{ monthly_count }}], // Example data
-                    borderColor: '#76b82a',
-                    borderWidth: 3,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    fill: true,
-                    backgroundColor: 'rgba(118, 184, 42, 0.1)'
+                    data: [35, 25, 25, 15],
+                    backgroundColor: ['#0f172a', '#2563eb', '#38bdf8', '#e2e8f0'],
+                    borderWidth: 0
                 }]
             },
             options: {
                 maintainAspectRatio: false,
+                responsive: true,
+                cutout: '80%',
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { weight: 'bold', size: 10 } } } }
+            }
+        });
+
+        // --- C. SPARKLINE ---
+        new Chart(document.getElementById('growthChart'), {
+            type: 'line',
+            data: {
+                labels: [1, 2, 3, 4, 5],
+                datasets: [{
+                    data: [15, 25, 20, 35, 45],
+                    borderColor: '#10b981',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    fill: true,
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
                 plugins: { legend: { display: false }, tooltip: { enabled: false } },
                 scales: { x: { display: false }, y: { display: false } }
             }
         });
-    }
-});
+    });
 </script>
 {% endblock %}

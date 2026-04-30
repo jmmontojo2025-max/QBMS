@@ -197,6 +197,12 @@
                 </a>
                 {% endif %}
 
+                {% if has_perm('staff_categories') %}
+                <a href="/staff/categories" class="sn-nav-link {{ 'active' if 'categories' in request.path }}">
+                <i class="fa-solid fa-tags"></i> Manage Services
+                </a>
+                {% endif %}
+
                 {% if has_perm('technicians') %}
                 <a href="/staff/technicians" class="sn-nav-link {{ 'active' if 'technicians' in request.path }}">
                     <i class="fa-solid fa-screwdriver-wrench"></i> Manage Technicians

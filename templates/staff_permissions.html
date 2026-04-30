@@ -30,11 +30,9 @@
                     <p class="extra-small opacity-75 mb-0 font-monospace">ENCRYPTED_SESSION // WRITE_ACCESS_GRANTED</p>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-3">
-                 <div class="status-pulse-container">
-                    <span class="pulse-dot-green"></span>
-                    <span class="extra-small fw-800">LIVE_SYNC</span>
-                </div>
+            <div class="status-pulse-container d-flex align-items-center gap-2">
+                <span class="pulse-dot-green"></span>
+                <span class="extra-small fw-800">LIVE_SYNC</span>
             </div>
         </div>
 
@@ -79,6 +77,8 @@
                                         {% elif 'users' in feat_key %}<i class="fa-solid fa-users-gear"></i>
                                         {% elif 'settings' in feat_key %}<i class="fa-solid fa-sliders"></i>
                                         {% elif 'global' in feat_key %}<i class="fa-solid fa-globe"></i>
+                                        {% elif 'technician' in feat_key %}<i class="fa-solid fa-wrench"></i>
+                                        {% elif 'locations' in feat_key %}<i class="fa-solid fa-building"></i>
                                         {% else %}<i class="fa-solid fa-cube"></i>{% endif %}
                                     </div>
                                     <div>
@@ -123,8 +123,7 @@
                         <i class="fa-solid fa-circle-info text-primary fs-5"></i>
                     </div>
                     <p class="extra-small text-muted fw-600 mb-0" style="max-width: 450px;">
-                        Personnel nodes at Level 0 (Super Admin) bypass all matrix checks.
-                        Modifying Level 1-3 will update their navigation menus in real-time.
+                        Level 0 (Super Admin) bypasses all checks. Updates to Admin, Coordinator, or Advisor will reflect immediately upon committing.
                     </p>
                 </div>
                 <button type="submit" class="btn btn-deploy-matrix fw-950 px-5 py-3 shadow-lg">
@@ -144,7 +143,6 @@
 
     .bg-navy { background-color: var(--coolaire-navy) !important; }
     .letter-spacing-tight { letter-spacing: -1.5px; }
-    .ls-1 { letter-spacing: 1px; }
     .fw-950 { font-weight: 950; }
 
     .header-icon-box {
@@ -153,7 +151,6 @@
         display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
     }
 
-    /* Table Styling */
     .matrix-table thead th { border-bottom: 2px solid #eee !important; padding: 25px 15px; }
     .matrix-row { transition: all 0.2s; }
     .matrix-row:hover { background-color: #f8fbff !important; }
@@ -164,49 +161,29 @@
         display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
     }
 
-    /* Clearance Tags */
-    .clearance-tag {
-        font-size: 0.65rem; font-weight: 900; padding: 4px 12px; border-radius: 6px;
-        letter-spacing: 1px; border: 1px solid transparent;
-    }
+    /* ROLE COLORS */
+    .clearance-tag { font-size: 0.65rem; font-weight: 900; padding: 4px 12px; border-radius: 6px; letter-spacing: 1px; border: 1px solid transparent; }
+
     .tag-super-admin { background: #000; color: #fff; border-color: var(--coolaire-green); }
     .tag-admin { background: #0f172a; color: #ffc107; border-color: #ffc107; }
-    .tag-staff { background: #eef2ff; color: #3b82f6; border-color: #dbeafe; }
-    .tag-customer { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+    .tag-coordinator { background: #4f46e5; color: #fff; border-color: #4338ca; }
+    .tag-advisor { background: #0d9488; color: #fff; border-color: #0f766e; }
 
-    /* CUSTOM MODERN SWITCH */
-    .switch-container {
-        position: relative; display: inline-block; width: 48px; height: 24px;
-    }
+    /* SWITCH UI */
+    .switch-container { position: relative; display: inline-block; width: 48px; height: 24px; }
     .switch-container input { opacity: 0; width: 0; height: 0; }
-    .switch-slider {
-        position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-        background-color: #e2e8f0; transition: .4s; border-radius: 34px;
-    }
-    .switch-slider:before {
-        position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
-        background-color: white; transition: .4s; border-radius: 50%;
-    }
+    .switch-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e2e8f0; transition: .4s; border-radius: 34px; }
+    .switch-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
     input:checked + .switch-slider { background-color: var(--coolaire-green); }
     input:checked + .switch-slider:before { transform: translateX(24px); }
 
-    /* Readonly switch for Super Admin */
     .readonly .switch-slider { background-color: #1a1a1a; cursor: not-allowed; }
     .readonly .switch-slider:before { background-color: var(--coolaire-green); }
 
-    .btn-deploy-matrix {
-        background: var(--coolaire-navy); color: white; border: none; border-radius: 10px;
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        border: 1px solid rgba(255,255,255,0.1);
-    }
+    .btn-deploy-matrix { background: var(--coolaire-navy); color: white; border: none; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
     .btn-deploy-matrix:hover { background: var(--coolaire-green); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(118, 184, 42, 0.3); }
 
-    /* Pulse */
-    .pulse-dot-green {
-        width: 8px; height: 8px; background: #22c55e; border-radius: 50%;
-        display: inline-block; margin-right: 8px; box-shadow: 0 0 10px #22c55e;
-        animation: pulse-green 2s infinite;
-    }
+    .pulse-dot-green { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #22c55e; animation: pulse-green 2s infinite; }
     @keyframes pulse-green { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 </style>
 {% endblock %}

@@ -47,136 +47,93 @@
     .ticket-number { font-weight: 800; line-height: 1; letter-spacing: -0.05em; color: var(--saas-primary); font-size: 1.3rem; }
     .plate-number-badge { background-color: var(--saas-text); color: white; padding: 0.3rem 0.7rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; margin-top: 0.5rem; display: inline-block; }
 
-    .work-card-actions { display: grid; grid-template-columns: 60px 1fr; gap: 1px; background-color: var(--saas-border); border-radius: 0 0 var(--saas-radius) var(--saas-radius); overflow: hidden; margin-top: auto; }
-    .work-card-actions .btn { padding: 1rem; font-weight: 600; text-decoration: none; border-radius: 0; }
-
     .queue-card-large { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); margin-bottom: 1.25rem; padding: 1.5rem; display: flex; flex-direction: column; }
     .queue-card-large .ticket-num-large { font-weight: 800; line-height: 1; letter-spacing: -0.05em; color: #000; font-size: 1.8rem; }
 
     .roster-card { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); height: 100%; display: flex; flex-direction: column; }
     .roster-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--saas-border); }
-
     .tech-status-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 0.75rem; flex-shrink: 0; }
     .dot-online { background-color: var(--saas-success); } .dot-busy { background-color: #f59e0b; } .dot-offline { background-color: #9ca3af; }
 
-    /* Custom Styles for Modals to ensure visibility */
-    .modal { z-index: 2000 !important; }
-    .modal-backdrop { z-index: 1900 !important; }
+    /* FIXED MODAL CSS */
+    .modal { background: rgba(0,0,0,0.4); } /* Ensure backdrop doesn't block */
+    .modal-content { pointer-events: auto !important; }
 </style>
 
 <div class="dashboard-container animate__animated animate__fadeIn">
 
-    <!-- HUB STRIP -->
+    <!-- HEADER -->
     <header class="hub-command-strip">
         <div class="d-flex align-items-center flex-grow-1">
-            <div class="me-4 d-none d-md-block">
-                <i class="fa-solid fa-cloud-bolt fa-3x text-primary"></i>
-            </div>
+            <div class="me-4 d-none d-md-block"><i class="fa-solid fa-shield-halved fa-3x text-primary"></i></div>
             <div>
-                <h2 class="hub-title">{{ session.get('location_name', 'Terminal') }} Console</h2>
-                <div class="hub-status-badge">
-                    <i class="fa-solid fa-server me-1"></i> Node ID: {{ session.get('location_code', '---') }}
-                </div>
+                <h2 class="hub-title">{{ session.get('location_name', 'Terminal') }} Admin Console</h2>
+                <div class="hub-status-badge"><i class="fa-solid fa-server me-1"></i> Node ID: {{ session.get('location_code', '---') }}</div>
             </div>
         </div>
         <div class="d-flex align-items-center gap-3">
-            <!-- DYNAMIC HUB CAPACITY -->
             <div class="stat-pill" style="min-width: 170px; border-left: 4px solid var(--saas-primary);">
                 <label class="label">Total Units On-Site</label>
-                <div class="value fw-bold">
-                    {{ current_occupancy }}/{{ max_capacity }}
-                </div>
-                <div class="progress mt-1" style="height: 4px; width: 100%;">
-                    <div class="progress-bar {% if capacity_percent >= 90 %}bg-danger{% else %}bg-primary{% endif %}"
-                         style="width: {{ capacity_percent }}%"></div>
-                </div>
+                <div class="value fw-bold">{{ current_occupancy }}/{{ max_capacity }}</div>
+                <div class="progress mt-1" style="height: 4px; width: 100%;"><div class="progress-bar {% if capacity_percent >= 90 %}bg-danger{% else %}bg-primary{% endif %}" style="width: {{ capacity_percent }}%"></div></div>
             </div>
-
-            <div class="stat-pill">
-                <label class="label">Queue</label>
-                <div class="value">{{ waiting_tickets|length }}</div>
-            </div>
-            <div class="stat-pill">
-                <label class="label">On Floor</label>
-                <div class="value">{{ serving_list|length }}</div>
-            </div>
+            <div class="stat-pill"><label class="label">Ongoing</label><div class="value">{{ serving_list|length }}</div></div>
             <div class="action-button-group d-flex gap-2">
-                <button type="button" class="btn btn-primary fw-bold btn-sm" data-bs-toggle="modal" data-bs-target="#manualCheckinModal">
-                    <i class="fa-solid fa-phone-volume me-1"></i> PHONE BOOKING
-                </button>
-                <a href="/tv" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-display"></i></a>
-                <a href="/kiosk" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-ticket"></i></a>
+                <button type="button" class="btn btn-danger fw-bold btn-sm" data-bs-toggle="modal" data-bs-target="#manualCheckinModal"><i class="fa-solid fa-phone-volume me-1"></i> ADMIN OVERRIDE</button>
             </div>
         </div>
     </header>
 
     <main class="main-grid">
 
-        <!-- COLUMN 1: ACTIVE WORKFLOOR -->
+        <!-- COLUMN 1: ONGOING WORKFLOW -->
         <section class="column">
-            <div class="column-header"><h5 class="column-title">Active Workfloor</h5></div>
+            <div class="column-header"><h5 class="column-title">Ongoing Workflow</h5></div>
             <div class="column-content">
                 <div class="row g-3">
                     {% for s in serving_list %}
                     <div class="col-md-12 col-xl-6">
-                        <div class="work-card shadow-sm">
+                        <div class="work-card shadow-sm border-{% if s.status == 'done' %}success{% else %}warning{% endif %}">
                             <div class="work-card-header">
-                                <div>
+                                <div class="flex-grow-1">
                                     <div class="ticket-number">{{ s.ticket_number }}</div>
                                     <div class="d-flex gap-2 align-items-center mt-1">
                                         <span class="plate-number-badge">{% if s.booking %}{{ s.booking.plate_number }}{% else %}WALK-IN{% endif %}</span>
-                                        <span class="badge {% if s.booking.service_location == 'In-Plant' %}bg-info{% else %}bg-danger animate__animated animate__pulse animate__infinite{% endif %} text-white"
-                                              style="font-size: 0.6rem; padding: 4px 6px; border-radius: 4px; font-weight: 700;">
-                                            <i class="fa-solid fa-location-dot me-1"></i>
+                                        <span class="badge {% if s.booking.service_location == 'In-Plant' %}bg-info{% else %}bg-danger{% endif %} text-white" style="font-size: 0.6rem; padding: 4px 6px; font-weight: 700;">
                                             {{ s.booking.service_location | upper if s.booking else 'IN-PLANT' }}
                                         </span>
                                     </div>
-                                    <div class="small fw-700 text-primary mt-1">{% if s.booking %}{{ s.booking.service_type }}{% endif %}</div>
+                                    <div class="small fw-700 text-primary mt-1">{{ s.booking.service_type if s.booking else 'Service Unspecified' }}</div>
                                 </div>
                                 <div class="text-end">
-                                    <span class="badge bg-warning text-dark fw-bold" style="border-radius: 8px;">
-                                        <i class="fa-solid fa-screwdriver-wrench me-1"></i> ON-GOING
-                                    </span>
+                                    {% if s.status == 'done' %}
+                                        <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 0.6rem; padding: 5px 10px;">JOB COMPLETE</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.6rem; padding: 5px 10px;">ONGOING</span>
+                                    {% endif %}
                                 </div>
                             </div>
 
                             <div class="p-4 flex-grow-1">
-                                <div class="mb-4">
-                                    <label class="d-block mb-2 fw-600 text-muted text-uppercase" style="letter-spacing: 0.5px; font-size: 0.65rem;">Personnel Assigned</label>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        {% for tech in s.assigned_techs %}
-                                            <span class="badge bg-primary px-3 py-2" style="font-size: 0.8rem; border-radius: 8px; font-weight: 600;">
-                                                <i class="fa-solid fa-user-gear me-1"></i> {{ tech.name }}
-                                            </span>
-                                        {% endfor %}
-                                    </div>
+                                <label class="d-block mb-1 small text-muted text-uppercase fw-600" style="font-size: 0.6rem;">Personnel Assigned</label>
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    {% for tech in s.assigned_techs %}
+                                        <span class="badge bg-primary px-3 py-2" style="font-size: 0.8rem; font-weight: 600;">{{ tech.name }}</span>
+                                    {% endfor %}
                                 </div>
 
-                                <label class="d-block mb-1 fw-600 text-muted text-uppercase" style="letter-spacing: 0.5px; font-size: 0.65rem;">Client Context</label>
+                                <label class="d-block mb-1 small text-muted text-uppercase fw-600" style="font-size: 0.6rem;">Client Context</label>
                                 <h6 class="fw-700 text-dark mb-1">
-                                    {% if s.booking and s.booking.customer %}{{ s.booking.customer.company_name }}
-                                    {% elif s.booking %}{{ s.booking.guest_name }}{% else %}Guest Client{% endif %}
+                                    {% if s.booking and s.booking.customer %}{{ s.booking.customer.company_name }}{% elif s.booking %}{{ s.booking.guest_name }}{% else %}Guest Client{% endif %}
                                 </h6>
-                                <hr>
-                                <form action="/staff/complete-work/{{ s.id }}" method="POST">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <div class="row g-2 mb-3">
-                                        <div class="col-6">
-                                            <label class="small fw-600 text-muted" style="font-size: 0.6rem;">START TIME</label>
-                                            <input type="time" name="manual_start" class="form-control fw-bold border-2" required>
-                                        </div>
-                                        <div class="col-6">
-                                            <label class="small fw-600 text-muted" style="font-size: 0.6rem;">END TIME</label>
-                                            <input type="time" name="manual_end" class="form-control fw-bold border-2" required>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex gap-1 mt-3">
-                                        <button type="button" class="btn btn-light border px-3" data-bs-toggle="modal" data-bs-target="#jobDetails-{{ s.id }}">
-                                            <i class="fa-solid fa-circle-info text-muted"></i>
-                                        </button>
-                                        <button type="submit" class="btn btn-primary fw-bold flex-grow-1">COMPLETE & RELEASE</button>
-                                    </div>
-                                </form>
+
+                                <div class="d-flex gap-2 border-top pt-3 mt-4">
+                                    <button type="button" class="btn btn-light border btn-sm" data-bs-toggle="modal" data-bs-target="#jobDetails-{{ s.id }}"><i class="fa-solid fa-circle-info"></i></button>
+                                    <button type="button" class="btn {% if s.status == 'done' %}btn-success{% else %}btn-outline-primary{% endif %} fw-bold flex-grow-1 btn-sm" data-bs-toggle="modal" data-bs-target="#materialsModal-{{ s.id }}">
+                                        <i class="fa-solid fa-box-open me-2"></i>
+                                        {% if s.status == 'done' %}ADD MATERIALS & FINALIZE{% else %}SCOPE OF WORK{% endif %}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -185,9 +142,9 @@
             </div>
         </section>
 
-        <!-- COLUMN 2: PENDING QUEUE -->
+        <!-- COLUMN 2: WAITING QUEUE -->
         <section class="column">
-            <div class="column-header"><h5 class="column-title">Pending Queue</h5></div>
+            <div class="column-header"><h5 class="column-title">Waiting Queue</h5></div>
             <div class="column-content">
                 {% for t in waiting_tickets %}
                 <div class="queue-card-large shadow-sm border-2">
@@ -196,196 +153,172 @@
                             <span class="ticket-num-large d-block">{{ t.ticket_number }}</span>
                             <div class="d-flex gap-2 align-items-center">
                                 <span class="badge bg-dark text-white fw-bold">{{ t.booking.plate_number if t.booking else "WALK-IN" }}</span>
-                                <span class="badge {% if t.booking.service_location == 'In-Plant' %}bg-info{% else %}bg-danger{% endif %} text-white" style="font-size: 0.6rem; padding: 4px 6px; font-weight: 700;">
-                                    {{ t.booking.service_location | upper if t.booking else 'IN-PLANT' }}
-                                </span>
+                                <span class="badge bg-secondary text-white fw-bold" style="font-size: 0.6rem; padding: 4px 6px;">WAITING</span>
                             </div>
-                            <span class="small fw-700 text-primary d-block mt-1">{{ t.booking.service_type if t.booking else "" }}</span>
+                            <span class="small fw-700 text-primary d-block mt-1">{{ t.booking.service_type if t.booking else "Service Unspecified" }}</span>
                         </div>
                         <a href="/staff/expire-ticket/{{ t.id }}" class="text-danger opacity-50" onclick="return confirm('Dismiss ticket?')"><i class="fa-solid fa-xmark fs-4"></i></a>
                     </div>
-                    <div class="mt-3 small fw-700 text-dark">
-                        {% if t.booking and t.booking.customer %}{{ t.booking.customer.company_name }}
-                        {% elif t.booking %}{{ t.booking.guest_name }}{% else %}Guest Client{% endif %}
-                    </div>
-                    <hr class="my-4">
-                    <form action="/staff/start-work/{{ t.id }}" method="POST">
+                    <div class="mt-3 small fw-700 text-dark">{% if t.booking and t.booking.customer %}{{ t.booking.customer.company_name }}{% else %}Guest{% endif %}</div>
+                    <form action="/staff/start-work/{{ t.id }}" method="POST" class="mt-4">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <label class="d-block mb-2 small fw-600 text-muted">ASSIGN TEAM</label>
-                        {% if technicians|length > 0 %}
-                            <select name="technician_ids" class="form-select mb-3 fw-bold border-2" multiple required>
-                                {% for tech in technicians %}<option value="{{ tech.id }}"> {{ tech.name }}</option>{% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-primary w-100 fw-bold">DISPATCH</button>
-                        {% else %}
-                            <div class="alert alert-warning small py-2 mb-3 fw-bold text-center">NO STAFF READY</div>
-                            <button type="button" class="btn btn-secondary w-100" disabled>WAITING FOR STAFF</button>
-                        {% endif %}
+                        <select name="technician_ids" class="form-select mb-3 border-2 fw-bold" multiple required>
+                            {% for tech in technicians %}<option value="{{ tech.id }}">{{ tech.name }}</option>{% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">DISPATCH</button>
                     </form>
                 </div>
                 {% endfor %}
             </div>
         </section>
 
-<!-- COLUMN 3: PERSONNEL Status -->
-<section class="column">
-    <div class="roster-card">
-        <div class="roster-header border-bottom">
-            <h5 class="mb-0 fw-700" style="font-size: 1rem;">Personnel Status</h5>
-        </div>
-        <div class="column-content p-0">
-            {% if roster|length > 0 %}
-                {% for tech in roster %}
-                    {% set assignment = busy_map.get(tech.id) %}
-                    <div class="d-flex align-items-center py-3 px-3 border-bottom"
-                         style="{% if not tech.is_present %}opacity: 0.5; background: #f8fafc;{% endif %}">
-
-                        <span class="tech-status-dot
-                            {% if not tech.is_present %}dot-offline
-                            {% elif assignment %}dot-busy
-                            {% else %}dot-online{% endif %}">
-                        </span>
-
-                        <div class="flex-grow-1">
-                            <!-- UPDATED: Personnel Name is now fw-800 (Extra Bold) -->
-                            <div class="fw-800 text-dark" style="font-size: 0.95rem; line-height: 1.2;">{{ tech.name }}</div>
-
-                            <div class="small mt-1">
-                                {% if not tech.is_present %}
-                                    <span class="text-muted fw-600" style="font-size: 0.65rem;">OFF-DUTY</span>
-                                {% elif assignment %}
-                                    <div class="d-flex flex-column gap-1">
-                                        <span class="text-warning fw-700" style="font-size: 0.7rem;">
-                                            <i class="fa-solid fa-thumbtack me-1"></i> TICKET: <strong>{{ assignment.ticket }}</strong>
-                                        </span>
-                                        <span class="text-primary fw-700" style="font-size: 0.7rem;">
-                                            <i class="fa-solid fa-car-side me-1"></i> UNIT: <strong>{{ assignment.plate }}</strong>
-                                        </span>
-                                        <span class="fw-700 {% if assignment.site == 'In-Plant' %}text-info{% else %}text-danger animate__animated animate__flash animate__infinite{% endif %}" style="font-size: 0.65rem;">
-                                            <i class="fa-solid fa-location-arrow me-1"></i> {{ assignment.site | upper }}
-                                        </span>
-                                    </div>
-                                {% else %}
-                                    <span class="text-success fw-700" style="font-size: 0.7rem;">READY</span>
-                                {% endif %}
+        <!-- COLUMN 3: ROSTER -->
+        <section class="column">
+            <div class="roster-card">
+                <div class="roster-header border-bottom"><h5 class="mb-0 fw-700" style="font-size: 1rem;">Personnel Status</h5></div>
+                <div class="column-content p-0">
+                    {% for tech in roster %}
+                        {% set assignment = busy_map.get(tech.id) %}
+                        <div class="d-flex align-items-center py-3 px-3 border-bottom" style="{% if not tech.is_present %}opacity: 0.5; background: #f8fafc;{% endif %}">
+                            <span class="tech-status-dot {% if not tech.is_present %}dot-offline{% elif assignment %}dot-busy{% else %}dot-online{% endif %}"></span>
+                            <div class="flex-grow-1">
+                                <div class="fw-800 text-dark" style="font-size: 0.95rem; line-height: 1.2;">{{ tech.name }}</div>
+                                <div class="small mt-1">
+                                    {% if not tech.is_present %}<span class="text-muted fw-600">OFF-DUTY</span>
+                                    {% elif assignment %}
+                                        <div class="d-flex flex-column gap-1">
+                                            <span class="text-warning fw-700" style="font-size: 0.7rem;"><i class="fa-solid fa-thumbtack"></i> {{ assignment.ticket }} (ONGOING)</span>
+                                            <span class="text-primary fw-700" style="font-size: 0.7rem;"><i class="fa-solid fa-car-side"></i> UNIT: {{ assignment.plate }}</span>
+                                        </div>
+                                    {% else %}<span class="text-success fw-700" style="font-size: 0.7rem;">READY</span>{% endif %}
+                                </div>
                             </div>
+                            <div class="ms-2"><a href="/staff/technician/toggle/{{ tech.id }}"><i class="fa-solid {{ 'fa-toggle-on text-success' if tech.is_present else 'fa-toggle-off text-muted' }} fs-4"></i></a></div>
                         </div>
-                        <div class="ms-2">
-                            <a href="/staff/technician/toggle/{{ tech.id }}" class="text-decoration-none">
-                                <i class="fa-solid {{ 'fa-toggle-on text-success' if tech.is_present else 'fa-toggle-off text-muted' }} fs-4"></i>
-                            </a>
-                        </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="p-5 text-center text-muted small">No Personnel</div>
-            {% endif %}
-        </div>
-    </div>
-</section>
-
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
     </main>
 </div>
 
-<!-- PHONE BOOKING MODAL -->
-<div class="modal fade" id="manualCheckinModal" tabindex="-1" aria-hidden="true" style="z-index: 2050;">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
-            <div class="modal-header bg-dark text-white">
-                <h6 class="modal-title fw-bold"><i class="fa-solid fa-phone-volume me-2"></i> Manual Phone Booking</h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
+<!-- ========================================== -->
+<!-- ALL MODALS MOVED HERE TO PREVENT TYPING LOCK -->
+<!-- ========================================== -->
 
+{% for s in serving_list %}
+<!-- MODAL: MATERIALS INPUT -->
+<div class="modal fade" id="materialsModal-{{ s.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header bg-primary text-white"><h6 class="modal-title fw-bold">Inventory Audit: {{ s.ticket_number }}</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <form action="/staff/save-materials/{{ s.id }}" method="POST">
+                <div class="modal-body p-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label class="small fw-bold text-muted mb-2 text-uppercase">Enter Scope of Work (Line by Line)</label>
+                    <textarea name="materials_list" class="form-control fw-bold border-2" rows="6" placeholder="Listing items clears the ticket from Admin view..." required>{{ s.materials_used or '' }}</textarea>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary fw-bold w-100">SAVE & FINALIZE AUDIT</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: JOB DETAILS -->
+<div class="modal fade" id="jobDetails-{{ s.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: 12px;">
+            <div class="modal-header"><h5 class="modal-title fw-bold">Job Diagnostics: {{ s.ticket_number }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <div class="col-md-6 border-end">
+                        <label class="small fw-bold text-muted text-uppercase">Booking Info</label>
+                        <div class="p-3 bg-light rounded-3 mt-1">
+                            <p class="small text-muted mb-1">Plate: <span class="fw-bold text-dark">{{ s.booking.plate_number if s.booking else 'N/A' }}</span></p>
+                            <p class="small text-muted mb-0">Service: <span class="fw-bold text-dark">{{ s.booking.service_type if s.booking else 'N/A' }}</span></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="small fw-bold text-muted text-uppercase">Internal Notes</label>
+                        <form action="/staff/save-notes/{{ s.id }}" method="POST" class="mt-1">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <textarea name="notes" class="form-control mb-2" rows="3">{{ s.internal_notes or '' }}</textarea>
+                            <button type="submit" class="btn btn-primary w-100 btn-sm fw-bold">SAVE NOTES</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- PHONE BOOKING MODAL -->
+<div class="modal fade" id="manualCheckinModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header bg-dark text-white p-4"><h6 class="modal-title fw-bold">Admin Manual Booking Manifest</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
             <form action="/staff/manual-checkin" method="POST" id="staffManifestForm">
                 <div class="modal-body p-4">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="staff_manifest_data" id="staffManifestJson">
+                    <div class="mb-4"><label class="small fw-bold text-muted mb-2">CLIENT NAME</label><input type="text" id="sClient" class="form-control fw-bold border-2" placeholder="e.g. San Miguel Corp"></div>
+                    <div id="staffManifestList" class="mb-3 d-none"><label class="extra-small fw-700 text-primary mb-2">MANIFEST</label><div class="border rounded bg-light p-2" id="staffTableItems"></div></div>
 
-                    <div class="mb-4 border-bottom pb-3">
-                        <label class="extra-small fw-700 text-muted mb-2">CLIENT / COMPANY NAME</label>
-                        <input type="text" id="sClient" class="form-control fw-bold border-2" placeholder="e.g. San Miguel Corp">
-                    </div>
-
-                    <div id="staffManifestList" class="mb-4 d-none">
-                        <label class="extra-small fw-700 text-primary mb-2">CURRENT MANIFEST</label>
-                        <div class="border-2 rounded bg-light p-2" id="staffTableItems" style="max-height: 120px; overflow-y: auto;"></div>
-                    </div>
-
-                    <div class="bg-light p-3 rounded-3 border-2">
-                        <div class="row g-2 mb-3">
+                    <div class="bg-light p-3 rounded border">
+                        <div class="row g-2 mb-2">
+                            <div class="col-6"><label class="extra-small fw-bold">PLATE</label><input type="text" id="sPlate" class="form-control form-control-sm fw-bold"></div>
                             <div class="col-6">
-                                <label class="extra-small fw-700">PLATE NUMBER</label>
-                                <input type="text" id="sPlate" class="form-control form-control-sm fw-bold">
-                            </div>
-                            <div class="col-6">
-                                <label class="extra-small fw-700">SERVICE</label>
+                                <label class="extra-small fw-bold">SERVICE</label>
                                 <select id="sService" class="form-select form-select-sm fw-bold">
-                                    <option value="Air Conditioning">Air Conditioning</option>
-                                    <option value="Cold Storage">Cold Storage</option>
+                                    <option value="" selected disabled>Select...</option>
+                                    {% for cat in categories %}
+                                        <option value="{{ cat.name }}">{{ cat.name }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-12">
-                                <label class="extra-small fw-700 d-block mb-1">LOCATION</label>
-                                <div class="d-flex gap-3">
-                                    <label class="small fw-bold"><input type="radio" name="sLoc" value="In-Plant" checked> In-Plant</label>
-                                    <label class="small fw-bold"><input type="radio" name="sLoc" value="Out-Plant"> Out-Plant</label>
-                                </div>
-                            </div>
                         </div>
-                        <button type="button" onclick="addStaffManifest()" class="btn btn-primary btn-sm w-100 fw-bold py-2">
-                            <i class="fa-solid fa-plus me-1"></i> ADD TO LIST
-                        </button>
+                        <div class="mb-3"><label class="extra-small fw-bold d-block">SITE</label><label class="me-3 small fw-bold"><input type="radio" name="sLoc" value="In-Plant" checked> In</label><label class="small fw-bold"><input type="radio" name="sLoc" value="Out-Plant"> Out</label></div>
+                        <button type="button" onclick="addStaffManifest()" class="btn btn-primary btn-sm w-100 fw-bold py-2">ADD TO LIST</button>
                     </div>
                 </div>
-                <div class="modal-footer bg-white border-top">
-                    <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">CANCEL</button>
-                    <button type="submit" id="staffSubmitBtn" class="btn btn-success px-4 fw-bold d-none">PROCESS ALL BOOKINGS</button>
-                </div>
+                <div class="modal-footer"><button type="submit" id="staffSubmitBtn" class="btn btn-success px-4 fw-bold w-100 py-3 d-none">PROCESS ALL BOOKINGS</button></div>
             </form>
         </div>
     </div>
 </div>
 
 <script>
-    // MANIFEST LOGIC
     let staffManifest = [];
     function addStaffManifest() {
         const client = document.getElementById('sClient').value.trim();
         const plate = document.getElementById('sPlate').value.trim().toUpperCase();
         const service = document.getElementById('sService').value;
         const site = document.querySelector('input[name="sLoc"]:checked').value;
-        if(!client || !plate) { alert("Check Client and Plate."); return; }
+        if(!client || !plate || !service) return alert("Fill Client, Plate, and select a Service.");
         staffManifest.push({client, plate, service, site});
         renderStaffManifest();
         document.getElementById('sPlate').value = "";
+        document.getElementById('sService').selectedIndex = 0;
     }
+
     function renderStaffManifest() {
         const listDiv = document.getElementById('staffManifestList');
         const itemsDiv = document.getElementById('staffTableItems');
         const submitBtn = document.getElementById('staffSubmitBtn');
         itemsDiv.innerHTML = "";
         staffManifest.forEach((m, idx) => {
-            itemsDiv.innerHTML += `<div class="d-flex justify-content-between small fw-bold border-bottom py-2"><span>${m.plate} - ${m.service}</span><i class="fa-solid fa-trash text-danger" style="cursor:pointer;" onclick="removeStaffManifest(${idx})"></i></div>`;
+            itemsDiv.innerHTML += `<div class="d-flex justify-content-between small fw-bold border-bottom py-2">
+                <span>${m.plate} - ${m.service} (${m.site})</span>
+                <i class="fa-solid fa-trash text-danger" onclick="removeStaffManifest(${idx})" style="cursor:pointer"></i>
+            </div>`;
         });
         document.getElementById('staffManifestJson').value = JSON.stringify(staffManifest);
         listDiv.classList.toggle('d-none', staffManifest.length === 0);
         submitBtn.classList.toggle('d-none', staffManifest.length === 0);
         document.getElementById('sClient').readOnly = (staffManifest.length > 0);
     }
-    function removeStaffManifest(idx) { staffManifest.splice(idx, 1); renderStaffManifest(); }
 
-    // MODAL NETSUITE
-    {% for s in serving_list %}
-    document.getElementById('jobDetails-{{ s.id }}').addEventListener('shown.bs.modal', function () {
-        const plate = "{{ s.booking.plate_number if s.booking else 'WALKIN' }}";
-        const nsDataBox = document.getElementById('ns-data-{{ s.id }}');
-        if(plate === 'WALKIN') { nsDataBox.innerHTML = '<span class="text-muted small">No ERP Sync</span>'; return; }
-        fetch(`/api/netsuite/verify/${plate}`).then(res => res.json()).then(data => {
-            if(data.status === 'success') {
-                nsDataBox.innerHTML = `<span class="small fw-bold">ERP Order: ${data.order_no}</span><br><span class="badge bg-success">${data.status_erp}</span>`;
-            } else { nsDataBox.innerHTML = '<span class="text-danger fw-bold">NO ERP RECORD</span>'; }
-        });
-    });
-    {% endfor %}
+    function removeStaffManifest(idx) { staffManifest.splice(idx, 1); renderStaffManifest(); }
 </script>
 {% endblock %}

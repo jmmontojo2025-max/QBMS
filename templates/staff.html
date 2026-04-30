@@ -317,13 +317,16 @@
                                 <label class="extra-small fw-700">PLATE NUMBER</label>
                                 <input type="text" id="sPlate" class="form-control form-control-sm fw-bold">
                             </div>
-                            <div class="col-6">
-                                <label class="extra-small fw-700">SERVICE</label>
-                                <select id="sService" class="form-select form-select-sm fw-bold">
-                                    <option value="Air Conditioning">Air Conditioning</option>
-                                    <option value="Cold Storage">Cold Storage</option>
-                                </select>
-                            </div>
+                                <div class="col-6">
+        <label class="extra-small fw-700">SERVICE TYPE</label>
+        <select id="sService" class="form-select form-select-sm fw-bold border-2">
+            <option value="" selected disabled>Select Service...</option>
+            {% for cat in categories %}
+                <option value="{{ cat.name }}">{{ cat.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
                             <div class="col-12">
                                 <label class="extra-small fw-700 d-block mb-1">LOCATION</label>
                                 <div class="d-flex gap-3">
@@ -354,7 +357,7 @@
         const plate = document.getElementById('sPlate').value.trim().toUpperCase();
         const service = document.getElementById('sService').value;
         const site = document.querySelector('input[name="sLoc"]:checked').value;
-        if(!client || !plate) { alert("Check Client and Plate."); return; }
+        if(!client || !plate) { alert("Check Client and Plate and Service are all selected."); return; }
         staffManifest.push({client, plate, service, site});
         renderStaffManifest();
         document.getElementById('sPlate').value = "";

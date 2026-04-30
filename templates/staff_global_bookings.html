@@ -1,255 +1,176 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<!-- Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<!-- Typography, Icons, and Excel Export Library -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-    /* CORE VARIABLES */
     :root {
-        --saas-navy: #002d72;
-        --saas-accent: #3b82f6;
-        --saas-success: #10b981;
-        --saas-warning: #f59e0b;
-        --saas-text: #1e293b;
-        --saas-light-text: #64748b;
-        --saas-border: #f1f5f9;
-        --saas-bg: #f8fafc;
-        --saas-radius: 1.25rem;
+        --c-navy: #0f172a;
+        --c-blue: #2563eb;
+        --c-accent: #38bdf8;
+        --c-border: #e2e8f0;
+        --c-bg: #f8fafc;
+        --c-text: #334155;
     }
 
-    /* 1. LAYOUT ENGINE (AUTO-SIZE) */
-    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; }
+    html, body { height: 100%; margin: 0; overflow: hidden; background-color: var(--c-bg); font-family: 'Inter', sans-serif; }
 
-    .dashboard-container {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        padding: 2rem;
-        gap: 1.5rem;
+    /* 1. ANIMATED PRELOADER */
+    #preloader {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--c-navy); display: flex; flex-direction: column;
+        align-items: center; justify-content: center; z-index: 10000;
+        transition: opacity 0.8s ease-in-out, visibility 0.8s;
+    }
+    .loader-logo-wrap { position: relative; width: 80px; height: 80px; margin-bottom: 1.5rem; }
+    .svg-logo { width: 80px; height: 80px; fill: none; stroke: var(--c-blue); stroke-width: 3; stroke-dasharray: 300; animation: logo-draw 2s infinite alternate ease-in-out; }
+    @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.3; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+    .loader-text { color: white; font-size: 0.7rem; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; animation: pulse 1.5s infinite; }
+
+    /* 2. CONTENT VIEWPORT */
+    #ledger-viewport {
+        opacity: 0; transform: translateY(20px);
+        transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        height: 100vh; display: flex; flex-direction: column; padding: 1.5rem; gap: 1rem;
+    }
+    #ledger-viewport.is-active { opacity: 1; transform: translateY(0); }
+
+    /* 3. HEADER & LOGO */
+    .report-header {
+        background: white; padding: 1.25rem 2rem; border-radius: 16px;
+        border: 1px solid var(--c-border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+        flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center;
+    }
+    .header-branding { display: flex; align-items: center; gap: 15px; }
+    .title-logo-icon {
+        width: 42px; height: 42px; background: var(--c-navy); border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; color: var(--c-accent);
+    }
+    .header-branding h4 { font-weight: 900; letter-spacing: -1px; color: var(--c-navy); font-size: 1.5rem; margin: 0; }
+
+    /* 4. FILTERS */
+    .filter-box { display: flex; flex-direction: column; gap: 4px; }
+    .filter-box label { font-size: 0.6rem; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+    .ledger-input {
+        border: 1px solid var(--c-border); padding: 0.5rem 0.8rem; border-radius: 10px;
+        font-size: 0.8rem; font-weight: 600; color: var(--c-navy); background: #fcfdfe;
     }
 
-    /* 2. ENHANCED TOP KPI DESIGN */
-    .header-section { flex: 0 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
-
-    .kpi-row {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1.5rem;
-    }
-
-    .kpi-module {
-        background: #ffffff;
-        padding: 1.5rem;
-        border-radius: var(--saas-radius);
-        border: 1px solid var(--saas-border);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .kpi-module:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08); }
-
-    /* Icon Wrappers */
-    .kpi-icon {
-        width: 56px; height: 56px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.4rem;
-        flex-shrink: 0;
-    }
-    .icon-total { background: #eff6ff; color: var(--saas-accent); }
-    .icon-forecast { background: #fffbeb; color: var(--saas-warning); }
-    .icon-active { background: #f0fdf4; color: var(--saas-success); }
-
-    .kpi-info { display: flex; flex-direction: column; }
-    .kpi-label { font-size: 0.65rem; font-weight: 800; color: var(--saas-light-text); text-uppercase; letter-spacing: 1px; margin-bottom: 2px; }
-    .kpi-value { font-family: 'JetBrains Mono', monospace; font-weight: 900; line-height: 1; letter-spacing: -1.5px; color: var(--saas-text); }
-
-    /* Export Module Branding */
-    .btn-export-module {
-        background: var(--saas-navy);
-        border: none;
-        color: white;
-        padding: 1.5rem;
-        border-radius: var(--saas-radius);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 1rem;
-        font-weight: 900;
-        font-size: 0.85rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 10px 20px -5px rgba(0, 45, 114, 0.3);
-    }
-    .btn-export-module:hover { background: var(--saas-accent); transform: scale(1.02); }
-
-    /* 3. SEARCH BAR DESIGN */
-    .action-bar {
-        background: #ffffff;
-        padding: 1rem 1.5rem;
-        border-radius: var(--saas-radius);
-        border: 1px solid var(--saas-border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-    .hub-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; }
-
-    /* 4. SCROLLABLE LEDGER */
-    .ledger-content {
-        flex: 1 1 auto;
-        overflow-y: auto;
-        background: #ffffff;
-        border-radius: var(--saas-radius);
-        border: 1px solid var(--saas-border);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+    /* 5. DATA TABLE */
+    .table-container {
+        flex: 1 1 auto; overflow-y: auto; background: white; border-radius: 16px;
+        border: 1px solid var(--c-border); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
     }
     .master-table { width: 100%; border-collapse: separate; border-spacing: 0; }
     .master-table thead th {
-        position: sticky; top: 0; background: #f9fafb; padding: 1.25rem 1.5rem;
-        font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
-        color: var(--saas-light-text); border-bottom: 1px solid var(--saas-border); z-index: 10;
+        position: sticky; top: 0; background: #f8fafc; padding: 0.8rem;
+        font-size: 0.65rem; font-weight: 900; text-transform: uppercase;
+        color: var(--c-navy); border-bottom: 1px solid var(--c-border); border-right: 1px solid var(--c-border);
+        z-index: 10; text-align: center;
     }
-    .master-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
-    .ledger-row:hover { background-color: #fcfdfe; cursor: pointer; }
+    .master-table thead tr:nth-child(2) th { top: 38px; background: white; font-size: 0.55rem; color: #64748b; }
+    .master-table td { padding: 0.8rem; border-bottom: 1px solid var(--c-border); border-right: 1px solid var(--c-border); font-size: 0.85rem; color: var(--c-text); vertical-align: top; }
+    .master-table tr:hover td { background-color: #f8fbff; }
 
-    /* COMPONENTS */
-    .plate-badge {
-        background: #0f172a; color: white; padding: 4px 10px; border-radius: 6px;
-        font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700;
-    }
-    .status-pill {
-        padding: 0.5rem 1rem; border-radius: 999px; font-size: 0.65rem; font-weight: 800;
-        display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid transparent;
-    }
-    .status-pending { background: #fff9db; color: #854d0e; border-color: #fef08a; }
-    .status-arrived { background: #e7f5ff; color: #1971c2; border-color: #a5d8ff; }
-    .status-done { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; color: var(--c-navy); text-align: center; }
 
-    /* RESPONSIVE TYPE */
-    html { font-size: clamp(14px, 0.5vw + 0.5rem, 18px); }
-    .kpi-value { font-size: clamp(1.8rem, 2.5vw, 2.4rem); }
+    /* UI BUTTONS */
+    .btn-gen { background: var(--c-navy); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; cursor: pointer; transition: 0.3s; }
+    .btn-gen:hover { background: var(--c-blue); transform: translateY(-1px); }
+
+    .btn-refresh { background: #f1f5f9; color: var(--c-navy); border: 1px solid var(--c-border); padding: 0.6rem; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+    .btn-refresh:hover { background: #e2e8f0; transform: rotate(15deg); }
+
+    .btn-export { background: #166534; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; cursor: pointer; }
 </style>
 
-<div class="dashboard-container animate__animated animate__fadeIn">
+<!-- PRELOADER -->
+<div id="preloader">
+    <div class="loader-logo-wrap">
+        <svg class="svg-logo" viewBox="0 0 100 100">
+            <path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" />
+        </svg>
+    </div>
+    <div class="loader-text">Compiling Analytics</div>
+</div>
 
-    <div class="header-section">
+<!-- MAIN LEDGER INTERFACE -->
+<div id="ledger-viewport">
+    <header class="report-header">
+        <div class="header-branding">
+            <div class="title-logo-icon"><i class="fa-solid fa-microchip"></i></div>
+            <div>
+                <h4>Deployment Ledger</h4>
+                <p class="small text-muted mb-0 fw-700" style="font-size: 0.6rem;">SAAS OPERATIONS AUDIT</p>
+            </div>
+        </div>
 
-        <!-- ENHANCED KPI GRID -->
-        <div class="kpi-row">
-            <!-- Box 1: Total -->
-            <div class="kpi-module">
-                <div class="kpi-icon icon-total">
-                    <i class="fa-solid fa-layer-group"></i>
-                </div>
-                <div class="kpi-info">
-                    <label class="kpi-label">TOTAL BOOKINGS</label>
-                    <div class="kpi-value">{{ bookings|length }}</div>
+        <div class="d-flex gap-2 align-items-end">
+            <div class="filter-box">
+                <label>Date Range</label>
+                <div class="d-flex gap-2">
+                    <input type="date" id="startDate" class="ledger-input">
+                    <input type="date" id="endDate" class="ledger-input">
                 </div>
             </div>
-
-            <!-- Box 2: Forecast -->
-            <div class="kpi-module">
-                <div class="kpi-icon icon-forecast">
-                    <i class="fa-solid fa-satellite-dish"></i>
-                </div>
-                <div class="kpi-info">
-                    <label class="kpi-label">FORECASTED (ON-WAY)</label>
-                    <div class="kpi-value text-warning">
-                        {{ bookings|selectattr('status', 'equalto', 'pending')|list|length }}
-                    </div>
-                </div>
+            <div class="filter-box">
+                <label>Keyword Search</label>
+                <input type="text" id="globalSearch" class="ledger-input" placeholder="Search Company..." style="width: 200px;">
             </div>
 
-            <!-- Box 3: Active -->
-            <div class="kpi-module">
-                <div class="kpi-icon icon-active">
-                    <i class="fa-solid fa-truck-ramp-box"></i>
-                </div>
-                <div class="kpi-info">
-                    <label class="kpi-label">ACTIVE IN HUBS</label>
-                    <div class="kpi-value text-success">
-                        {{ bookings|selectattr('status', 'equalto', 'arrived')|list|length }}
-                    </div>
-                </div>
-            </div>
+            <button onclick="applyFilters()" class="btn-gen" title="Apply Filters">GENERATE</button>
 
-            <!-- Box 4: Export -->
-            <button onclick="exportTableToCSV('logistics_forecast.csv')" class="btn-export-module">
-                <i class="fa-solid fa-file-csv fa-2x"></i>
-                <div class="text-start">
-                    <div style="font-size: 0.6rem; opacity: 0.7; letter-spacing: 1px;">LEDGER ACTION</div>
-                    <div>EXPORT LOGISTICS</div>
-                </div>
+            <!-- CLEAR FILTERS -->
+            <button onclick="resetFilters()" class="btn-refresh" title="Clear Filters">
+                <i class="fa-solid fa-eraser"></i>
+            </button>
+
+            <!-- HARD REFRESH DATA -->
+            <button onclick="hardRefresh()" class="btn-refresh" title="Reload Latest Data">
+                <i class="fa-solid fa-sync-alt"></i>
+            </button>
+
+            <button onclick="exportToExcel()" class="btn-export">
+                <i class="fa-solid fa-file-excel me-2"></i>EXPORT .XLSX
             </button>
         </div>
+    </header>
 
-        <!-- SEARCH BAR -->
-        <div class="action-bar">
-            <h4 class="hub-title">Deployment Intelligence Ledger</h4>
-            <div class="input-group" style="max-width: 450px;">
-                <span class="input-group-text bg-light border-end-0 ps-3"><i class="fa-solid fa-magnifying-glass text-muted small"></i></span>
-                <input type="text" id="globalSearch" class="form-control bg-light border-start-0 py-2 fw-600" placeholder="Search entity, node, or plate...">
-            </div>
-        </div>
-    </div>
-
-    <!-- MAIN TABLE -->
-    <main class="ledger-content">
+    <main class="table-container">
         <table class="master-table" id="masterLedger">
             <thead>
                 <tr>
-                    <th>Target Node</th>
-                    <th>Asset Details</th>
-                    <th>Client Entity</th>
-                    <th>Arrival Window</th>
-                    <th class="text-center">Lifecycle Status</th>
+                    <th rowspan="2" style="width: 120px;">SERVICE DATE</th>
+                    <th rowspan="2" style="width: 130px;">JOB ORDER</th>
+                    <th rowspan="2" style="width: 220px;">CLIENT</th>
+                    <th rowspan="2">SCOPE OF WORK</th>
+                    <th rowspan="2" style="width: 130px;">STANDARD REPAIR HOURS</th>
+                    <th colspan="2">ACTUAL HOURS</th>
+                    <th rowspan="2" style="width: 180px;">TECHNICIANS</th>
+                </tr>
+                <tr>
+                    <th>IN</th>
+                    <th>OUT</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="ledgerBody">
                 {% for b in bookings %}
-                <tr class="ledger-row">
+                {% set q = b.queue_records[0] if b.queue_records else None %}
+                <tr class="ledger-row" data-date="{{ b.scheduled_time.strftime('%Y-%m-%d') }}">
+                    <td class="mono">{{ b.scheduled_time.strftime('%m-%d-%Y') }}</td>
+                    <td></td>
+                    <td class="fw-800" style="color: var(--c-navy);">{% if b.customer %}{{ b.customer.company_name }}{% else %}{{ b.guest_name }}{% endif %}</td>
+                    <td style="font-size: 0.75rem; color: #64748b;">{% if q and q.materials_used %}{{ q.materials_used }}{% else %}{{ b.service_type }}{% endif %}</td>
+                    <td></td>
+                    <td class="mono" style="color: #64748b;">{{ q.start_time.strftime('%I:%M %p') if q and q.start_time else '---' }}</td>
+                    <td class="mono" style="color: #64748b;">{{ q.end_time.strftime('%I:%M %p') if q and q.end_time else '---' }}</td>
                     <td>
-                        <div class="fw-800 text-dark" style="font-size: 0.95rem;">
-                            {{ b.location.name if b.location else 'UNASSIGNED' }}
-                        </div>
-                        <div class="extra-small text-muted fw-bold font-monospace">NODE_{{ b.location.code }}</div>
-                    </td>
-                    <td>
-                        <div class="plate-badge mb-1">{{ b.plate_number }}</div>
-                        <div class="extra-small text-primary fw-800 text-uppercase">{{ b.service_type }}</div>
-                    </td>
-                    <td>
-                        <div class="fw-800 text-dark" style="font-size: 0.95rem;">{{ b.customer.company_name }}</div>
-                        <div class="small text-muted fw-500">{{ b.customer.full_name }}</div>
-                    </td>
-                    <td>
-                        <div class="fw-800 text-dark" style="font-size: 0.95rem;">{{ b.scheduled_time.strftime('%b %d, %Y') }}</div>
-                        <div class="small text-primary fw-900" style="font-family: 'JetBrains Mono';">{{ b.scheduled_time.strftime('%I:%M %p') }}</div>
-                    </td>
-                    <td class="text-center">
-                        {% if b.status == 'pending' %}
-                            <span class="status-pill status-pending">
-                                <i class="fa-solid fa-clock-rotate-left"></i> EXPECTED
-                            </span>
-                        {% elif b.status == 'arrived' %}
-                            <span class="status-pill status-arrived">
-                                <i class="fa-solid fa-truck-moving"></i> ARRIVED
-                            </span>
-                        {% elif b.status == 'done' %}
-                            <span class="status-pill status-done">
-                                <i class="fa-solid fa-circle-check"></i> RELEASED
-                            </span>
-                        {% else %}
-                            <span class="badge bg-light text-muted border-0 px-3 py-2 fw-800" style="font-size:0.6rem;">
-                                {{ b.status|upper }}
-                            </span>
-                        {% endif %}
+                        {% if q and q.assigned_techs %}
+                            {% for tech in q.assigned_techs %}<span style="display:inline-block; background:#eff6ff; color:#1d4ed8; padding:2px 8px; border-radius:6px; font-size:0.65rem; font-weight:800; margin:2px;">{{ tech.name }}</span>{% endfor %}
+                        {% else %}---{% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -259,29 +180,52 @@
 </div>
 
 <script>
-    // Search Logic
-    document.getElementById('globalSearch').addEventListener('input', function() {
-        const val = this.value.toLowerCase();
-        document.querySelectorAll('.ledger-row').forEach(row => {
-            row.style.display = row.innerText.toLowerCase().includes(val) ? '' : 'none';
-        });
+    // PRELOADER
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('preloader').style.opacity = '0';
+            document.getElementById('preloader').style.visibility = 'hidden';
+            document.getElementById('ledger-viewport').classList.add('is-active');
+        }, 1200);
     });
 
-    // CSV Export
-    function exportTableToCSV(filename) {
-        let csv = [];
-        let rows = document.querySelectorAll("table tr");
-        for (let i = 0; i < rows.length; i++) {
-            let row = [], cols = rows[i].querySelectorAll("td, th");
-            for (let j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/\n/g, " ").trim() + '"');
-            csv.push(row.join(","));
-        }
-        let csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
-        let downloadLink = document.createElement("a");
-        downloadLink.download = filename;
-        downloadLink.href = window.URL.createObjectURL(csvFile);
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
+    // HARD REFRESH DATA (RELOADS PAGE + LOADER)
+    function hardRefresh() {
+        window.location.reload();
+    }
+
+    // CLEAR FILTERS INSTANTLY
+    function resetFilters() {
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('globalSearch').value = '';
+        document.querySelectorAll('.ledger-row').forEach(row => row.style.display = '');
+    }
+
+    function applyFilters() {
+        const start = document.getElementById('startDate').value;
+        const end = document.getElementById('endDate').value;
+        const search = document.getElementById('globalSearch').value.toLowerCase();
+
+        document.querySelectorAll('.ledger-row').forEach(row => {
+            const rowDate = row.getAttribute('data-date');
+            const rowText = row.innerText.toLowerCase();
+            let dateMatch = true;
+            if (start && rowDate < start) dateMatch = false;
+            if (end && rowDate > end) dateMatch = false;
+            let searchMatch = rowText.includes(search);
+            row.style.display = (dateMatch && searchMatch) ? '' : 'none';
+        });
+    }
+
+    function exportToExcel() {
+        const table = document.getElementById("masterLedger");
+        const tableClone = table.cloneNode(true);
+        tableClone.querySelectorAll(".ledger-row").forEach(row => {
+            if (row.style.display === 'none') row.remove();
+        });
+        const wb = XLSX.utils.table_to_book(tableClone, { sheet: "Service Ledger" });
+        XLSX.writeFile(wb, "Coolaire_Service_Audit.xlsx");
     }
 </script>
 {% endblock %}
