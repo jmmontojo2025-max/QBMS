@@ -21,6 +21,8 @@ from functools import wraps
 from requests_oauthlib import OAuth1
 
 import json # Ensure this is at the top of app.py
+from sqlalchemy import or_, and_, func
+
 
 
 
@@ -47,7 +49,7 @@ def roles_required(*roles):
                 return redirect(url_for('login'))
 
             # This checks the 'role' column in your User table
-            if current_user.role not in ['admin', 'staff', 'super_admin']:
+            if current_user.role not in ['admin', 'coordinator', 'advisor', 'super_admin']:
                 # This automatically sends them to your custom 403.html
                 abort(403)
             return f(*args, **kwargs)
@@ -208,6 +210,8 @@ class Queue(db.Model):
     end_time = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     call_count = db.Column(db.Integer, default=0)
+    materials_used = db.Column(db.Text) # Add this line
+
 
     # Relationships
     location = db.relationship('Location', backref='queue_entries')
@@ -328,7 +332,7 @@ def root_redirect_to_login():
         if current_user.role == 'customer':
             return redirect(url_for('dashboard'))
         # ADD 'super_admin' here
-        elif current_user.role in ['staff', 'admin', 'super_admin']:
+        elif current_user.role in ['admin', 'coordinator', 'advisor', 'super_admin']:
             if 'loc_id' in session:
                 return redirect(url_for('staff_panel'))
             else:
@@ -382,39 +386,24 @@ def set_branch(loc_id):
 
 @app.route('/staff')
 @login_required
-@roles_required('super_admin', 'admin', 'staff')
+@roles_required('super_admin', 'admin', 'coordinator', 'advisor') # Updated roles
 def staff_panel():
-    if 'loc_id' not in session:
-        return redirect(url_for('select_branch_for_staff'))
-
+    if 'loc_id' not in session: return redirect(url_for('select_branch_for_staff'))
     loc_id = session.get('loc_id')
-    now = datetime.now(timezone.utc)
 
-    # 1. Fetch Hub Details
+    # 1. Fetch Dynamic Data from Supabase
     current_location = db.session.get(Location, loc_id)
-    if not current_location:
-        return redirect(url_for('select_branch_for_staff'))
-    max_capacity = current_location.capacity
+    max_capacity = current_location.capacity if current_location else 20
 
-    # 2. Cleanup stale tickets (Hourly)
-    last_cleanup = session.get('last_cleanup')
-    if not last_cleanup or (now - datetime.fromisoformat(last_cleanup)).total_seconds() > 3600:
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        stale = Queue.query.filter(Queue.location_id == loc_id, Queue.status == 'waiting',
-                                   Queue.created_at < today_start).all()
-        for t in stale:
-            t.status = 'expired'
-            if t.booking: t.booking.status = 'missed'
-        db.session.commit()
-        session['last_cleanup'] = now.isoformat()
+    # FETCH SERVICES FOR DROPDOWNS
+    categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
 
-    # 3. Fetch Active Work and CREATE BUSY MAP
-    serving = Queue.query.options(
-        db.joinedload(Queue.assigned_techs),
-        db.joinedload(Queue.booking)
-    ).filter_by(location_id=loc_id, status='serving').all()
+    # 2. Workfloor & Queue Logic
+    serving = Queue.query.options(db.joinedload(Queue.assigned_techs), db.joinedload(Queue.booking)).filter_by(
+        location_id=loc_id, status='serving').all()
+    waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
 
-    # --- THIS IS THE FIX ---
+    # 3. Busy Map for Roster
     busy_map = {}
     for q in serving:
         for t_assigned in q.assigned_techs:
@@ -423,85 +412,86 @@ def staff_panel():
                 'plate': q.booking.plate_number if q.booking else 'WALK-IN',
                 'site': q.booking.service_location if q.booking else 'In-Plant'
             }
-    # -----------------------
 
-    # 4. Fetch All Technicians
-    all_techs = Technician.query.filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
-
-    # 5. Filter Available Technicians (Not in the busy_map)
+    # 4. Personnel
+    all_techs = Technician.query.options(db.selectinload(Technician.tasks).joinedload(Queue.booking)).filter_by(
+        location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
     available_techs = [t for t in all_techs if t.is_present and t.id not in busy_map]
 
-    waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
+    # 5. Occupancy
     current_occupancy = len(serving) + len(waiting)
     capacity_percent = int((current_occupancy / max_capacity) * 100) if max_capacity > 0 else 0
 
-    # 6. Pass busy_map to the render_template
     return render_template('staff.html',
-                           waiting_tickets=waiting,
-                           serving_list=serving,
-                           technicians=available_techs,
-                           roster=all_techs,
-                           busy_map=busy_map, # <--- SENDING THE VARIABLE TO HTML
-                           max_capacity=max_capacity,
-                           current_occupancy=current_occupancy,
-                           capacity_percent=capacity_percent,
-                           title="Live Console")
+                           categories=categories,  # <--- DYNAMIC SERVICES
+                           waiting_tickets=waiting, serving_list=serving, technicians=available_techs,
+                           roster=all_techs, busy_map=busy_map, max_capacity=max_capacity,
+                           current_occupancy=current_occupancy, capacity_percent=capacity_percent, title="Live Console")
 
 
 @app.route('/admin/workflow')
 @login_required
-@roles_required('super_admin', 'admin') # Strictly Admin only
+@roles_required('super_admin', 'admin')
 def admin_workflow():
-    if 'loc_id' not in session:
-        return redirect(url_for('select_branch_for_staff'))
-
+    if 'loc_id' not in session: return redirect(url_for('select_branch_for_staff'))
     loc_id = session.get('loc_id')
     now = datetime.now(timezone.utc)
 
-    # 1. Hub & Capacity
+    # 1. Fetch Hub Details & Dynamic Services
     current_location = db.session.get(Location, loc_id)
     max_capacity = current_location.capacity if current_location else 20
+    categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
 
-    # 2. Fetch Active Workfloor
-    serving = Queue.query.options(
-        db.joinedload(Queue.assigned_techs),
-        db.joinedload(Queue.booking)
-    ).filter_by(location_id=loc_id, status='serving').all()
+    # 2. Admin Workfloor Logic: Ongoing (serving) OR Done (waiting for materials)
+    serving = Queue.query.options(db.joinedload(Queue.assigned_techs), db.joinedload(Queue.booking)).filter(
+        Queue.location_id == loc_id,
+        or_(
+            Queue.status == 'serving',
+            and_(Queue.status == 'done', or_(Queue.materials_used == None, Queue.materials_used == ''))
+        )
+    ).all()
 
-    # 3. Create Busy Map for Roster Details
+    # 3. Create Busy Map for Roster (Only those currently 'serving' are busy)
     busy_map = {}
     for q in serving:
-        for t_assigned in q.assigned_techs:
-            busy_map[t_assigned.id] = {
-                'ticket': q.ticket_number,
-                'plate': q.booking.plate_number if q.booking else 'WALK-IN',
-                'site': q.booking.service_location if q.booking else 'In-Plant'
-            }
+        if q.status == 'serving':
+            for t_assigned in q.assigned_techs:
+                busy_map[t_assigned.id] = {
+                    'ticket': q.ticket_number,
+                    'plate': q.booking.plate_number if q.booking else 'WALK-IN',
+                    'site': q.booking.service_location if q.booking else 'In-Plant'
+                }
 
-    # 4. Fetch Technicians
-    all_techs = Technician.query.options(
-        db.selectinload(Technician.tasks).joinedload(Queue.booking)
-    ).filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
-
-    # 5. Filter Available for Dispatch Dropdown
+    # 4. Personnel & Queue
+    all_techs = Technician.query.options(db.selectinload(Technician.tasks).joinedload(Queue.booking)).filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
     available_techs = [t for t in all_techs if t.is_present and t.id not in busy_map]
-
-    # 6. Fetch Queue & Stats
     waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
+
+    # 5. Occupancy Stats
     current_occupancy = len(serving) + len(waiting)
     capacity_percent = int((current_occupancy / max_capacity) * 100) if max_capacity > 0 else 0
 
-    return render_template('admin_workflow.html', # Note the new template name
-                           waiting_tickets=waiting,
-                           serving_list=serving,
-                           technicians=available_techs,
-                           roster=all_techs,
-                           busy_map=busy_map,
-                           max_capacity=max_capacity,
-                           current_occupancy=current_occupancy,
-                           capacity_percent=capacity_percent,
-                           title="Admin Workflow Control")
+    return render_template('admin_workflow.html',
+                           waiting_tickets=waiting, serving_list=serving, technicians=available_techs,
+                           roster=all_techs, busy_map=busy_map, categories=categories,
+                           max_capacity=max_capacity, current_occupancy=current_occupancy,
+                           capacity_percent=capacity_percent, title="Admin Control Center")
 
+
+
+@app.route('/staff/save-materials/<int:q_id>', methods=['POST'])
+@login_required
+def save_materials(q_id):
+    loc_id = session.get('loc_id')
+    q = db.session.get(Queue, q_id)
+
+    if q and q.location_id == loc_id:
+        materials = request.form.get('materials_list')
+        q.materials_used = materials
+        db.session.commit()
+        flash(f"Materials list updated for Ticket {q.ticket_number}", "success")
+
+    return redirect(request.referrer or url_for('staff_panel'))
 
 
 @app.route('/staff/manual-checkin', methods=['POST'])
@@ -653,13 +643,13 @@ def approve_user(user_id):
 # --- STAFF TERMINAL LOGIN (Strictly Staff Only) ---
 @app.route('/staff/login', methods=['GET', 'POST'])
 def staff_login():
-    if current_user.is_authenticated and current_user.role in ['staff', 'admin', 'super_admin']:
+    if current_user.is_authenticated and current_user.role in ['admin', 'coordinator', 'advisor', 'super_admin']:
         return redirect(url_for('select_branch_for_staff'))
 
     if request.method == 'POST':
         u = User.query.filter_by(username=request.form.get('username')).first()
         if u and check_password_hash(u.password_hash, request.form.get('password')):
-            if u.role in ['staff', 'admin', 'super_admin']:
+            if u.role in ['admin', 'coordinator', 'advisor', 'super_admin']: # Updated
                 login_user(u)
                 return redirect(url_for('select_branch_for_staff'))
             else:
@@ -1160,31 +1150,69 @@ def tv_display():
 @app.route('/staff/analytics')
 @login_required
 @permission_required('analytics')
-
 def staff_analytics():
     loc_id = session.get('loc_id')
     now = datetime.now(timezone.utc)
+    today = now.date()
 
-    # 1. Monthly Momentum
-    this_month = Queue.query.filter(Queue.location_id == loc_id,
-                                    extract('month', Queue.created_at) == now.month).count()
-    last_month = Queue.query.filter(Queue.location_id == loc_id,
-                                    extract('month', Queue.created_at) == (now.month - 1)).count()
-    momentum = int(((this_month - last_month) / last_month * 100)) if last_month > 0 else 100
+    # 1. TOTAL THROUGHPUT (Today) - Includes all types
+    daily_count = Queue.query.filter(
+        Queue.location_id == loc_id,
+        func.date(Queue.created_at) == today
+    ).count()
 
-    # 2. Tech Efficiency
+    # 2. SERVICE VELOCITY (Avg minutes from Start to End)
+    completed_jobs = Queue.query.filter(
+        Queue.location_id == loc_id,
+        Queue.status == 'done',
+        Queue.start_time != None,
+        Queue.end_time != None
+    ).all()
+
+    total_mins = 0
+    for job in completed_jobs:
+        diff = job.end_time - job.start_time
+        total_mins += diff.total_seconds() / 60
+
+    avg_wait = int(total_mins / len(completed_jobs)) if completed_jobs else 0
+
+    # 3. MONTHLY MOMENTUM
+    this_month_count = Queue.query.filter(
+        Queue.location_id == loc_id,
+        extract('month', Queue.created_at) == now.month
+    ).count()
+
+    last_month_count = Queue.query.filter(
+        Queue.location_id == loc_id,
+        extract('month', Queue.created_at) == (now.month - 1 if now.month > 1 else 12)
+    ).count()
+
+    momentum = int(((this_month_count - last_month_count) / last_month_count * 100)) if last_month_count > 0 else 100
+
+    # 4. SOURCE BREAKDOWN (Online vs Walk-in vs Phone)
+    # Online: booking.user_id exists and no [PHONE] prefix
+    # Phone: booking.guest_name starts with [PHONE]
+    # Walk-in: booking.ref_id starts with W-
+    sources = db.session.query(
+        Booking.service_location,  # Placeholder or use status logic
+        func.count(Queue.id)
+    ).join(Queue).filter(Queue.location_id == loc_id).group_by(Booking.service_location).all()
+
+    # 5. TECH STATS
     tech_stats = db.session.query(
         Technician.name,
         func.count(queue_technicians.c.queue_id).label('total_jobs')
-    ).join(queue_technicians).join(Queue).filter(Queue.location_id == loc_id, Queue.status == 'done').group_by(
-        Technician.name).all()
+    ).join(queue_technicians).join(Queue).filter(
+        Queue.location_id == loc_id,
+        Queue.status == 'done'
+    ).group_by(Technician.name).order_by(db.desc('total_jobs')).limit(5).all()
 
     return render_template('staff_analytics.html',
-                           daily_count=this_month,  # Simplified for example
-                           monthly_count=this_month,
+                           daily_count=daily_count,
+                           monthly_count=this_month_count,
+                           avg_wait=avg_wait,
                            momentum=momentum,
                            tech_stats=tech_stats,
-                           forecast=5,  # Logic for upcoming bookings
                            title="Business Intelligence")
 
 
@@ -1251,7 +1279,7 @@ def staff_users():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        role = request.form.get('role')  # super_admin, admin, staff, customer
+        role = request.form.get('role')  # super_admin, admin, coordinator, advisor, customer
         full_name = request.form.get('full_name')
         email = request.form.get('email')
         company_name = request.form.get('company_name')
@@ -1314,7 +1342,7 @@ def update_last_seen():
     Throttled to once every 60 seconds to optimize DB performance and prevent hangs.
     """
     # 1. Only track Management (Staff/Admin/Super Admin)
-    if current_user.is_authenticated and current_user.role in ['staff', 'admin', 'super_admin']:
+    if current_user.is_authenticated and current_user.role in ['admin', 'coordinator', 'advisor', 'super_admin']:
         now = datetime.now(timezone.utc)
 
         # 2. Retrieve the last time the DB was updated for this user
@@ -1811,7 +1839,7 @@ def sync_job_order():
 @login_required
 @permission_required('settings')
 def manage_permissions():
-    roles = ['admin', 'staff', 'customer']
+    roles = ['admin', 'coordinator', 'advisor']
     features = [
         ('analytics', 'Site Analytics'),
         ('notifications', 'Messaging Audit'),
@@ -1850,11 +1878,6 @@ def manage_permissions():
                            features=features,
                            current_perms=current_perms,
                            title="Access Control Matrix")
-
-
-
-
-
 
 
 @app.route('/logout')
