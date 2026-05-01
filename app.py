@@ -20,11 +20,14 @@ from functools import wraps
 
 from requests_oauthlib import OAuth1
 
-import json # Ensure this is at the top of app.py
+import json  # Ensure this is at the top of app.py
 from sqlalchemy import or_, and_, func
 
+# Define Philippine Time (UTC+8)
+PHT = timezone(timedelta(hours=8))
 
-
+def get_pht_now():
+    return datetime.now(PHT)
 
 app = Flask(__name__)
 # IMPORTANT: Use a strong, random key from environment for production.
@@ -77,7 +80,9 @@ class NetSuiteConnector:
         try:
             res = requests.get(self.base_url, auth=auth, params=params, timeout=10)
             return res.json() if res.status_code == 200 else None
-        except: return None
+        except:
+            return None
+
 
 class NotificationLog(db.Model):
     __tablename__ = 'notification_logs'
@@ -103,15 +108,32 @@ class Vehicle(db.Model):
     related_bookings = db.relationship('Booking', backref='associated_vehicle', cascade="all, delete-orphan")
 
 
-
 # --- MODELS ---
 class Location(db.Model):
     __tablename__ = 'locations'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
     code = db.Column(db.String(10), unique=True)
-    capacity = db.Column(db.Integer, default=20) # Add this line
+    capacity = db.Column(db.Integer, default=20)  # Add this line
+    kiosk_last_seen = db.Column(db.DateTime)
+    tv_last_seen = db.Column(db.DateTime)
 
+    @property
+    def kiosk_online(self):
+        if not self.kiosk_last_seen: return False
+        # Ensure both are UTC before comparing
+        now = datetime.now(timezone.utc)
+        last_seen = self.kiosk_last_seen.replace(
+            tzinfo=timezone.utc) if self.kiosk_last_seen.tzinfo is None else self.kiosk_last_seen
+        return (now - last_seen).total_seconds() < 120
+
+    @property
+    def tv_online(self):
+        if not self.tv_last_seen: return False
+        now = datetime.now(timezone.utc)
+        last_seen = self.tv_last_seen.replace(
+            tzinfo=timezone.utc) if self.tv_last_seen.tzinfo is None else self.tv_last_seen
+        return (now - last_seen).total_seconds() < 120
 
     @property
     def is_online(self):
@@ -122,6 +144,7 @@ class Location(db.Model):
             User.last_seen >= threshold
         ).first()
         return active_user is not None
+
 
 # A branch is online if any staff/admin was seen in the last 2 minutes at this ID
 
@@ -146,7 +169,8 @@ class User(db.Model, UserMixin):
     phone = db.Column(db.String(20))
     email = db.Column(db.String(100))
     company_name = db.Column(db.String(150))
-    bookings = db.relationship('Booking', backref='customer', lazy=True, cascade="all, delete-orphan") # THIS IS THE EXISTING BACKREF
+    bookings = db.relationship('Booking', backref='customer', lazy=True,
+                               cascade="all, delete-orphan")  # THIS IS THE EXISTING BACKREF
     last_seen = db.Column(db.DateTime)
     current_loc_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
     is_approved = db.Column(db.Boolean, default=False)  # NEW: Default is False
@@ -154,9 +178,7 @@ class User(db.Model, UserMixin):
     tin_number = db.Column(db.String(20))  # Tax ID
     business_permit = db.Column(db.String(50))  # Legal Permit or Accreditation
     vehicles = db.relationship('Vehicle', backref='owner', lazy=True, cascade="all, delete-orphan")
-    is_rejected = db.Column(db.Boolean, default=False) # NEW: Soft delete flag
-
-
+    is_rejected = db.Column(db.Boolean, default=False)  # NEW: Soft delete flag
 
 
 class ServiceCategory(db.Model):
@@ -165,27 +187,27 @@ class ServiceCategory(db.Model):
     name = db.Column(db.String(100), unique=True)
 
 
-
-
 class Booking(db.Model):
     __tablename__ = 'bookings'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) # Changed to nullable
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Changed to nullable
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))
     vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicles.id'), nullable=True)
     plate_number = db.Column(db.String(50))
-    guest_name = db.Column(db.String(150)) # Added this
+    guest_name = db.Column(db.String(150))  # Added this
     service_type = db.Column(db.String(255))
-    service_location = db.Column(db.String(50), default='In-Plant') # Added this
+    service_location = db.Column(db.String(50), default='In-Plant')  # Added this
     status = db.Column(db.String(20), default='pending')
     scheduled_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     ref_id = db.Column(db.String(10), unique=True)
     queue_records = db.relationship('Queue', back_populates='booking', cascade="all, delete-orphan")
-
+    job_order = db.Column(db.String(50), nullable=True)
+    std_repair_hours = db.Column(db.Float, default=0.0)
 
     # NO EXPLICIT 'customer' relationship here, it's created by the backref in User model
     # location = db.relationship('Location', backref='bookings_at_location') # This can stay or be removed if 'location' is sufficient from backref in Location model
-    location = db.relationship('Location', backref='bookings') # Use existing backref from Location if available, or define here if not.
+    location = db.relationship('Location',
+                               backref='bookings')  # Use existing backref from Location if available, or define here if not.
 
     def __init__(self, **kwargs):
         super(Booking, self).__init__(**kwargs)
@@ -193,10 +215,11 @@ class Booking(db.Model):
             # Generates a unique 4-digit number for Kiosk Check-in
             self.ref_id = ''.join(random.choices(string.digits, k=4))
 
+
 queue_technicians = db.Table('queue_technicians',
-    db.Column('queue_id', db.Integer, db.ForeignKey('queues.id'), primary_key=True),
-    db.Column('technician_id', db.Integer, db.ForeignKey('technicians.id'), primary_key=True)
-)
+                             db.Column('queue_id', db.Integer, db.ForeignKey('queues.id'), primary_key=True),
+                             db.Column('technician_id', db.Integer, db.ForeignKey('technicians.id'), primary_key=True)
+                             )
 
 
 class Queue(db.Model):
@@ -210,8 +233,7 @@ class Queue(db.Model):
     end_time = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     call_count = db.Column(db.Integer, default=0)
-    materials_used = db.Column(db.Text) # Add this line
-
+    materials_used = db.Column(db.Text)  # Add this line
 
     # Relationships
     location = db.relationship('Location', backref='queue_entries')
@@ -234,7 +256,7 @@ class AuditLog(db.Model):
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     action = db.Column(db.String(100))  # e.g., "Work Started", "Ticket Expired"
-    details = db.Column(db.Text)        # e.g., "Assigned Tech A to Ticket BAS-101"
+    details = db.Column(db.Text)  # e.g., "Assigned Tech A to Ticket BAS-101"
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
@@ -268,6 +290,7 @@ def require_staff_location():
 
     return None
 
+
 def permission_required(feature_key):
     def wrapper(f):
         @wraps(f)
@@ -275,9 +298,10 @@ def permission_required(feature_key):
             if not current_user.is_authenticated: return redirect(url_for('login'))
             if not check_permission(feature_key): abort(403)
             return f(*args, **kwargs)
-        return decorated_view
-    return wrapper
 
+        return decorated_view
+
+    return wrapper
 
 
 # This makes the permission check available in all HTML templates
@@ -381,18 +405,20 @@ def set_branch(loc_id):
     return redirect(url_for('dashboard'))
 
 
-
 # --- STAFF OPERATIONS ---
 
 @app.route('/staff')
 @login_required
-@roles_required('super_admin', 'admin', 'coordinator', 'advisor') # Updated roles
+@roles_required('super_admin', 'admin', 'coordinator', 'advisor')  # Updated roles
 def staff_panel():
     if 'loc_id' not in session: return redirect(url_for('select_branch_for_staff'))
     loc_id = session.get('loc_id')
 
-    # 1. Fetch Dynamic Data from Supabase
+    # 1. Fetch Fresh Hub Details (Crucial for Green/Red status)
     current_location = db.session.get(Location, loc_id)
+    if current_location:
+        db.session.refresh(current_location)  # Force pull latest timestamps from Supabase
+
     max_capacity = current_location.capacity if current_location else 20
 
     # FETCH SERVICES FOR DROPDOWNS
@@ -403,14 +429,19 @@ def staff_panel():
         location_id=loc_id, status='serving').all()
     waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
 
-    # 3. Busy Map for Roster
+    # 3. BUILD THE BUSY MAP (Mapping Service to Tech via Ticket)
     busy_map = {}
     for q in serving:
+        # Check if the queue has a booking (to get the service type)
+        service_name = q.booking.service_type if q.booking else "General Service"
+        plate_no = q.booking.plate_number if q.booking else "WALK-IN"
+
         for t_assigned in q.assigned_techs:
+            # Map the technician ID to the specific details of the ticket they are holding
             busy_map[t_assigned.id] = {
                 'ticket': q.ticket_number,
-                'plate': q.booking.plate_number if q.booking else 'WALK-IN',
-                'site': q.booking.service_location if q.booking else 'In-Plant'
+                'plate': plate_no,
+                'service': service_name
             }
 
     # 4. Personnel
@@ -423,60 +454,54 @@ def staff_panel():
     capacity_percent = int((current_occupancy / max_capacity) * 100) if max_capacity > 0 else 0
 
     return render_template('staff.html',
-                           categories=categories,  # <--- DYNAMIC SERVICES
-                           waiting_tickets=waiting, serving_list=serving, technicians=available_techs,
-                           roster=all_techs, busy_map=busy_map, max_capacity=max_capacity,
-                           current_occupancy=current_occupancy, capacity_percent=capacity_percent, title="Live Console")
+                           current_location=current_location,  # <--- ADDED THIS
+                           categories=categories,
+                           waiting_tickets=waiting,
+                           serving_list=serving,
+                           technicians=available_techs,
+                           roster=all_techs,
+                           busy_map=busy_map,
+                           max_capacity=max_capacity,
+                           current_occupancy=current_occupancy,
+                           capacity_percent=capacity_percent,
+                           title="Live Console")
 
 
 @app.route('/admin/workflow')
 @login_required
 @roles_required('super_admin', 'admin')
 def admin_workflow():
-    if 'loc_id' not in session: return redirect(url_for('select_branch_for_staff'))
-    loc_id = session.get('loc_id')
-    now = datetime.now(timezone.utc)
-
-    # 1. Fetch Hub Details & Dynamic Services
-    current_location = db.session.get(Location, loc_id)
-    max_capacity = current_location.capacity if current_location else 20
+    all_locations = Location.query.order_by(Location.name.asc()).all()
     categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
+    hub_data = []
 
-    # 2. Admin Workfloor Logic: Ongoing (serving) OR Done (waiting for materials)
-    serving = Queue.query.options(db.joinedload(Queue.assigned_techs), db.joinedload(Queue.booking)).filter(
-        Queue.location_id == loc_id,
-        or_(
-            Queue.status == 'serving',
-            and_(Queue.status == 'done', or_(Queue.materials_used == None, Queue.materials_used == ''))
-        )
-    ).all()
+    for loc in all_locations:
+        active_tickets = Queue.query.options(db.joinedload(Queue.assigned_techs), db.joinedload(Queue.booking)).filter(
+            Queue.location_id == loc.id,
+            or_(Queue.status == 'serving',
+                and_(Queue.status == 'done', or_(Queue.materials_used == None, Queue.materials_used == '')))
+        ).order_by(Queue.created_at.asc()).all()
 
-    # 3. Create Busy Map for Roster (Only those currently 'serving' are busy)
-    busy_map = {}
-    for q in serving:
-        if q.status == 'serving':
-            for t_assigned in q.assigned_techs:
-                busy_map[t_assigned.id] = {
+        loc_techs = Technician.query.filter_by(location_id=loc.id, is_active=True).order_by(Technician.name.asc()).all()
+
+        # Build a busy map for this specific hub
+        busy_map = {}
+        for q in active_tickets:
+            for t in q.assigned_techs:
+                busy_map[t.id] = {
                     'ticket': q.ticket_number,
-                    'plate': q.booking.plate_number if q.booking else 'WALK-IN',
-                    'site': q.booking.service_location if q.booking else 'In-Plant'
+                    'service': q.booking.service_type if q.booking else "Service"
                 }
 
-    # 4. Personnel & Queue
-    all_techs = Technician.query.options(db.selectinload(Technician.tasks).joinedload(Queue.booking)).filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
-    available_techs = [t for t in all_techs if t.is_present and t.id not in busy_map]
-    waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
+        hub_data.append({
+            'info': loc,
+            'tickets': active_tickets,
+            'techs': loc_techs,
+            'busy_map': busy_map,  # Detailed status mapping
+            'ticket_count': len(active_tickets)
+        })
 
-    # 5. Occupancy Stats
-    current_occupancy = len(serving) + len(waiting)
-    capacity_percent = int((current_occupancy / max_capacity) * 100) if max_capacity > 0 else 0
-
-    return render_template('admin_workflow.html',
-                           waiting_tickets=waiting, serving_list=serving, technicians=available_techs,
-                           roster=all_techs, busy_map=busy_map, categories=categories,
-                           max_capacity=max_capacity, current_occupancy=current_occupancy,
-                           capacity_percent=capacity_percent, title="Admin Control Center")
-
+    return render_template('admin_workflow.html', hub_data=hub_data, categories=categories, title="Global Workflow")
 
 
 @app.route('/staff/save-materials/<int:q_id>', methods=['POST'])
@@ -497,18 +522,24 @@ def save_materials(q_id):
 @app.route('/staff/manual-checkin', methods=['POST'])
 @login_required
 def staff_manual_checkin():
-    loc_id = session.get('loc_id')
-    loc_code = session.get('location_code', 'CCI')
-    manifest_data = request.form.get('staff_manifest_data')
+    # 1. Determine Location: Check if an Admin-specified loc_id was sent,
+    # otherwise fallback to the session loc_id (for regular staff).
+    admin_loc_id = request.form.get('admin_loc_id')
+    loc_id = admin_loc_id if admin_loc_id else session.get('loc_id')
 
+    # Fetch the specific location object to get its Code (for the ticket prefix)
+    target_loc = db.session.get(Location, loc_id)
+    loc_code = target_loc.code if target_loc else 'CCI'
+
+    manifest_data = request.form.get('staff_manifest_data')
     if not manifest_data:
-        return redirect(url_for('staff_panel'))
+        return redirect(request.referrer or url_for('staff_panel'))
 
     manifest = json.loads(manifest_data)
 
     try:
         for item in manifest:
-            # 1. Create Booking
+            # 2. Create Booking with JO and SRH
             new_booking = Booking(
                 user_id=None,
                 location_id=loc_id,
@@ -516,27 +547,29 @@ def staff_manual_checkin():
                 guest_name=f"[PHONE] {item['client']}",
                 service_type=item['service'],
                 service_location=item['site'],
+                job_order=item.get('jo'),
+                std_repair_hours=float(item.get('srh', 0)) if item.get('srh') else 0.0,
                 status='arrived'
             )
             db.session.add(new_booking)
             db.session.flush()
 
-            # 2. Generate Ticket
+            # 3. Generate Ticket
             today = datetime.now(timezone.utc).date()
             count = Queue.query.filter_by(location_id=loc_id).filter(func.date(Queue.created_at) == today).count()
             ticket_no = f"{loc_code}-M-{101 + count}"
 
-            # 3. Add to Queue
+            # 4. Add to Queue
             new_q = Queue(ticket_number=ticket_no, location_id=loc_id, booking_id=new_booking.id, status='waiting')
             db.session.add(new_q)
 
         db.session.commit()
-        flash(f"Successfully processed {len(manifest)} phone bookings.", "success")
+        flash(f"Successfully deployed to {target_loc.name}.", "success")
     except Exception as e:
         db.session.rollback()
         flash("System error in bulk check-in.", "danger")
 
-    return redirect(url_for('staff_panel'))
+    return redirect(request.referrer or url_for('staff_panel'))
 
 
 @app.route('/staff/start-work/<int:q_id>', methods=['POST'])
@@ -547,11 +580,19 @@ def start_work(q_id):
     tech_ids = request.form.getlist('technician_ids')
     q = db.session.get(Queue, q_id)
 
+    # New inputs from the dispatch form
+    jo_number = request.form.get('job_order')
+    srh_value = request.form.get('std_repair_hours', 0)
+
     if q and q.location_id == loc_id and tech_ids:
+        # Update booking details if they exist
+        if q.booking:
+            if jo_number: q.booking.job_order = jo_number
+            if srh_value: q.booking.std_repair_hours = float(srh_value)
+
         techs = Technician.query.filter(Technician.id.in_(tech_ids)).all()
         q.assigned_techs = techs
         q.status = 'serving'
-        # Note: We don't set start_time here anymore because it's manually typed later
         db.session.commit()
 
         log_action("Dispatch", f"Ticket {q.ticket_number} sent to floor.")
@@ -564,7 +605,7 @@ def start_work(q_id):
 
 @app.route('/staff/recall-ticket/<int:q_id>')
 @login_required
-@permission_required('recall-ticket') # Add this!
+@permission_required('recall-ticket')  # Add this!
 def recall_ticket(q_id):
     q = db.session.get(Queue, q_id)
     if q:
@@ -627,10 +668,11 @@ def login():
 
     return render_template('login.html')
 
+
 @app.route('/staff/users/approve/<int:user_id>')
 @login_required
 def approve_user(user_id):
-    if current_user.role != ['admin','super_admin']: abort(403)
+    if current_user.role != ['admin', 'super_admin']: abort(403)
     u = db.session.get(User, user_id)
     if u:
         u.is_approved = True
@@ -649,7 +691,7 @@ def staff_login():
     if request.method == 'POST':
         u = User.query.filter_by(username=request.form.get('username')).first()
         if u and check_password_hash(u.password_hash, request.form.get('password')):
-            if u.role in ['admin', 'coordinator', 'advisor', 'super_admin']: # Updated
+            if u.role in ['admin', 'coordinator', 'advisor', 'super_admin']:  # Updated
                 login_user(u)
                 return redirect(url_for('select_branch_for_staff'))
             else:
@@ -688,7 +730,7 @@ def register():
             tin_number=request.form.get('tin_number'),
             business_permit=request.form.get('business_permit'),
             role='customer',
-            is_approved=False # Locked until staff verifies in Verify Center
+            is_approved=False  # Locked until staff verifies in Verify Center
         )
 
         try:
@@ -830,7 +872,7 @@ def staff_locations():
     if request.method == 'POST':
         name = request.form.get('name').strip()
         code = request.form.get('code').strip().upper()
-        capacity = request.form.get('capacity', 20) # Get capacity from form
+        capacity = request.form.get('capacity', 20)  # Get capacity from form
 
         new_location = Location(name=name, code=code, capacity=int(capacity))
         db.session.add(new_location)
@@ -842,7 +884,6 @@ def staff_locations():
     return render_template('staff_locations.html', locations=all_locations)
 
 
-
 @app.route('/staff/locations/edit/<int:loc_id>', methods=['GET', 'POST'])
 @login_required
 @permission_required('locations_edit')
@@ -851,7 +892,7 @@ def edit_location(loc_id):
     if request.method == 'POST':
         loc.name = request.form.get('name')
         loc.code = request.form.get('code').upper()
-        loc.capacity = int(request.form.get('capacity', 20)) # Update capacity
+        loc.capacity = int(request.form.get('capacity', 20))  # Update capacity
         db.session.commit()
         flash("Branch updated successfully.", "success")
         return redirect(url_for('staff_locations'))
@@ -861,9 +902,7 @@ def edit_location(loc_id):
 @app.route('/staff/locations/delete/<int:loc_id>')
 @login_required
 @permission_required('locations')
-
 def delete_location(loc_id):
-
     location_to_delete = db.session.get(Location, loc_id)
     if not location_to_delete:
         flash("Location not found.", "danger")
@@ -913,9 +952,13 @@ def staff_panel():
 @app.route('/staff/complete-work/<int:q_id>', methods=['POST'])  # MUST BE POST
 @login_required
 def complete_work(q_id):
-    # Capture the HH:MM values from the HTML form
+    # Capture values from the HTML form
     start_str = request.form.get('manual_start')
     end_str = request.form.get('manual_end')
+
+    # NEW: Capture JO and SRH at the point of completion
+    jo_number = request.form.get('job_order')
+    srh_value = request.form.get('std_repair_hours')
 
     if not start_str or not end_str:
         flash("Error: Start and End times are required.", "danger")
@@ -928,20 +971,28 @@ def complete_work(q_id):
         q.start_time = datetime.combine(today, datetime.strptime(start_str, '%H:%M').time())
         q.end_time = datetime.combine(today, datetime.strptime(end_str, '%H:%M').time())
 
+        # Save the JO and SRH to the booking record
+        if q.booking:
+            if jo_number: q.booking.job_order = jo_number
+            if srh_value: q.booking.std_repair_hours = float(srh_value)
+            q.booking.status = 'done'
+
         q.status = 'done'
-        if q.booking: q.booking.status = 'done'
         db.session.commit()
+
+        # Notify customer
+        if q.booking and q.booking.customer:
+            notify_customer(q.booking.customer, q.booking.plate_number, 'done', q.id, q.ticket_number)
+
         flash(f"Ticket {q.ticket_number} marked complete.", "success")
 
     return redirect(url_for('staff_panel'))
 
 
-
 @app.route('/staff/records')
 @login_required
-@permission_required('records') # <--- Use the Matrix Key
+@permission_required('records')  # <--- Use the Matrix Key
 def staff_records():
-
     loc_id = session.get('loc_id')
     if not loc_id:
         flash("Please select a branch first.", "warning")
@@ -959,7 +1010,6 @@ def staff_records():
 @app.route('/staff/settings', methods=['GET', 'POST'])
 @login_required
 @permission_required('settings')
-
 def staff_settings():
     redirect_response = require_staff_location()
     if redirect_response: return redirect_response  # This route is general settings, not loc_id specific, but still staff-only.
@@ -1055,7 +1105,6 @@ def kiosk():
     return render_template('kiosk.html', categories=categories)
 
 
-
 @app.route('/check-in', methods=['POST'])
 @csrf.exempt
 def check_in():
@@ -1097,7 +1146,7 @@ def walk_in():
 
     try:
         new_booking = Booking(
-            user_id=None, # Explicitly None for Walk-ins
+            user_id=None,  # Explicitly None for Walk-ins
             location_id=loc_id,
             plate_number=plate_number,
             guest_name=guest_name,
@@ -1121,6 +1170,7 @@ def walk_in():
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @app.route('/print-ticket/<int:q_id>')
 def print_ticket_view(q_id):
@@ -1250,21 +1300,38 @@ def analytics_forecast():
 
 @app.route('/api/get-latest-queue')
 def get_latest_queue():
-    # Priority 1: URL Argument (Best for TVs/Kiosks)
-    # Priority 2: Session
     loc_id = request.args.get('loc_id') or session.get('loc_id')
-
     if not loc_id:
         return jsonify({"now_serving": "---", "waiting": []})
 
-    serving = Queue.query.filter_by(location_id=loc_id, status='serving').order_by(Queue.start_time.desc()).first()
-    waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).limit(
-        5).all()
+    # 1. Get the most recently COMPLETED unit (status='done')
+    # within the last 15 minutes
+    threshold = datetime.now(timezone.utc) - timedelta(minutes=15)
+
+    latest_release = Queue.query.filter(
+        Queue.location_id == loc_id,
+        Queue.status == 'done',
+        Queue.end_time >= threshold
+    ).order_by(Queue.end_time.desc()).first()
+
+    # 2. Get the units still in the facility (either 'waiting' or currently 'serving')
+    # This keeps the "Up Next" list populated with units still on the floor
+    active_queue = Queue.query.filter(
+        Queue.location_id == loc_id,
+        Queue.status.in_(['waiting', 'serving'])
+    ).order_by(Queue.created_at.asc()).limit(5).all()
 
     return jsonify({
-        "now_serving": serving.ticket_number if serving else "---",
-        "call_count": serving.call_count if serving else 0,
-        "waiting": [t.ticket_number for t in waiting]
+        "now_serving": latest_release.ticket_number if latest_release else "---",
+        "now_serving_plate": latest_release.booking.plate_number if (latest_release and latest_release.booking) else "",
+        "call_count": latest_release.call_count if latest_release else 0,
+        "waiting": [
+            {
+                "ticket": t.ticket_number,
+                "plate": t.booking.plate_number if t.booking else "WALK-IN",
+                "is_on_floor": t.status == 'serving'
+            } for t in active_queue
+        ]
     })
 
 
@@ -1274,7 +1341,6 @@ from datetime import datetime, timezone  # Ensure these are imported at the top
 @app.route('/staff/users', methods=['GET', 'POST'])
 @login_required
 @permission_required('users')
-
 def staff_users():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -1388,7 +1454,6 @@ def shutdown_session(exception=None):
 @login_required
 @permission_required('technicians')
 def staff_technicians():
-
     loc_id = session.get('loc_id')
     if not loc_id:
         flash("Please select a branch first.", "warning")
@@ -1406,6 +1471,7 @@ def staff_technicians():
     # Only show technicians assigned to the CURRENT branch in session
     techs = Technician.query.filter_by(location_id=loc_id).all()
     return render_template('staff_technicians.html', technicians=techs, title="Manage Technicians")
+
 
 @app.route('/staff/technicians/delete/<int:id>')
 @login_required
@@ -1449,7 +1515,6 @@ def revert_ticket(q_id):
         db.session.commit()
         flash(f"Ticket {q.ticket_number} returned to queue.", "success")
     return redirect(url_for('staff_records'))
-
 
 
 import threading
@@ -1595,7 +1660,7 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
 
 @app.route('/staff/notifications')
 @login_required
-@permission_required('notifications') # <--- Use the Matrix Key
+@permission_required('notifications')  # <--- Use the Matrix Key
 def staff_notifications():
     loc_id = session.get('loc_id')
 
@@ -1612,7 +1677,6 @@ def staff_notifications():
 @login_required
 @permission_required('verify_center')
 def verify_center():
-
     # Get only users who are NOT yet approved
     pending = User.query.filter_by(is_approved=False).order_by(User.created_at.asc()).all()
     # Get recently approved for reference
@@ -1628,8 +1692,6 @@ def verify_center():
 @login_required
 @permission_required('verify_center')
 def verify_action(user_id, action):
-
-
     user_to_verify = db.session.get(User, user_id)
     if not user_to_verify:
         flash("System Error: The requested user record no longer exists.", "danger")
@@ -1653,7 +1715,9 @@ def verify_action(user_id, action):
             flash(f"Success: Access GRANTED and Activation Email sent to {user_to_verify.full_name}.", "success")
         except Exception as e:
             app.logger.error(f"Approval Notification Failed for {user_to_verify.email}: {e}")
-            flash(f"Account approved for {user_to_verify.full_name}, but the activation email failed to send. Please check SMTP settings.", "warning")
+            flash(
+                f"Account approved for {user_to_verify.full_name}, but the activation email failed to send. Please check SMTP settings.",
+                "warning")
 
     elif action == 'reject':
         # 4. SOFT DELETE: Move bogus/competitor identity to Archive instead of purging
@@ -1672,9 +1736,7 @@ def verify_action(user_id, action):
 @app.route('/staff/archive')
 @login_required
 @permission_required('staff_archived')
-
 def staff_archive():
-
     # View users marked as rejected
     rejected_users = User.query.filter_by(is_rejected=True).order_by(User.created_at.desc()).all()
     return render_template('staff_archive.html', users=rejected_users, title="Rejected Identity Archive")
@@ -1691,6 +1753,7 @@ def purge_user(user_id):
         db.session.commit()
         flash("Record permanently purged from the system.", "danger")
     return redirect(url_for('staff_archive'))
+
 
 def log_action(action, details):
     """ Records an entry into the audit trail for the current hub """
@@ -1712,7 +1775,6 @@ def log_action(action, details):
 @login_required
 @permission_required('audit')
 def staff_audit_trail():
-
     loc_id = session.get('loc_id')
     # Fetch logs for THIS location only
     logs = AuditLog.query.filter_by(location_id=loc_id).order_by(AuditLog.created_at.desc()).limit(500).all()
@@ -1730,8 +1792,9 @@ def global_bookings():
     try:
         all_bookings = Booking.query.options(
             db.joinedload(Booking.location),
-            db.joinedload(Booking.customer),         # 'customer' is the backref from User.bookings
-            db.joinedload(Booking.associated_vehicle) # 'associated_vehicle' is the backref from Vehicle.related_bookings
+            db.joinedload(Booking.customer),  # 'customer' is the backref from User.bookings
+            db.joinedload(Booking.associated_vehicle)
+            # 'associated_vehicle' is the backref from Vehicle.related_bookings
         ).order_by(Booking.scheduled_time.desc()).all()
 
     except Exception as e:
@@ -1745,6 +1808,7 @@ def global_bookings():
         bookings=all_bookings,
         title="Global Deployment Ledger"
     )
+
 
 @app.route('/staff/technician/toggle/<int:tech_id>')
 @login_required
@@ -1784,7 +1848,9 @@ def roles_required(*roles):
             if current_user.role not in roles:
                 abort(403)
             return f(*args, **kwargs)
+
         return decorated_view
+
     return wrapper
 
 
@@ -1792,6 +1858,7 @@ def roles_required(*roles):
 @app.errorhandler(403)
 def forbidden_error(error):
     return render_template('errors/403.html'), 403
+
 
 @app.route('/api/netsuite/verify/<string:search_val>')
 @login_required
@@ -1801,6 +1868,7 @@ def api_verify_netsuite(search_val):
     if data and data.get('status') == 'success':
         return jsonify(data)
     return jsonify({"status": "error", "message": "No record found"})
+
 
 @app.route('/staff/sync-job-order', methods=['POST'])
 @login_required
@@ -1835,6 +1903,7 @@ def sync_job_order():
         flash("Could not find that JO# in NetSuite.", "danger")
     return redirect(url_for('staff_panel'))
 
+
 @app.route('/staff/permissions', methods=['GET', 'POST'])
 @login_required
 @permission_required('settings')
@@ -1849,8 +1918,8 @@ def manage_permissions():
         ('users', 'User Registry'),
         ('settings', 'System Settings'),
         ('global_bookings', 'Global Ledger'),
-        ('technicians', 'Manage Technicians'), # Add this
-        ('locations', 'Manage Branches')      # Add this
+        ('technicians', 'Manage Technicians'),  # Add this
+        ('locations', 'Manage Branches')  # Add this
     ]
 
     if request.method == 'POST':
@@ -1880,6 +1949,28 @@ def manage_permissions():
                            title="Access Control Matrix")
 
 
+@app.route('/api/device-heartbeat')
+def device_heartbeat():
+    loc_id = request.args.get('loc_id')
+    device_type = request.args.get('type')
+
+    if loc_id and device_type:
+        loc = db.session.get(Location, int(loc_id))
+        if loc:
+            # FORCE UTC
+            now = datetime.now(timezone.utc)
+            if device_type == 'kiosk':
+                loc.kiosk_last_seen = now
+            elif device_type == 'tv':
+                loc.tv_last_seen = now
+
+            db.session.commit()
+            # print(f"DEBUG: Heartbeat received for {loc.name} {device_type}") # Check your terminal
+            return jsonify({"status": "ok", "time": now.isoformat()})
+
+    return jsonify({"status": "error"}), 400
+
+
 @app.route('/logout')
 def logout():
     logout_user()
@@ -1894,32 +1985,54 @@ if __name__ == '__main__':
         db.create_all()
 
         try:
-            # 2. Use a safer way to check for missing columns
+            # 2. Inspect the 'bookings' table
             inspector = db.inspect(db.engine)
             existing_columns = [c['name'] for c in inspector.get_columns('bookings')]
 
-            # Check and add 'plate_number'
+            if 'kiosk_last_seen' not in existing_columns:
+                db.session.execute(db.text('ALTER TABLE locations ADD COLUMN kiosk_last_seen TIMESTAMP'))
+            if 'tv_last_seen' not in existing_columns:
+                db.session.execute(db.text('ALTER TABLE locations ADD COLUMN tv_last_seen TIMESTAMP'))
+            db.session.commit()
+
+            # Existing Migration: plate_number
             if 'plate_number' not in existing_columns:
                 db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN plate_number VARCHAR(50)'))
                 db.session.commit()
                 print("--- Database Updated: Added plate_number ---")
 
-            # Check and add 'guest_name' (for Walk-ins)
+            # Existing Migration: guest_name
             if 'guest_name' not in existing_columns:
                 db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN guest_name VARCHAR(150)'))
                 db.session.commit()
                 print("--- Database Updated: Added guest_name ---")
 
-            # Check and add 'service_location' (In-Plant/Out-Plant)
+            # Existing Migration: service_location
             if 'service_location' not in existing_columns:
                 db.session.execute(
                     db.text("ALTER TABLE bookings ADD COLUMN service_location VARCHAR(50) DEFAULT 'In-Plant'"))
                 db.session.commit()
                 print("--- Database Updated: Added service_location ---")
 
+            # --- NEW MIGRATIONS START HERE ---
+
+            # New Migration: job_order
+            if 'job_order' not in existing_columns:
+                db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN job_order VARCHAR(50)'))
+                db.session.commit()
+                print("--- Database Updated: Added job_order ---")
+
+            # New Migration: std_repair_hours
+            if 'std_repair_hours' not in existing_columns:
+                db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN std_repair_hours FLOAT DEFAULT 0.0'))
+                db.session.commit()
+                print("--- Database Updated: Added std_repair_hours ---")
+
+            # --- NEW MIGRATIONS END HERE ---
+
         except Exception as e:
             print(f"--- Database Migration Note: {e} ---")
             db.session.rollback()
 
-    # 3. Run the app on Port 5000
+    # 3. Run the app
     app.run(debug=True, port=5000)
