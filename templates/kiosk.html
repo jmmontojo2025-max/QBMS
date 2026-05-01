@@ -66,7 +66,7 @@
     }
 
     .card-appointment { border-top: 15px solid var(--coolaire-blue); }
-    .card-walkin { border-top: 15 : 15px solid var(--coolaire-yellow); }
+    .card-walkin { border-top: 15px solid var(--coolaire-yellow); }
 
     /* INPUT STYLING */
     .kiosk-input-massive {
@@ -132,6 +132,18 @@
         color: white; text-align: center;
     }
 
+    #overlayPlate {
+        background: white;
+        color: var(--coolaire-blue-dark);
+        padding: 10px 40px;
+        border-radius: 15px;
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 900;
+        font-size: 4rem;
+        margin-top: 20px;
+        display: none;
+    }
+
     .kiosk-footer {
         background: #0f172a;
         border-radius: 2.5rem;
@@ -147,18 +159,21 @@
 <div class="kiosk-overlay animate__animated animate__fadeIn" id="printOverlay">
     <div class="spinner-grow text-warning mb-5" style="width: 8rem; height: 8rem;"></div>
     <h1 class="display-1 fw-950 mb-3" id="overlayTitle">PROCESSING...</h1>
-    <p class="fs-2 opacity-75" id="overlaySub">Updating local node registry...</p>
+    <p class="fs-2 opacity-75" id="overlaySub">Syncing with Hub Controller...</p>
+
+    <!-- PLATE VISIBILITY ON SUCCESS -->
+    <div id="overlayPlate" class="animate__animated animate__bounceIn"></div>
 </div>
 
 <div class="kiosk-wrapper">
     <!-- 1. HEADER -->
     <header class="kiosk-header">
         <div class="d-flex align-items-center gap-4">
-            <img src="{{ url_for('static', filename='logo.png') }}" height="60" alt="Coolaire">
+            <img src="{{ url_for('static', filename='logo.png') }}" height="60" alt="Coolaire" onerror="this.src='https://placehold.co/200x60?text=COOLAIRE'">
             <div class="vr opacity-10 mx-2" style="height: 40px;"></div>
             <div>
                 <h2 class="fw-900 mb-0" style="color: #002d72; letter-spacing: -1px;">
-                    {{ session.get('location_name') | upper }} SERVICE CENTER
+                    {{ session.get('location_name', 'COOLAIRE') | upper }}
                 </h2>
                 <p class="text-muted small fw-bold mb-0 text-uppercase" id="kioskDate">Loading...</p>
             </div>
@@ -192,7 +207,7 @@
             </div>
         </div>
 
-        <!-- MODE B: WALK-IN (NOW OPENS MODAL) -->
+        <!-- MODE B: WALK-IN -->
         <div class="col-lg-6">
             <div class="kiosk-card card-walkin justify-content-center animate__animated animate__fadeInRight">
                 <div class="text-center h-100 d-flex flex-column justify-content-center">
@@ -217,12 +232,12 @@
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}register" width="80">
         </div>
         <div class="flex-grow-1 ms-3">
-            <h2 class="fw-900 text-warning mb-1">Join the Queue</h2>
-            <p class="fs-4 mb-0 opacity-75">Scan the QR code to book your next appointment online.</p>
+            <h2 class="fw-900 text-warning mb-1">Online Booking</h2>
+            <p class="fs-4 mb-0 opacity-75">Scan to skip the line for your next service.</p>
         </div>
         <div class="text-end">
-            <div class="opacity-50 small fw-bold text-uppercase">Broadcast: {{ session.get('location_code') }}</div>
-            <div class="opacity-75 small fw-bold">NODE STATUS: ACTIVE</div>
+            <div class="opacity-50 small fw-bold text-uppercase">Broadcast Node: {{ session.get('location_code', 'CCI') }}</div>
+            <div class="text-success small fw-900"><i class="fa-solid fa-circle me-1 small"></i> SYSTEM LINK ACTIVE</div>
         </div>
     </footer>
 </div>
@@ -239,20 +254,17 @@
                 <form action="/walk-in" method="POST" class="kiosk-form-ajax">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                    <!-- Customer Name -->
                     <div class="mb-4">
                         <label class="modal-label-kiosk">Customer / Company Name</label>
                         <input type="text" name="customer_name" class="form-control modal-input-kiosk" placeholder="Enter Full Name" required>
                     </div>
 
                     <div class="row g-4 mb-5">
-                        <!-- Plate Number -->
                         <div class="col-md-6">
                             <label class="modal-label-kiosk">Plate Number</label>
-                            <input type="text" name="plate_number" class="form-control modal-input-kiosk text-uppercase" placeholder="ABC 123" required>
+                            <input type="text" name="plate_number" id="modalPlateInput" class="form-control modal-input-kiosk text-uppercase" placeholder="ABC 123" required>
                         </div>
 
-                        <!-- Service Category Dropdown -->
                         <div class="col-md-6">
                             <label class="modal-label-kiosk">Service Required</label>
                             <select name="service_type" class="form-select modal-input-kiosk" required>
@@ -264,15 +276,7 @@
                         </div>
                     </div>
 
-                    <!-- Read-only Service Location display -->
-                    <div class="mb-5 p-4 bg-info bg-opacity-10 rounded-4 border border-info border-opacity-25">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <span class="fs-3 fw-bold text-navy"><i class="fa-solid fa-warehouse me-3"></i>Service Location</span>
-                            <span class="badge bg-navy fs-4 px-4 py-2">IN-PLANT</span>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-kiosk-primary w-100 py-4 fs-1">
+                    <button type="submit" class="btn btn-kiosk-primary w-100 py-4 fs-1 shadow-lg">
                         DISPENSE TICKET <i class="fa-solid fa-ticket ms-3"></i>
                     </button>
                 </form>
@@ -291,25 +295,43 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. AJAX SUBMISSION
+    // 2. ROBUST HEARTBEAT SYSTEM
+    // Fix: Fallback to URL param if session is lost to keep Admin detection alive
+    const urlParams = new URLSearchParams(window.location.search);
+    const LOC_ID = "{{ session.get('loc_id') or '' }}" || urlParams.get('loc_id');
+
+    function sendHeartbeat() {
+        if (!LOC_ID || LOC_ID === "None" || LOC_ID === "") return;
+        fetch(`/api/device-heartbeat?type=kiosk&loc_id=${LOC_ID}`)
+            .catch(err => console.error("Pulse Lost"));
+    }
+    setInterval(sendHeartbeat, 60000);
+    sendHeartbeat();
+
+    // 3. AJAX SUBMISSION
     document.querySelectorAll('.kiosk-form-ajax').forEach(form => {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            // Hide modal if active
+            // Store plate for display
+            const plateInput = this.querySelector('[name="plate_number"]');
+            const plateVal = plateInput ? plateInput.value.toUpperCase() : "";
+
             const modalInstance = bootstrap.Modal.getInstance(document.getElementById('walkInModal'));
             if(modalInstance) modalInstance.hide();
 
             const overlay = document.getElementById('printOverlay');
             const title = document.getElementById('overlayTitle');
             const sub = document.getElementById('overlaySub');
+            const plateBox = document.getElementById('overlayPlate');
 
             if (this.dataset.busy === "true") return;
             this.dataset.busy = "true";
 
             overlay.style.display = 'flex';
+            plateBox.style.display = 'none';
             title.innerText = "PROCESSING...";
-            sub.innerText = "Syncing with Hub Controller...";
+            sub.innerText = "Assigning System Ticket...";
 
             try {
                 const response = await fetch(this.action, {
@@ -319,30 +341,34 @@
                 });
 
                 const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Check connection');
 
-                if (!response.ok) throw new Error(data.message || 'System Error');
-
-                // SUCCESS
+                // SUCCESS DISPLAY
                 title.innerText = "TICKET: " + data.ticket;
-                sub.innerText = "Dispensing thermal slip. Please wait...";
+                sub.innerText = "Assigned to Unit:";
+
+                // Show the Plate Number in a big white box
+                if (plateVal) {
+                    plateBox.innerText = plateVal;
+                    plateBox.style.display = 'inline-block';
+                }
 
                 setTimeout(() => {
                     window.location.href = "/print-ticket/" + data.q_id;
-                }, 2000);
+                }, 3000);
 
             } catch (err) {
-                title.innerText = "FAILED";
+                title.innerText = "SYSTEM ERROR";
                 sub.innerText = err.message;
-                this.reset();
                 setTimeout(() => {
                     overlay.style.display = 'none';
                     this.dataset.busy = "false";
-                }, 3000);
+                }, 4000);
             }
         });
     });
 
-    // Auto-refresh Kiosk every hour
+    // Refresh every hour to prevent browser lag
     setTimeout(() => { window.location.reload(); }, 3600000);
 </script>
 {% endblock %}

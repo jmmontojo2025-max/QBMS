@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coolaire Display | {{ location.name }}</title>
+    <title>Coolaire Release Display | {{ location.name }}</title>
 
     <!-- Professional Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
@@ -56,16 +56,10 @@
         }
 
         .branch-info { display: flex; align-items: center; gap: 20px; }
-        .hub-icon-wrapper { position: relative; }
         .hub-icon {
             width: 60px; height: 60px; background: var(--coolaire-navy); color: white;
             border-radius: 15px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem; position: relative; z-index: 2;
-        }
-        .radar-ping {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            border: 3px solid var(--coolaire-navy); border-radius: 15px;
-            animation: radar-expand 2s infinite;
+            font-size: 1.8rem;
         }
 
         .branch-label h1 { font-size: 2.2rem; font-weight: 900; color: var(--coolaire-navy); line-height: 1; margin-bottom: 2px; }
@@ -96,32 +90,42 @@
         }
 
         .label-now-serving {
-            font-size: 4vh; font-weight: 900; color: #94a3b8;
-            text-transform: uppercase; letter-spacing: 1rem; margin-bottom: 2vh;
+            font-size: 4vh; font-weight: 900; color: var(--coolaire-green);
+            text-transform: uppercase; letter-spacing: 0.8rem; margin-bottom: 1vh;
         }
 
         #nowServingNumber {
-            font-size: clamp(5rem, 13vw, 35vh);
+            font-size: clamp(5rem, 12vw, 30vh);
             font-weight: 950;
             color: var(--coolaire-navy);
             line-height: 1;
-            letter-spacing: -0.6vw;
+            letter-spacing: -0.5vw;
             font-family: 'JetBrains Mono', monospace;
             white-space: nowrap;
-            text-align: center;
-            transition: all 0.3s ease;
+        }
+
+        #nowServingPlate {
+            background: #0f172a;
+            color: white;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8vh;
+            padding: 1vh 4vw;
+            border-radius: 1rem;
+            margin-top: 2vh;
+            font-weight: 800;
+            letter-spacing: 5px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
 
         .instruction-box {
             margin-top: 4vh;
             background: var(--coolaire-green);
             color: white;
-            padding: 2vh 5vw;
+            padding: 1.5vh 4vw;
             border-radius: 50px;
-            font-size: 2.5vh;
+            font-size: 2.2vh;
             font-weight: 900;
             display: flex; align-items: center; gap: 20px;
-            box-shadow: 0 10px 20px rgba(118, 184, 42, 0.3);
         }
 
         .instruction-box.hidden { visibility: hidden; opacity: 0; }
@@ -136,30 +140,29 @@
         }
 
         .pane-title {
-            font-size: 1.8rem; font-weight: 900; color: var(--coolaire-navy-dark);
+            font-size: 1.6rem; font-weight: 900; color: var(--coolaire-navy-dark);
             margin-bottom: 3vh; padding-bottom: 1vh; border-bottom: 4px solid var(--coolaire-navy);
-            display: flex; justify-content: space-between; align-items: center;
         }
 
-        .queue-list { display: flex; flex-direction: column; gap: 1.5vh; flex-grow: 1; }
+        .queue-list { display: flex; flex-direction: column; gap: 1.5vh; flex-grow: 1; overflow-y: hidden; }
+
         .waiting-card {
             background: white;
-            padding: 2.5vh;
+            padding: 2vh;
             border-radius: 1.2rem;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 5px 15px rgba(0,0,0,0.03);
-            border-left: 8px solid var(--coolaire-navy);
+            border-left: 10px solid var(--coolaire-navy);
         }
 
-        .waiting-ticket { font-size: 3rem; font-weight: 900; color: var(--coolaire-navy); font-family: 'JetBrains Mono', monospace; }
-        .waiting-label { font-size: 1rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
+        .waiting-ticket { font-size: 2.6rem; font-weight: 900; color: var(--coolaire-navy); font-family: 'JetBrains Mono', monospace; line-height: 1; }
+        .waiting-plate { font-size: 1.1rem; font-weight: 800; color: #64748b; font-family: 'JetBrains Mono', monospace; margin-top: 5px; }
 
         /* --- TICKER --- */
         .ticker-wrap {
             position: fixed; bottom: 2vh; left: 2vh; right: 2vh;
             height: 8vh; background: var(--coolaire-navy-dark);
             border-radius: 1.2rem; display: flex; align-items: center; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
         .ticker-label {
@@ -169,15 +172,12 @@
         }
 
         .ticker-content {
-            display: inline-block;
-            white-space: nowrap;
-            padding-left: 100%;
+            display: inline-block; white-space: nowrap; padding-left: 100%;
             animation: marquee 40s linear infinite;
             font-size: 2.5vh; font-weight: 700; color: white;
         }
 
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-        @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.6); opacity: 0; } }
 
         /* RECALL FLASH */
         .recall-flash { animation: flash-bg 0.8s ease-in-out 2; }
@@ -195,29 +195,24 @@
 </head>
 <body>
 
-    <div id="connectionStatus"><i class="fa-solid fa-wifi-slash me-2"></i> RECONNECTING TO HUB...</div>
+    <div id="connectionStatus">HUB CONNECTION LOST</div>
 
     <!-- INITIALIZATION OVERLAY -->
     <div id="tvInit" onclick="startDisplay()">
         <div class="animate__animated animate__pulse animate__infinite" style="background: white; border-radius: 50%; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 30px;">
             <i class="fa-solid fa-play" style="font-size: 50px; color: var(--coolaire-navy); margin-left: 10px;"></i>
         </div>
-        <h1 style="font-weight: 900; font-size: 3.5rem;">START DISPLAY</h1>
-        <p style="opacity: 0.7; font-size: 1.2rem;">Click to enable Audio & Live Sync</p>
+        <h1 style="font-weight: 900; font-size: 3.5rem;">START MONITOR</h1>
+        <p style="opacity: 0.7; font-size: 1.2rem;">Click to enable Audio & Alerts</p>
     </div>
 
     <!-- HEADER -->
     <header class="tv-header">
         <div class="branch-info">
-            <div class="hub-icon-wrapper">
-                <div class="radar-ping"></div>
-                <div class="hub-icon shadow-sm">
-                    <i class="fa-solid fa-tower-broadcast"></i>
-                </div>
-            </div>
+            <div class="hub-icon shadow-sm"><i class="fa-solid fa-tower-broadcast"></i></div>
             <div class="branch-label">
-                <h1>{{ location.name }} Hub</h1>
-                <span><i class="fa-solid fa-microchip me-1"></i> System Node: {{ location.code }}</span>
+                <h1>{{ location.name }}</h1>
+                <span><i class="fa-solid fa-microchip me-1"></i> Hub Node: {{ location.code }}</span>
             </div>
         </div>
 
@@ -232,21 +227,24 @@
     <!-- MAIN GRID -->
     <main class="tv-main">
         <section class="now-serving-pane shadow-lg" id="mainPane">
-            <h2 class="label-now-serving">Now Serving</h2>
+            <h2 class="label-now-serving">Ready for Release</h2>
             <div id="nowServingNumber" class="animate__animated">---</div>
+
+            <!-- PLATE NUMBER -->
+            <div id="nowServingPlate" class="animate__animated hidden">---</div>
+
             <div class="instruction-box animate__animated animate__pulse animate__infinite hidden">
-                <i class="fa-solid fa-circle-arrow-right"></i>
-                PROCEED TO SERVICE BAY
+                <i class="fa-solid fa-circle-check"></i>
+                PLEASE PROCEED TO THE RELEASE BAY
             </div>
         </section>
 
         <section class="up-next-pane">
             <div class="pane-title">
-                <span><i class="fa-solid fa-layer-group me-2"></i> UP NEXT</span>
-                <div style="font-size: 0.9rem; background: var(--coolaire-navy); color: white; padding: 5px 15px; border-radius: 20px;">LIVE QUEUE</div>
+                <span><i class="fa-solid fa-clock-rotate-left me-2"></i> CURRENT QUEUE</span>
             </div>
             <div id="waitingFeed" class="queue-list">
-                <!-- Data populated by syncData() -->
+                <!-- Sidebar units -->
             </div>
         </section>
     </main>
@@ -255,7 +253,7 @@
     <footer class="ticker-wrap">
         <div class="ticker-label">ANNOUNCEMENTS</div>
         <div class="ticker-content">
-            Welcome to Coolaire {{ location.name }} Hub &bull; Please prepare your Ticket Number for verification &bull; Freshness Delivered Since 1969 &bull; Mission: Responsible for making people safe and healthy by ensuring products are kept sustainably fresh from farm to table &bull; Leader in Cold Chain Solutions &bull;
+            Welcome to Coolaire Hub &bull; Please wait for your plate number to appear on the main screen &bull; High Quality Cold Chain Solutions Since 1969 &bull; Quality Service Guaranteed &bull;
         </div>
     </footer>
 
@@ -270,89 +268,101 @@
 
         function startDisplay() {
             document.getElementById('tvInit').style.display = 'none';
-            // Unlock audio for browser
+            // Unlock audio
             chime.play().then(() => { chime.pause(); chime.currentTime = 0; });
 
             setInterval(syncData, 3000);
             setInterval(updateClock, 1000);
+            setInterval(sendHeartbeat, 60000); // For Admin visibility
+
             syncData();
             updateClock();
+            sendHeartbeat();
+        }
+
+        function sendHeartbeat() {
+            fetch(`/api/device-heartbeat?type=tv&loc_id={{ location.id }}`).catch(e => {});
         }
 
         async function syncData() {
             const statusBadge = document.getElementById('connectionStatus');
             try {
+                // IMPORTANT: This API route must be updated in app.py to look for status='done'
                 const response = await fetch('/api/get-latest-queue?loc_id={{ location.id }}');
-                if (!response.ok) throw new Error("Offline");
-
                 const data = await response.json();
                 statusBadge.style.display = 'none';
 
-                const pane = document.getElementById('mainPane');
                 const numDisplay = document.getElementById('nowServingNumber');
-                const feed = document.getElementById('waitingFeed');
+                const plateDisplay = document.getElementById('nowServingPlate');
                 const instruct = document.querySelector('.instruction-box');
 
-                // Case: Nothing is being served
+                // Case: No recent completions
                 if (!data.now_serving || data.now_serving === "---") {
                     numDisplay.innerText = "---";
+                    numDisplay.style.opacity = "0.2";
+                    plateDisplay.classList.add('hidden');
                     instruct.classList.add('hidden');
                     lastTicket = "";
                 } else {
+                    numDisplay.style.opacity = "1";
                     instruct.classList.remove('hidden');
+                    plateDisplay.classList.remove('hidden');
+                    plateDisplay.innerText = data.now_serving_plate || "WALK-IN";
 
-                    // Alert Logic
-                    const isNew = data.now_serving !== lastTicket;
-                    const isRecall = data.call_count > lastCallCount;
-
-                    if (isNew || isRecall) {
-                        triggerAlert(pane, numDisplay);
+                    // Trigger alert only on new completion or manual recall
+                    if (data.now_serving !== lastTicket || data.call_count > lastCallCount) {
+                        triggerAlert(document.getElementById('mainPane'), numDisplay, plateDisplay);
                     }
                     numDisplay.innerText = data.now_serving;
                 }
 
-                // Build Waiting List
+                // Build Sidebar Queue (Showing Waiting and On-Floor units)
                 let html = "";
                 if(data.waiting && data.waiting.length > 0) {
-                    data.waiting.slice(0, 5).forEach((t) => {
+                    data.waiting.forEach((item) => {
+                        const statusLabel = item.is_on_floor ? 'ON FLOOR' : 'WAITING';
+                        const statusClass = item.is_on_floor ? 'bg-warning text-dark' : 'bg-light text-muted';
+
                         html += `
                             <div class="waiting-card animate__animated animate__fadeInRight">
-                                <span class="waiting-ticket">${t}</span>
-                                <span class="waiting-label">Waiting</span>
+                                <div>
+                                    <span class="waiting-ticket">${item.ticket}</span>
+                                    <div class="waiting-plate">${item.plate}</div>
+                                </div>
+                                <span class="badge ${statusClass}" style="font-size:0.75rem; font-weight:900; padding: 4px 10px; border-radius: 5px;">${statusLabel}</span>
                             </div>`;
                     });
                 } else {
-                    html = '<div style="text-align:center; margin-top:10vh; opacity:0.1;"><i class="fa-solid fa-check-double fa-5x"></i><p style="font-weight:800; font-size: 1.5rem;">ALL CLEAR</p></div>';
+                    html = '<div style="text-align:center; margin-top:5vh; opacity:0.2;"><i class="fa-solid fa-check-circle fa-4x"></i><p>QUEUE CLEAR</p></div>';
                 }
-                feed.innerHTML = html;
+                document.getElementById('waitingFeed').innerHTML = html;
 
                 lastTicket = data.now_serving;
                 lastCallCount = data.call_count;
             } catch (e) {
-                console.error("Sync Error", e);
                 statusBadge.style.display = 'block';
             }
         }
 
-        function triggerAlert(pane, numDisplay) {
+        function triggerAlert(pane, num, plate) {
             chime.currentTime = 0;
             chime.play().catch(() => {});
 
+            [num, plate].forEach(el => {
+                el.classList.remove('animate__bounceIn');
+                void el.offsetWidth;
+                el.classList.add('animate__bounceIn');
+            });
+
             pane.classList.remove('recall-flash');
-            numDisplay.classList.remove('animate__bounceIn');
-            void pane.offsetWidth; // Force Reflow
+            void pane.offsetWidth;
             pane.classList.add('recall-flash');
-            numDisplay.classList.add('animate__bounceIn');
         }
 
         function updateClock() {
             const now = new Date();
-            document.getElementById('time').innerText = now.toLocaleTimeString('en-US', {
-                hour: '2-digit', minute: '2-digit', hour12: false
-            });
-            document.getElementById('date').innerText = now.toLocaleDateString('en-US', {
-                weekday: 'long', month: 'short', day: 'numeric', year: 'numeric'
-            });
+            document.getElementById('time').innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         }
     </script>
 </body>

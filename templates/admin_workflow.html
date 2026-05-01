@@ -1,324 +1,357 @@
 {% extends "base_staff.html" %}
 {% block content %}
-<!-- Google Fonts & Icons -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
-    /* VARIABLES - SaaS Style */
     :root {
-        --saas-primary: #3b82f6;
-        --saas-text: #1f2937;
-        --saas-light-text: #4b5563;
-        --saas-border: #e5e7eb;
-        --saas-bg-light: #f9fafb;
-        --saas-bg-white: #ffffff;
-        --saas-success: #10b981;
-        --saas-radius: 12px;
-        --saas-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+        --s-primary: #2563eb;
+        --s-navy: #0f172a;
+        --s-slate: #64748b;
+        --s-border: #e2e8f0;
+        --s-bg: #f8fafc;
+        --s-success: #10b981;
     }
 
-    html, body {
-        height: 100%; margin: 0; overflow: hidden;
-        background-color: var(--saas-bg-light); font-family: 'Inter', sans-serif;
+    html, body { height: 100%; margin: 0; background-color: var(--s-bg); font-family: 'Inter', sans-serif; overflow-x: hidden; color: var(--s-navy); }
+
+    /* PRELOADER */
+    #preloader {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--s-navy); display: flex; flex-direction: column;
+        align-items: center; justify-content: center; z-index: 10000;
+        transition: opacity 0.6s ease-in-out, visibility 0.6s;
+    }
+    .svg-logo { width: 60px; height: 60px; fill: none; stroke: var(--s-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2s infinite alternate; }
+    @keyframes logo-draw { 0% { stroke-dashoffset: 300; } 100% { stroke-dashoffset: 0; } }
+
+    #admin-viewport { opacity: 0; transition: all 0.6s ease; padding: 1.25rem 2rem; }
+    #admin-viewport.is-active { opacity: 1; }
+
+    /* MODERN HEADER */
+    .global-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .global-header h2 { font-weight: 900; letter-spacing: -1.5px; font-size: 1.75rem; margin: 0; }
+
+    /* TABS */
+    .nav-pills { gap: 10px; border-bottom: 1px solid var(--s-border); padding-bottom: 10px; }
+    .nav-pills .nav-link {
+        background: transparent; color: var(--s-slate); font-weight: 700; font-size: 0.85rem;
+        border-radius: 8px; padding: 10px 16px; border: 1px solid transparent; transition: 0.2s;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .nav-pills .nav-link.active {
+        background: white !important; color: var(--s-primary) !important;
+        border-color: var(--s-border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
     }
 
-    .dashboard-container { height: 100vh; display: flex; flex-direction: column; padding: 1.5rem; gap: 1.5rem; }
+    .pulse-online { color: var(--s-success); animation: blink 2s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-    .hub-command-strip {
-        flex: 0 0 auto; background-color: var(--saas-bg-white); border: 1px solid var(--saas-border);
-        border-radius: var(--saas-radius); padding: 1.5rem; box-shadow: var(--saas-shadow);
-        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    /* WORK CARDS */
+    .work-card {
+        background: white; border: 1px solid var(--s-border); border-radius: 12px;
+        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); height: 100%; display: flex; flex-direction: column;
     }
-    .hub-title { font-weight: 800; letter-spacing: -0.05em; margin-bottom: 0.25rem; color: #000; }
-    .hub-status-badge { background-color: var(--saas-bg-light); color: var(--saas-light-text); padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--saas-border); white-space: nowrap; }
+    .work-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); border-color: var(--s-primary); }
 
-    .stat-pill { display: flex; flex-direction: column; align-items: center; padding: 0.75rem 1.25rem; background-color: var(--saas-bg-light); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); min-width: 100px; }
-    .stat-pill .label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--saas-light-text); margin-bottom: 0.25rem; }
-    .stat-pill .value { font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1; color: #000; }
+    .card-head { padding: 1rem; border-bottom: 1px solid var(--s-bg); background: #fafafa; border-radius: 12px 12px 0 0; }
+    .ticket-id { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--s-primary); font-size: 1.1rem; }
+    .plate-label { background: var(--s-navy); color: white; padding: 4px 10px; border-radius: 6px; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; }
 
-    .main-grid { flex: 1 1 auto; display: grid; grid-template-columns: 2fr 1.25fr 260px; gap: 1.5rem; min-height: 0; }
-    .column { display: flex; flex-direction: column; min-height: 0; }
-    .column-header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-    .column-title { font-weight: 700; margin-bottom: 0; color: #000; }
-    .column-content { flex: 1 1 auto; overflow-y: auto; padding-right: 8px; }
+    /* LOCATION BADGE STYLES */
+    .loc-badge { font-size: 0.6rem; font-weight: 900; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+    .loc-in-plant { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .loc-out-plant { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; animation: pulse 2s infinite; }
 
-    .work-card { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); overflow: hidden; height: 100%; display: flex; flex-direction: column; }
-    .work-card-header { padding: 1rem; border-bottom: 1px solid var(--saas-border); display: flex; justify-content: space-between; align-items: flex-start; background-color: var(--saas-bg-light); }
-    .ticket-number { font-weight: 800; line-height: 1; letter-spacing: -0.05em; color: var(--saas-primary); font-size: 1.3rem; }
-    .plate-number-badge { background-color: var(--saas-text); color: white; padding: 0.3rem 0.7rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; margin-top: 0.5rem; display: inline-block; }
+    /* HUB TOOLBAR */
+    .hub-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; background: #fff; padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid var(--s-border); }
+    .hub-toolbar h4 { font-weight: 800; margin: 0; font-size: 1.1rem; color: var(--s-navy); }
 
-    .queue-card-large { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); margin-bottom: 1.25rem; padding: 1.5rem; display: flex; flex-direction: column; }
-    .queue-card-large .ticket-num-large { font-weight: 800; line-height: 1; letter-spacing: -0.05em; color: #000; font-size: 1.8rem; }
+    .btn-action { font-weight: 800; font-size: 0.75rem; padding: 8px 16px; border-radius: 8px; border: 2px solid transparent; transition: 0.2s; }
+    .btn-override { background: var(--s-navy); color: white; }
+    .btn-hub-refresh { background: white; border-color: var(--s-border); color: var(--s-navy); }
 
-    .roster-card { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); height: 100%; display: flex; flex-direction: column; }
-    .roster-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--saas-border); }
-    .tech-status-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 0.75rem; flex-shrink: 0; }
-    .dot-online { background-color: var(--saas-success); } .dot-busy { background-color: #f59e0b; } .dot-offline { background-color: #9ca3af; }
+    .side-module { background: white; border: 1px solid var(--s-border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; }
+    .side-module h6 { font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: var(--s-slate); border-bottom: 1px solid var(--s-bg); padding-bottom: 8px; margin-bottom: 12px; }
 
-    /* FIXED MODAL CSS */
-    .modal { background: rgba(0,0,0,0.4); } /* Ensure backdrop doesn't block */
-    .modal-content { pointer-events: auto !important; }
+    .tech-pill { background: #eff6ff; color: #1e40af; border: 1px solid #dbeafe; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
 </style>
 
-<div class="dashboard-container animate__animated animate__fadeIn">
+<!-- PRELOADER -->
+<div id="preloader">
+    <div class="loader-logo-wrap"><svg class="svg-logo" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg></div>
+    <div class="loader-text text-white fw-400 mt-3" style="letter-spacing: 4px;">COOLAIRE CONSOLIDATED INC.</div>
+</div>
 
-    <!-- HEADER -->
-    <header class="hub-command-strip">
-        <div class="d-flex align-items-center flex-grow-1">
-            <div class="me-4 d-none d-md-block"><i class="fa-solid fa-shield-halved fa-3x text-primary"></i></div>
-            <div>
-                <h2 class="hub-title">{{ session.get('location_name', 'Terminal') }} Admin Console</h2>
-                <div class="hub-status-badge"><i class="fa-solid fa-server me-1"></i> Node ID: {{ session.get('location_code', '---') }}</div>
-            </div>
+<div id="admin-viewport">
+    <header class="global-header">
+        <div>
+            <h2>Global Workflow</h2>
+            <p class="small fw-700 text-muted mb-0">ORGANIZATION-WIDE OPERATIONS AUDIT</p>
         </div>
-        <div class="d-flex align-items-center gap-3">
-            <div class="stat-pill" style="min-width: 170px; border-left: 4px solid var(--saas-primary);">
-                <label class="label">Total Units On-Site</label>
-                <div class="value fw-bold">{{ current_occupancy }}/{{ max_capacity }}</div>
-                <div class="progress mt-1" style="height: 4px; width: 100%;"><div class="progress-bar {% if capacity_percent >= 90 %}bg-danger{% else %}bg-primary{% endif %}" style="width: {{ capacity_percent }}%"></div></div>
-            </div>
-            <div class="stat-pill"><label class="label">Ongoing</label><div class="value">{{ serving_list|length }}</div></div>
-            <div class="action-button-group d-flex gap-2">
-                <button type="button" class="btn btn-danger fw-bold btn-sm" data-bs-toggle="modal" data-bs-target="#manualCheckinModal"><i class="fa-solid fa-phone-volume me-1"></i> ADMIN OVERRIDE</button>
-            </div>
-        </div>
+        <span class="badge bg-primary p-2 px-3 rounded-pill fw-bold shadow-sm">Admin: {{ current_user.full_name }}</span>
     </header>
 
-    <main class="main-grid">
+    <!-- HUB NAVIGATION -->
+    <ul class="nav nav-pills mb-4" id="hubTabs" role="tablist">
+        {% for hub in hub_data %}
+        <li class="nav-item">
+            <button class="nav-link {% if loop.first %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#pane-{{ hub.info.id }}" type="button">
+                <span class="d-flex gap-1">
+                    <i class="fa-solid fa-tablet-screen-button {% if hub.info.kiosk_online %}pulse-online{% endif %}"></i>
+                    <i class="fa-solid fa-tv {% if hub.info.tv_online %}pulse-online{% endif %}"></i>
+                </span>
+                {{ hub.info.name }}
+                {% if hub.ticket_count > 0 %}<span class="badge bg-danger rounded-pill">{{ hub.ticket_count }}</span>{% endif %}
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
 
-        <!-- COLUMN 1: ONGOING WORKFLOW -->
-        <section class="column">
-            <div class="column-header"><h5 class="column-title">Ongoing Workflow</h5></div>
-            <div class="column-content">
-                <div class="row g-3">
-                    {% for s in serving_list %}
-                    <div class="col-md-12 col-xl-6">
-                        <div class="work-card shadow-sm border-{% if s.status == 'done' %}success{% else %}warning{% endif %}">
-                            <div class="work-card-header">
-                                <div class="flex-grow-1">
-                                    <div class="ticket-number">{{ s.ticket_number }}</div>
-                                    <div class="d-flex gap-2 align-items-center mt-1">
-                                        <span class="plate-number-badge">{% if s.booking %}{{ s.booking.plate_number }}{% else %}WALK-IN{% endif %}</span>
-                                        <span class="badge {% if s.booking.service_location == 'In-Plant' %}bg-info{% else %}bg-danger{% endif %} text-white" style="font-size: 0.6rem; padding: 4px 6px; font-weight: 700;">
-                                            {{ s.booking.service_location | upper if s.booking else 'IN-PLANT' }}
+    <div class="tab-content">
+        {% for hub in hub_data %}
+        <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="pane-{{ hub.info.id }}" role="tabpanel">
+
+            <div class="hub-toolbar shadow-sm">
+                <div class="d-flex align-items-center gap-3">
+                    <h4>{{ hub.info.name }} Floor</h4>
+                    <span class="badge bg-light text-muted border fw-700">{{ hub.info.code }}</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-hub-refresh btn-action" onclick="window.location.reload()"><i class="fa-solid fa-arrows-rotate me-1"></i> REFRESH</button>
+                    <button class="btn btn-override btn-action" data-bs-toggle="modal" data-bs-target="#manual-{{ hub.info.id }}"><i class="fa-solid fa-plus me-1"></i> HUB OVERRIDE</button>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-9">
+                    <div class="row g-3">
+                        {% for s in hub.tickets %}
+                        <div class="col-md-6 col-xl-4">
+                            <div class="work-card shadow-sm border-{% if s.status == 'done' %}success{% else %}warning{% endif %}">
+                                <div class="card-head">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="ticket-id">{{ s.ticket_number }}</div>
+                                        <span class="badge {% if s.status == 'done' %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning{% endif %} fw-900 extra-small">
+                                            {{ 'AUDIT READY' if s.status == 'done' else 'IN PROGRESS' }}
                                         </span>
                                     </div>
-                                    <div class="small fw-700 text-primary mt-1">{{ s.booking.service_type if s.booking else 'Service Unspecified' }}</div>
+                                    <div class="mt-2 d-flex align-items-center gap-2">
+                                        <span class="plate-label">{{ s.booking.plate_number if s.booking else 'WALK-IN' }}</span>
+                                        <span class="loc-badge {% if s.booking and s.booking.service_location == 'Out-Plant' %}loc-out-plant{% else %}loc-in-plant{% endif %}">
+                                            {{ s.booking.service_location if s.booking else 'IN-PLANT' }}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div class="text-end">
-                                    {% if s.status == 'done' %}
-                                        <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 0.6rem; padding: 5px 10px;">JOB COMPLETE</span>
-                                    {% else %}
-                                        <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.6rem; padding: 5px 10px;">ONGOING</span>
-                                    {% endif %}
-                                </div>
-                            </div>
+                                <div class="p-3 flex-grow-1 d-flex flex-column">
+                                    <div class="mb-2">
+                                        <div class="small fw-800 text-dark">{{ s.booking.service_type if s.booking else 'Service' }}</div>
+                                        <div class="extra-small text-muted fw-600 mt-1">JO: {{ s.booking.job_order or '---' }} | {{ s.booking.std_repair_hours or 0 }} HR</div>
+                                    </div>
 
-                            <div class="p-4 flex-grow-1">
-                                <label class="d-block mb-1 small text-muted text-uppercase fw-600" style="font-size: 0.6rem;">Personnel Assigned</label>
-                                <div class="d-flex flex-wrap gap-2 mb-3">
-                                    {% for tech in s.assigned_techs %}
-                                        <span class="badge bg-primary px-3 py-2" style="font-size: 0.8rem; font-weight: 600;">{{ tech.name }}</span>
-                                    {% endfor %}
-                                </div>
+                                    <div class="mb-3 mt-1 border-top pt-2">
+                                        <label class="extra-small fw-800 text-muted text-uppercase d-block mb-1">Personnel</label>
+                                        {% if s.assigned_techs %}
+                                            {% for t in s.assigned_techs %}<span class="tech-pill">{{ t.name }}</span>{% endfor %}
+                                        {% else %}
+                                            <span class="extra-small text-danger fw-700 italic">No technician assigned</span>
+                                        {% endif %}
+                                    </div>
 
-                                <label class="d-block mb-1 small text-muted text-uppercase fw-600" style="font-size: 0.6rem;">Client Context</label>
-                                <h6 class="fw-700 text-dark mb-1">
-                                    {% if s.booking and s.booking.customer %}{{ s.booking.customer.company_name }}{% elif s.booking %}{{ s.booking.guest_name }}{% else %}Guest Client{% endif %}
-                                </h6>
-
-                                <div class="d-flex gap-2 border-top pt-3 mt-4">
-                                    <button type="button" class="btn btn-light border btn-sm" data-bs-toggle="modal" data-bs-target="#jobDetails-{{ s.id }}"><i class="fa-solid fa-circle-info"></i></button>
-                                    <button type="button" class="btn {% if s.status == 'done' %}btn-success{% else %}btn-outline-primary{% endif %} fw-bold flex-grow-1 btn-sm" data-bs-toggle="modal" data-bs-target="#materialsModal-{{ s.id }}">
-                                        <i class="fa-solid fa-box-open me-2"></i>
-                                        {% if s.status == 'done' %}ADD MATERIALS & FINALIZE{% else %}SCOPE OF WORK{% endif %}
-                                    </button>
+                                    <div class="d-flex gap-2 mt-auto">
+                                        <button class="btn btn-primary btn-sm flex-grow-1 fw-800 rounded-8" data-bs-toggle="modal" data-bs-target="#materials-{{ s.id }}">VERIFY SCOPE</button>
+                                        <button class="btn btn-light border btn-sm" data-bs-toggle="modal" data-bs-target="#details-{{ s.id }}"><i class="fa-solid fa-ellipsis"></i></button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        {% else %}
+                        <div class="col-12 py-5 text-center bg-white rounded-4 border border-2 border-dashed" style="border-style: dashed !important;"><p class="text-muted fw-700 mb-0">No active work orders in {{ hub.info.name }}.</p></div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
+                </div>
+
+                <!-- SIDEBAR WITH STATUS -->
+                <div class="col-lg-3">
+                    <div class="side-module shadow-sm">
+                        <h6>Personnel Details</h6>
+                        {% for tech in hub.techs %}
+                            {% set assignment = hub.busy_map.get(tech.id) %}
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 8px; height: 8px; border-radius: 50%;" class="me-2 {% if assignment %}bg-warning{% else %}bg-success{% endif %}"></div>
+                                    <span class="small fw-800">{{ tech.name }}</span>
+                                </div>
+                                {% if assignment %}
+                                    <div class="ms-3 mt-1 extra-small">
+                                        <div class="text-warning fw-700"><i class="fa-solid fa-thumbtack me-1"></i> {{ assignment.ticket }}</div>
+                                        <div class="text-muted fw-600 text-uppercase" style="font-size: 0.6rem;">{{ assignment.service }}</div>
+                                    </div>
+                                {% else %}
+                                    <div class="ms-3 mt-1 extra-small text-success fw-700" style="font-size: 0.6rem;">READY</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="side-module shadow-sm">
+                        <h6>Hub Health</h6>
+                        <div class="d-flex flex-column gap-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="extra-small fw-800 text-muted">KIOSK</span>
+                                <span class="badge {% if hub.info.kiosk_online %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                    {{ hub.info.kiosk_last_seen.strftime('%H:%M') if hub.info.kiosk_last_seen else 'OFFLINE' }}
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="extra-small fw-800 text-muted">TV</span>
+                                <span class="badge {% if hub.info.tv_online %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                    {{ hub.info.tv_last_seen.strftime('%H:%M') if hub.info.tv_last_seen else 'OFFLINE' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </section>
+        </div>
+        {% endfor %}
+    </div>
+</div>
 
-        <!-- COLUMN 2: WAITING QUEUE -->
-        <section class="column">
-            <div class="column-header"><h5 class="column-title">Waiting Queue</h5></div>
-            <div class="column-content">
-                {% for t in waiting_tickets %}
-                <div class="queue-card-large shadow-sm border-2">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <span class="ticket-num-large d-block">{{ t.ticket_number }}</span>
-                            <div class="d-flex gap-2 align-items-center">
-                                <span class="badge bg-dark text-white fw-bold">{{ t.booking.plate_number if t.booking else "WALK-IN" }}</span>
-                                <span class="badge bg-secondary text-white fw-bold" style="font-size: 0.6rem; padding: 4px 6px;">WAITING</span>
-                            </div>
-                            <span class="small fw-700 text-primary d-block mt-1">{{ t.booking.service_type if t.booking else "Service Unspecified" }}</span>
-                        </div>
-                        <a href="/staff/expire-ticket/{{ t.id }}" class="text-danger opacity-50" onclick="return confirm('Dismiss ticket?')"><i class="fa-solid fa-xmark fs-4"></i></a>
-                    </div>
-                    <div class="mt-3 small fw-700 text-dark">{% if t.booking and t.booking.customer %}{{ t.booking.customer.company_name }}{% else %}Guest{% endif %}</div>
-                    <form action="/staff/start-work/{{ t.id }}" method="POST" class="mt-4">
+<!-- GLOBAL MODALS BUILDER -->
+{% for hub in hub_data %}
+    <!-- HUB OVERRIDE MODAL -->
+    <div class="modal fade" id="manual-{{ hub.info.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white p-4">
+                    <h5 class="modal-title fw-900">Hub Override: {{ hub.info.name }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/staff/manual-checkin" method="POST">
+                    <div class="modal-body p-4">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <select name="technician_ids" class="form-select mb-3 border-2 fw-bold" multiple required>
-                            {% for tech in technicians %}<option value="{{ tech.id }}">{{ tech.name }}</option>{% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-primary w-100 fw-bold">DISPATCH</button>
+                        <input type="hidden" name="admin_loc_id" value="{{ hub.info.id }}">
+                        <input type="hidden" name="staff_manifest_data" id="json-{{ hub.info.id }}">
+                        <div class="mb-3">
+                            <label class="extra-small fw-900 text-muted mb-2">CLIENT NAME</label>
+                            <input type="text" id="client-{{ hub.info.id }}" class="form-control fw-bold border-2" placeholder="Organization name...">
+                        </div>
+                        <div id="list-container-{{ hub.info.id }}" class="mb-3 d-none">
+                            <div class="bg-light rounded p-3 border" id="items-{{ hub.info.id }}"></div>
+                        </div>
+                        <div class="bg-light p-3 rounded-4 border">
+                            <div class="row g-2 mb-3">
+                                <div class="col-6"><input type="text" id="plate-{{ hub.info.id }}" class="form-control form-control-sm fw-bold" placeholder="PLATE #"></div>
+                                <div class="col-6"><input type="text" id="jo-{{ hub.info.id }}" class="form-control form-control-sm fw-bold" placeholder="JO #"></div>
+                                <div class="col-12 mt-2">
+                                    <select id="service-{{ hub.info.id }}" class="form-select form-select-sm fw-bold">
+                                        <option value="" disabled selected>SELECT SERVICE</option>
+                                        {% for cat in categories %}<option value="{{ cat.name }}">{{ cat.name }}</option>{% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addToAdminManifest({{ hub.info.id }})" class="btn btn-primary btn-sm w-100 fw-900">ADD TO OVERRIDE</button>
+                        </div>
+                    </div>
+                    <div class="modal-footer"><button type="submit" id="submit-{{ hub.info.id }}" class="btn btn-success fw-900 w-100 py-3 d-none">INITIALIZE DEPLOYMENT</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% for s in hub.tickets %}
+    <!-- SCOPE VERIFICATION MODAL -->
+    <div class="modal fade" id="materials-{{ s.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h6 class="modal-title fw-900">Scope Verification: {{ s.ticket_number }}</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/staff/save-materials/{{ s.id }}" method="POST">
+                    <div class="modal-body p-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <textarea name="materials_list" class="form-control border-2 fw-bold" rows="6" placeholder="List repairs performed..." required>{{ s.materials_used or '' }}</textarea>
+                    </div>
+                    <div class="modal-footer"><button type="submit" class="btn btn-primary fw-900 w-100">SAVE & ARCHIVE</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- TICKET DETAILS MODAL -->
+    <div class="modal fade" id="details-{{ s.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0"><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
+                    <form action="/staff/start-work/{{ s.id }}" method="POST" class="mb-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% for t_id in s.assigned_techs %}<input type="hidden" name="technician_ids" value="{{ t_id.id }}">{% endfor %}
+                        <div class="row g-2 mb-3">
+                            <div class="col-6"><label class="extra-small fw-900">JO #</label><input type="text" name="job_order" class="form-control fw-bold border-2" value="{{ s.booking.job_order or '' }}"></div>
+                            <div class="col-6"><label class="extra-small fw-900">STD HRS</label><input type="number" step="0.1" name="std_repair_hours" class="form-control fw-bold border-2" value="{{ s.booking.std_repair_hours or '' }}"></div>
+                        </div>
+                        <button type="submit" class="btn btn-dark w-100 fw-900 btn-sm">UPDATE TICKET DATA</button>
+                    </form>
+                    <div class="bg-light p-3 rounded mb-3">
+                        <label class="extra-small fw-900 text-muted d-block mb-1">CLIENT</label>
+                        <p class="fw-800 mb-0">{{ s.booking.customer.company_name if s.booking and s.booking.customer else s.booking.guest_name }}</p>
+                    </div>
+                    <form action="/staff/save-notes/{{ s.id }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <textarea name="notes" class="form-control mb-2 border-2" rows="3">{{ s.internal_notes or '' }}</textarea>
+                        <button type="submit" class="btn btn-outline-primary btn-sm fw-900 w-100">SAVE ADMIN NOTES</button>
                     </form>
                 </div>
-                {% endfor %}
-            </div>
-        </section>
-
-        <!-- COLUMN 3: ROSTER -->
-        <section class="column">
-            <div class="roster-card">
-                <div class="roster-header border-bottom"><h5 class="mb-0 fw-700" style="font-size: 1rem;">Personnel Status</h5></div>
-                <div class="column-content p-0">
-                    {% for tech in roster %}
-                        {% set assignment = busy_map.get(tech.id) %}
-                        <div class="d-flex align-items-center py-3 px-3 border-bottom" style="{% if not tech.is_present %}opacity: 0.5; background: #f8fafc;{% endif %}">
-                            <span class="tech-status-dot {% if not tech.is_present %}dot-offline{% elif assignment %}dot-busy{% else %}dot-online{% endif %}"></span>
-                            <div class="flex-grow-1">
-                                <div class="fw-800 text-dark" style="font-size: 0.95rem; line-height: 1.2;">{{ tech.name }}</div>
-                                <div class="small mt-1">
-                                    {% if not tech.is_present %}<span class="text-muted fw-600">OFF-DUTY</span>
-                                    {% elif assignment %}
-                                        <div class="d-flex flex-column gap-1">
-                                            <span class="text-warning fw-700" style="font-size: 0.7rem;"><i class="fa-solid fa-thumbtack"></i> {{ assignment.ticket }} (ONGOING)</span>
-                                            <span class="text-primary fw-700" style="font-size: 0.7rem;"><i class="fa-solid fa-car-side"></i> UNIT: {{ assignment.plate }}</span>
-                                        </div>
-                                    {% else %}<span class="text-success fw-700" style="font-size: 0.7rem;">READY</span>{% endif %}
-                                </div>
-                            </div>
-                            <div class="ms-2"><a href="/staff/technician/toggle/{{ tech.id }}"><i class="fa-solid {{ 'fa-toggle-on text-success' if tech.is_present else 'fa-toggle-off text-muted' }} fs-4"></i></a></div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </section>
-    </main>
-</div>
-
-<!-- ========================================== -->
-<!-- ALL MODALS MOVED HERE TO PREVENT TYPING LOCK -->
-<!-- ========================================== -->
-
-{% for s in serving_list %}
-<!-- MODAL: MATERIALS INPUT -->
-<div class="modal fade" id="materialsModal-{{ s.id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-            <div class="modal-header bg-primary text-white"><h6 class="modal-title fw-bold">Inventory Audit: {{ s.ticket_number }}</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <form action="/staff/save-materials/{{ s.id }}" method="POST">
-                <div class="modal-body p-4">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <label class="small fw-bold text-muted mb-2 text-uppercase">Enter Scope of Work (Line by Line)</label>
-                    <textarea name="materials_list" class="form-control fw-bold border-2" rows="6" placeholder="Listing items clears the ticket from Admin view..." required>{{ s.materials_used or '' }}</textarea>
-                </div>
-                <div class="modal-footer"><button type="submit" class="btn btn-primary fw-bold w-100">SAVE & FINALIZE AUDIT</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL: JOB DETAILS -->
-<div class="modal fade" id="jobDetails-{{ s.id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content" style="border-radius: 12px;">
-            <div class="modal-header"><h5 class="modal-title fw-bold">Job Diagnostics: {{ s.ticket_number }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body p-4">
-                <div class="row g-4">
-                    <div class="col-md-6 border-end">
-                        <label class="small fw-bold text-muted text-uppercase">Booking Info</label>
-                        <div class="p-3 bg-light rounded-3 mt-1">
-                            <p class="small text-muted mb-1">Plate: <span class="fw-bold text-dark">{{ s.booking.plate_number if s.booking else 'N/A' }}</span></p>
-                            <p class="small text-muted mb-0">Service: <span class="fw-bold text-dark">{{ s.booking.service_type if s.booking else 'N/A' }}</span></p>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="small fw-bold text-muted text-uppercase">Internal Notes</label>
-                        <form action="/staff/save-notes/{{ s.id }}" method="POST" class="mt-1">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <textarea name="notes" class="form-control mb-2" rows="3">{{ s.internal_notes or '' }}</textarea>
-                            <button type="submit" class="btn btn-primary w-100 btn-sm fw-bold">SAVE NOTES</button>
-                        </form>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
-</div>
+    {% endfor %}
 {% endfor %}
 
-<!-- PHONE BOOKING MODAL -->
-<div class="modal fade" id="manualCheckinModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-            <div class="modal-header bg-dark text-white p-4"><h6 class="modal-title fw-bold">Admin Manual Booking Manifest</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <form action="/staff/manual-checkin" method="POST" id="staffManifestForm">
-                <div class="modal-body p-4">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="staff_manifest_data" id="staffManifestJson">
-                    <div class="mb-4"><label class="small fw-bold text-muted mb-2">CLIENT NAME</label><input type="text" id="sClient" class="form-control fw-bold border-2" placeholder="e.g. San Miguel Corp"></div>
-                    <div id="staffManifestList" class="mb-3 d-none"><label class="extra-small fw-700 text-primary mb-2">MANIFEST</label><div class="border rounded bg-light p-2" id="staffTableItems"></div></div>
-
-                    <div class="bg-light p-3 rounded border">
-                        <div class="row g-2 mb-2">
-                            <div class="col-6"><label class="extra-small fw-bold">PLATE</label><input type="text" id="sPlate" class="form-control form-control-sm fw-bold"></div>
-                            <div class="col-6">
-                                <label class="extra-small fw-bold">SERVICE</label>
-                                <select id="sService" class="form-select form-select-sm fw-bold">
-                                    <option value="" selected disabled>Select...</option>
-                                    {% for cat in categories %}
-                                        <option value="{{ cat.name }}">{{ cat.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mb-3"><label class="extra-small fw-bold d-block">SITE</label><label class="me-3 small fw-bold"><input type="radio" name="sLoc" value="In-Plant" checked> In</label><label class="small fw-bold"><input type="radio" name="sLoc" value="Out-Plant"> Out</label></div>
-                        <button type="button" onclick="addStaffManifest()" class="btn btn-primary btn-sm w-100 fw-bold py-2">ADD TO LIST</button>
-                    </div>
-                </div>
-                <div class="modal-footer"><button type="submit" id="staffSubmitBtn" class="btn btn-success px-4 fw-bold w-100 py-3 d-none">PROCESS ALL BOOKINGS</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script>
-    let staffManifest = [];
-    function addStaffManifest() {
-        const client = document.getElementById('sClient').value.trim();
-        const plate = document.getElementById('sPlate').value.trim().toUpperCase();
-        const service = document.getElementById('sService').value;
-        const site = document.querySelector('input[name="sLoc"]:checked').value;
-        if(!client || !plate || !service) return alert("Fill Client, Plate, and select a Service.");
-        staffManifest.push({client, plate, service, site});
-        renderStaffManifest();
-        document.getElementById('sPlate').value = "";
-        document.getElementById('sService').selectedIndex = 0;
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('preloader').style.opacity = '0';
+            document.getElementById('preloader').style.visibility = 'hidden';
+            document.getElementById('admin-viewport').classList.add('is-active');
+        }, 1000);
+    });
+
+    let globalManifests = {};
+    function addToAdminManifest(hubId) {
+        if (!globalManifests[hubId]) globalManifests[hubId] = [];
+        const client = document.getElementById(`client-${hubId}`).value.trim();
+        const plate = document.getElementById(`plate-${hubId}`).value.trim().toUpperCase();
+        const jo = document.getElementById(`jo-${hubId}`).value.trim();
+        const service = document.getElementById(`service-${hubId}`).value;
+        if (!client || !plate || !service) return alert("Fill required fields.");
+        globalManifests[hubId].push({ client, plate, jo, service, site: 'In-Plant' });
+        renderAdminManifest(hubId);
+        document.getElementById(`plate-${hubId}`).value = "";
+        document.getElementById(`jo-${hubId}`).value = "";
     }
 
-    function renderStaffManifest() {
-        const listDiv = document.getElementById('staffManifestList');
-        const itemsDiv = document.getElementById('staffTableItems');
-        const submitBtn = document.getElementById('staffSubmitBtn');
-        itemsDiv.innerHTML = "";
-        staffManifest.forEach((m, idx) => {
-            itemsDiv.innerHTML += `<div class="d-flex justify-content-between small fw-bold border-bottom py-2">
-                <span>${m.plate} - ${m.service} (${m.site})</span>
-                <i class="fa-solid fa-trash text-danger" onclick="removeStaffManifest(${idx})" style="cursor:pointer"></i>
-            </div>`;
+    function renderAdminManifest(hubId) {
+        const manifest = globalManifests[hubId];
+        const listDiv = document.getElementById(`items-${hubId}`);
+        const submitBtn = document.getElementById(`submit-${hubId}`);
+        const container = document.getElementById(`list-container-${hubId}`);
+        listDiv.innerHTML = "";
+        manifest.forEach((m, idx) => {
+            listDiv.innerHTML += `<div class="d-flex justify-content-between extra-small fw-800 border-bottom py-2"><span>${m.plate} [JO: ${m.jo || '---'}]</span><i class="fa-solid fa-trash text-danger" onclick="removeFromAdminManifest(${hubId}, ${idx})" style="cursor:pointer"></i></div>`;
         });
-        document.getElementById('staffManifestJson').value = JSON.stringify(staffManifest);
-        listDiv.classList.toggle('d-none', staffManifest.length === 0);
-        submitBtn.classList.toggle('d-none', staffManifest.length === 0);
-        document.getElementById('sClient').readOnly = (staffManifest.length > 0);
+        document.getElementById(`json-${hubId}`).value = JSON.stringify(manifest);
+        container.classList.toggle('d-none', manifest.length === 0);
+        submitBtn.classList.toggle('d-none', manifest.length === 0);
+        document.getElementById(`client-${hubId}`).readOnly = (manifest.length > 0);
     }
 
-    function removeStaffManifest(idx) { staffManifest.splice(idx, 1); renderStaffManifest(); }
+    function removeFromAdminManifest(hubId, idx) {
+        globalManifests[hubId].splice(idx, 1);
+        renderAdminManifest(hubId);
+    }
 </script>
 {% endblock %}
