@@ -1971,6 +1971,54 @@ def device_heartbeat():
     return jsonify({"status": "error"}), 400
 
 
+@app.route('/staff/reports')
+@login_required
+@roles_required('super_admin', 'admin', 'coordinator')
+def staff_reports():
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    # 1. PIVOTED MONTHLY QUERY (One row per month)
+    service_query = db.session.query(
+        func.to_char(Booking.scheduled_time, 'YYYY-MM').label('month'),
+        func.count(Booking.id).filter(Booking.service_location == 'In-Plant').label('in_plant_count'),
+        func.count(Booking.id).filter(Booking.service_location == 'Out-Plant').label('out_plant_count'),
+        func.count(Booking.id).label('grand_total')
+    ).filter(Booking.status == 'done')
+
+    # 2. Tech Performance Query
+    tech_query = db.session.query(
+        Technician.name,
+        func.count(Queue.id).label('total_completed')
+    ).join(queue_technicians, Technician.id == queue_technicians.c.technician_id) \
+     .join(Queue, Queue.id == queue_technicians.c.queue_id) \
+     .filter(Queue.status == 'done')
+
+    # 3. Company Audit Query
+    company_query = db.session.query(
+        User.company_name,
+        Booking.service_location,
+        func.count(Booking.id).label('total_units')
+    ).join(User, Booking.user_id == User.id).filter(Booking.status == 'done')
+
+    # Apply Filters
+    if start_date and end_date:
+        service_query = service_query.filter(Booking.scheduled_time.between(start_date, end_date))
+        tech_query = tech_query.filter(Queue.created_at.between(start_date, end_date))
+        company_query = company_query.filter(Booking.scheduled_time.between(start_date, end_date))
+
+    # EXECUTE (Prevents NameError)
+    service_stats = service_query.group_by('month').order_by(db.desc('month')).all()
+    tech_performance = tech_query.group_by(Technician.name).order_by(db.desc('total_completed')).all()
+    company_audit = company_query.group_by(User.company_name, Booking.service_location).order_by(User.company_name.asc()).all()
+
+    return render_template('staff_reports.html',
+                           service_stats=service_stats,
+                           tech_performance=tech_performance,
+                           company_audit=company_audit,
+                           start_date=start_date, end_date=end_date, title="Operations Performance")
+
+
 @app.route('/logout')
 def logout():
     logout_user()
