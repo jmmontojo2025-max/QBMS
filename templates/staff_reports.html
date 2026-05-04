@@ -1,0 +1,182 @@
+{% extends "base_staff.html" %}
+
+{% block content %}
+<!-- Typography and Libraries -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+    :root {
+        --c-navy: #0f172a; --c-blue: #2563eb; --c-accent: #38bdf8;
+        --c-border: #e2e8f0; --c-bg: #f8fafc; --c-text: #334155; --c-teal: #76b82a;
+    }
+    html, body { height: 100%; margin: 0; overflow: hidden; background-color: var(--c-bg); font-family: 'Inter', sans-serif; }
+
+    #preloader {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--c-navy);
+        display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000;
+        transition: opacity 0.8s ease-in-out, visibility 0.8s;
+    }
+
+    #ledger-viewport {
+        opacity: 0; transform: translateY(20px); transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        height: 100vh; display: flex; flex-direction: column; padding: 1.5rem; gap: 1rem;
+    }
+    #ledger-viewport.is-active { opacity: 1; transform: translateY(0); }
+
+    .report-header {
+        background: white; padding: 1.25rem 2rem; border-radius: 16px; border: 1px solid var(--c-border);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center;
+    }
+    .header-branding { display: flex; align-items: center; gap: 15px; }
+    .title-logo-icon { width: 42px; height: 42px; background: var(--c-navy); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--c-accent); }
+
+    .filter-box { display: flex; flex-direction: column; gap: 4px; }
+    .filter-box label { font-size: 0.6rem; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+    .ledger-input { border: 1px solid var(--c-border); padding: 0.5rem 0.8rem; border-radius: 10px; font-size: 0.8rem; font-weight: 600; color: var(--c-navy); background: #fcfdfe; }
+
+    .table-container { flex: 1 1 auto; overflow-y: auto; background: white; border-radius: 16px; border: 1px solid var(--c-border); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04); padding: 1rem; }
+    .section-label { font-size: 0.65rem; font-weight: 900; color: var(--c-blue); text-transform: uppercase; letter-spacing: 1.5px; margin: 1.5rem 0 0.5rem 0.5rem; }
+
+    .master-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 2rem; }
+    .master-table thead th { position: sticky; top: 0; background: #f8fafc; padding: 0.8rem; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; color: var(--c-navy); border-bottom: 1px solid var(--c-border); border-right: 1px solid var(--c-border); z-index: 10; }
+    .master-table td { padding: 0.8rem; border-bottom: 1px solid var(--c-border); border-right: 1px solid var(--c-border); font-size: 0.85rem; color: var(--c-text); }
+
+    .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700; color: var(--c-navy); }
+    .btn-gen { background: var(--c-navy); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; cursor: pointer; transition: 0.3s; }
+    .btn-export { background: #166534; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; cursor: pointer; }
+</style>
+
+<div id="preloader">
+    <div class="loader-text" style="color: white; font-weight: 900; letter-spacing: 2px;">PREPARING AUDIT DATA...</div>
+</div>
+
+<div id="ledger-viewport">
+    <header class="report-header">
+        <div class="header-branding">
+            <div class="title-logo-icon"><i class="fa-solid fa-chart-line"></i></div>
+            <div>
+                <h4>Operations Performance</h4>
+                <p class="small text-muted mb-0 fw-700" style="font-size: 0.6rem;">SAAS PERFORMANCE AUDIT</p>
+            </div>
+        </div>
+
+        <div class="d-flex gap-3 align-items-end">
+            <div class="filter-box">
+                <label>Period Start</label>
+                <input type="date" id="startDate" class="ledger-input" value="{{ start_date or '' }}">
+            </div>
+            <div class="filter-box">
+                <label>Period End</label>
+                <input type="date" id="endDate" class="ledger-input" value="{{ end_date or '' }}">
+            </div>
+            <button onclick="runReport()" class="btn-gen">GENERATE REPORT</button>
+
+            <div class="vr mx-2"></div>
+
+            <button onclick="exportPerformanceExcel()" class="btn-export">
+                <i class="fa-solid fa-file-excel me-2"></i>EXPORT FULL AUDIT (.XLSX)
+            </button>
+        </div>
+    </header>
+
+    <main class="table-container">
+        <!-- SECTION 1: CONSOLIDATED MONTHLY SUMMARY -->
+        <div class="section-label">Monthly Service Site Distribution Summary</div>
+        <table class="master-table" id="monthlyStatsLedger">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Service Month</th>
+                    <th style="text-align: center;">In-Plant Units</th>
+                    <th style="text-align: center;">Out-Plant Units</th>
+                    <th style="text-align: center; background: #f1f5f9;">Grand Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in service_stats %}
+                <tr>
+                    <td class="mono">{{ stat.month }}</td>
+                    <td class="mono" style="text-align: center; color: var(--c-blue);">{{ stat.in_plant_count or 0 }}</td>
+                    <td class="mono" style="text-align: center; color: var(--c-teal);">{{ stat.out_plant_count or 0 }}</td>
+                    <td class="mono" style="text-align: center; font-weight: 900; background: #f8fafc;">{{ stat.grand_total or 0 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- SECTION 2: DETAILED COMPANY AUDIT -->
+        <div class="section-label">Detailed Client Service Audit</div>
+        <table class="master-table" id="companyServiceAudit">
+            <thead>
+                <tr>
+                    <th style="width: 35%;">Company Name</th>
+                    <th style="width: 25%;">Service Location</th>
+                    <th style="text-align: center;">Units Completed</th>
+                    <th style="text-align: center;">Operational Load</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in company_audit %}
+                <tr>
+                    <td class="fw-800" style="color: var(--c-navy);">{{ row.company_name }}</td>
+                    <td>
+                        {% if row.service_location == 'In-Plant' %}
+                        <span style="color: var(--c-blue); font-weight: 700;"><i class="fa-solid fa-industry me-2"></i>In-Plant</span>
+                        {% else %}
+                        <span style="color: var(--c-teal); font-weight: 700;"><i class="fa-solid fa-truck-fast me-2"></i>Out-Plant</span>
+                        {% endif %}
+                    </td>
+                    <td class="mono" style="text-align: center;">{{ row.total_units }}</td>
+                    <td style="text-align: center;">
+                        {% if row.total_units > 10 %}<span class="badge bg-danger" style="font-size: 0.6rem;">HIGH VOLUME</span>
+                        {% elif row.service_location == 'Out-Plant' %}<span class="badge bg-warning text-dark" style="font-size: 0.6rem;">FIELD LOAD</span>
+                        {% else %}<span class="badge bg-light text-muted" style="font-size: 0.6rem;">STABLE</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- SECTION 3: PERSONNEL PRODUCTIVITY -->
+        <div class="section-label">Personnel Productivity</div>
+        <table class="master-table" id="techProductivityLedger">
+            <thead>
+                <tr><th style="width: 80px; text-align: center;">Rank</th><th>Technician Name</th><th style="text-align: center;">Total Units Released</th></tr>
+            </thead>
+            <tbody>
+                {% for tech in tech_performance %}
+                <tr><td class="mono" style="text-align: center;">#{{ loop.index }}</td><td class="fw-800">{{ tech.name }}</td><td class="mono" style="text-align: center; color: var(--c-teal);">{{ tech.total_completed }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </main>
+</div>
+
+<script>
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('preloader').style.opacity = '0';
+            document.getElementById('preloader').style.visibility = 'hidden';
+            document.getElementById('ledger-viewport').classList.add('is-active');
+        }, 800);
+    });
+
+    function runReport() {
+        const start = document.getElementById('startDate').value;
+        const end = document.getElementById('endDate').value;
+        if (!start || !end) { alert("Please select both dates."); return; }
+        window.location.href = `/staff/reports?start_date=${start}&end_date=${end}`;
+    }
+
+    function exportPerformanceExcel() {
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById("monthlyStatsLedger")), "Monthly Site Summary");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById("companyServiceAudit")), "Client Behavior Audit");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById("techProductivityLedger")), "Tech Productivity");
+
+        var dateStr = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(wb, "Coolaire_Performance_Report_" + dateStr + ".xlsx");
+    }
+</script>
+{% endblock %}

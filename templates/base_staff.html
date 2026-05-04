@@ -171,6 +171,12 @@
                 {% endif %}
 
                 <div class="sn-nav-label">Management Intelligence</div>
+
+                <!-- NEW PERFORMANCE REPORTS LINK -->
+                <a href="/staff/reports" class="sn-nav-link {{ 'active' if '/staff/reports' in request.path }}">
+                    <i class="fa-solid fa-chart-line"></i> Performance Reports
+                </a>
+
                 {% if has_perm('analytics') %}
                 <a href="/staff/analytics" class="sn-nav-link {{ 'active' if 'analytics' in request.path }}">
                     <i class="fa-solid fa-chart-simple"></i> Site Analytics
