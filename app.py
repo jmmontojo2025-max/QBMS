@@ -16,6 +16,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import func, extract
 from flask_wtf.csrf import CSRFProtect
 
+from flask import request
+
+from datetime import date, datetime
+from flask import render_template, session
+from flask_login import login_required, current_user
+
+
 from functools import wraps
 
 from requests_oauthlib import OAuth1
@@ -306,18 +313,22 @@ def permission_required(feature_key):
 
 # This makes the permission check available in all HTML templates
 @app.context_processor
-def inject_permissions():
-    def has_perm(feature):
-        if not current_user.is_authenticated: return False
-        if current_user.role == 'super_admin': return True  # Super Admin sees all
+def utility_processor():
+    def has_perm(permission_name):
+        # 1. Always allow Super Admin to see everything
+        if current_user.is_authenticated and current_user.role == 'super_admin':
+            return True
 
-        perm = RolePermission.query.filter_by(
-            role=current_user.role,
-            feature_key=feature
-        ).first()
-        return perm.is_allowed if perm else False
+        # 2. Existing logic for other users
+        if not current_user.is_authenticated:
+            return False
 
-    return dict(has_perm=check_permission)
+        # Check if the permission exists in the user's assigned permissions
+        # (This depends on how your database is set up)
+        user_permissions = [p.name for p in current_user.permissions]
+        return permission_name in user_permissions
+
+    return dict(has_perm=has_perm)
 
 
 def check_permission(feature_key):
@@ -409,99 +420,112 @@ def set_branch(loc_id):
 
 @app.route('/staff')
 @login_required
-@roles_required('super_admin', 'admin', 'coordinator', 'advisor')  # Updated roles
+@roles_required('super_admin', 'admin', 'coordinator', 'advisor')
 def staff_panel():
     if 'loc_id' not in session: return redirect(url_for('select_branch_for_staff'))
     loc_id = session.get('loc_id')
 
-    # 1. Fetch Fresh Hub Details (Crucial for Green/Red status)
+    # Optimization: Get location once
     current_location = db.session.get(Location, loc_id)
-    if current_location:
-        db.session.refresh(current_location)  # Force pull latest timestamps from Supabase
 
-    max_capacity = current_location.capacity if current_location else 20
+    # Fetch serving and waiting in optimized queries
+    serving = Queue.query.options(
+        db.joinedload(Queue.assigned_techs),
+        db.joinedload(Queue.booking)
+    ).filter_by(location_id=loc_id, status='serving').all()
 
-    # FETCH SERVICES FOR DROPDOWNS
-    categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
+    waiting = Queue.query.options(
+        db.joinedload(Queue.booking)
+    ).filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
 
-    # 2. Workfloor & Queue Logic
-    serving = Queue.query.options(db.joinedload(Queue.assigned_techs), db.joinedload(Queue.booking)).filter_by(
-        location_id=loc_id, status='serving').all()
-    waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
-
-    # 3. BUILD THE BUSY MAP (Mapping Service to Tech via Ticket)
+    # Pre-calculate busy map for the UI
     busy_map = {}
     for q in serving:
-        # Check if the queue has a booking (to get the service type)
         service_name = q.booking.service_type if q.booking else "General Service"
         plate_no = q.booking.plate_number if q.booking else "WALK-IN"
-
         for t_assigned in q.assigned_techs:
-            # Map the technician ID to the specific details of the ticket they are holding
             busy_map[t_assigned.id] = {
                 'ticket': q.ticket_number,
                 'plate': plate_no,
                 'service': service_name
             }
 
-    # 4. Personnel
-    all_techs = Technician.query.options(db.selectinload(Technician.tasks).joinedload(Queue.booking)).filter_by(
-        location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
+    all_techs = Technician.query.filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
     available_techs = [t for t in all_techs if t.is_present and t.id not in busy_map]
 
-    # 5. Occupancy
+    categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
+    max_capacity = current_location.capacity if current_location else 20
     current_occupancy = len(serving) + len(waiting)
     capacity_percent = int((current_occupancy / max_capacity) * 100) if max_capacity > 0 else 0
 
-    return render_template('staff.html',
-                           current_location=current_location,  # <--- ADDED THIS
-                           categories=categories,
-                           waiting_tickets=waiting,
-                           serving_list=serving,
-                           technicians=available_techs,
-                           roster=all_techs,
-                           busy_map=busy_map,
-                           max_capacity=max_capacity,
-                           current_occupancy=current_occupancy,
-                           capacity_percent=capacity_percent,
-                           title="Live Console")
+    # DATA CONTEXT for the template
+    context = {
+        "current_location": current_location,
+        "categories": categories,
+        "waiting_tickets": waiting,
+        "serving_list": serving,
+        "technicians": available_techs,
+        "roster": all_techs,
+        "busy_map": busy_map,
+        "max_capacity": max_capacity,
+        "current_occupancy": current_occupancy,
+        "capacity_percent": capacity_percent,
+        "title": "Live Console"
+    }
+
+    # IF AJAX/HTMX REQUEST: Load ONLY the internal content (No Sidebar)
+    if request.headers.get('HX-Request'):
+        return render_template('staff_content_only.html', **context)
+
+    # OTHERWISE: Load the full page (With Sidebar)
+    return render_template('staff.html', **context)
 
 
 @app.route('/admin/workflow')
 @login_required
-@roles_required('super_admin', 'admin')
 def admin_workflow():
-    all_locations = Location.query.order_by(Location.name.asc()).all()
-    categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
-    hub_data = []
+    if current_user.role not in ['admin', 'super_admin']:
+        return "Unauthorized Access", 403
 
-    for loc in all_locations:
-        active_tickets = Queue.query.options(db.joinedload(Queue.assigned_techs), db.joinedload(Queue.booking)).filter(
-            Queue.location_id == loc.id,
-            or_(Queue.status == 'serving',
-                and_(Queue.status == 'done', or_(Queue.materials_used == None, Queue.materials_used == '')))
+    # FIX 1: Alphabetical sorting for locations
+    locations = Location.query.order_by(Location.name.asc()).all()
+    hub_data = []
+    today = date.today()
+
+    for loc in locations:
+        # Fetch Waiting, Serving, and those finished Today
+        tickets = Queue.query.filter(
+            Queue.location_id == loc.id
+        ).filter(
+            (Queue.status.in_(['waiting', 'serving'])) |
+            ((Queue.status == 'done') & (func.date(Queue.created_at) == today))
         ).order_by(Queue.created_at.asc()).all()
 
-        loc_techs = Technician.query.filter_by(location_id=loc.id, is_active=True).order_by(Technician.name.asc()).all()
+        techs = Technician.query.filter_by(location_id=loc.id).all()
 
-        # Build a busy map for this specific hub
         busy_map = {}
-        for q in active_tickets:
-            for t in q.assigned_techs:
-                busy_map[t.id] = {
-                    'ticket': q.ticket_number,
-                    'service': q.booking.service_type if q.booking else "Service"
-                }
+        for t in tickets:
+            if t.status == 'serving':
+                for tech in t.assigned_techs:
+                    service_name = t.booking.service_type if t.booking else "General Service"
+                    busy_map[tech.id] = {
+                        'ticket': t.ticket_number,
+                        'service': service_name
+                    }
 
         hub_data.append({
             'info': loc,
-            'tickets': active_tickets,
-            'techs': loc_techs,
-            'busy_map': busy_map,  # Detailed status mapping
-            'ticket_count': len(active_tickets)
+            'tickets': tickets,
+            'techs': techs,
+            'busy_map': busy_map,
+            'ticket_count': len([t for t in tickets if t.status in ['waiting', 'serving']])
         })
 
-    return render_template('admin_workflow.html', hub_data=hub_data, categories=categories, title="Global Workflow")
+    # FIX 2: Alphabetical sorting for categories
+    categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
+
+    return render_template('admin_workflow.html', hub_data=hub_data, categories=categories, title="Global Workflow Audit")
+
 
 
 @app.route('/staff/save-materials/<int:q_id>', methods=['POST'])
