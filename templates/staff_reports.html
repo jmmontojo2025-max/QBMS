@@ -1,164 +1,297 @@
+
+
 {% extends "base_staff.html" %}
 
 {% block content %}
 <!-- Typography and Libraries -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
+    /* VARIABLES - UNIFIED SYSTEM */
     :root {
-        --c-navy: #0f172a; --c-blue: #2563eb; --c-accent: #38bdf8;
-        --c-border: #e2e8f0; --c-bg: #f8fafc; --c-text: #334155; --c-teal: #76b82a;
+        --saas-primary: #2563eb;
+        --saas-navy: #0f172a;
+        --saas-slate: #64748b;
+        --saas-border: #e2e8f0;
+        --saas-bg: #f8fafc;
+        --saas-bg-white: #ffffff;
+        --saas-success: #10b981;
+        --saas-warning: #f59e0b;
+        --saas-danger: #ef4444;
+        --saas-radius: 16px;
+        --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
     }
-    html, body { height: 100%; margin: 0; overflow: hidden; background-color: var(--c-bg); font-family: 'Inter', sans-serif; }
 
+    /* 1. APP LAYOUT */
+    .report-container {
+        height: calc(100vh - 70px);
+        display: flex;
+        flex-direction: column;
+        background-color: var(--saas-bg);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--saas-navy);
+        position: relative; /* Confines Preloader */
+    }
+
+    /* PRELOADER OVERLAY - CONFINED */
     #preloader {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--c-navy);
-        display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000;
-        transition: opacity 0.8s ease-in-out, visibility 0.8s;
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: #ffffff; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; z-index: 10000;
+        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
     }
+    .svg-logo { width: 70px; height: 70px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
+    @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+    .loader-text { color: var(--saas-primary); font-size: 0.8rem; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 1.5rem; }
 
-    #ledger-viewport {
-        opacity: 0; transform: translateY(20px); transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-        height: 100vh; display: flex; flex-direction: column; padding: 1.5rem; gap: 1rem;
-    }
-    #ledger-viewport.is-active { opacity: 1; transform: translateY(0); }
-
+    /* 2. HEADER */
     .report-header {
-        background: white; padding: 1.25rem 2rem; border-radius: 16px; border: 1px solid var(--c-border);
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center;
+        flex: 0 0 auto;
+        padding: 1.5rem 2rem;
+        background-color: var(--saas-bg-white);
+        border-bottom: 1px solid var(--saas-border);
     }
-    .header-branding { display: flex; align-items: center; gap: 15px; }
-    .title-logo-icon { width: 42px; height: 42px; background: var(--c-navy); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--c-accent); }
+    .title-logo-icon { width: 42px; height: 42px; background: var(--saas-navy); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--saas-primary); }
 
-    .filter-box { display: flex; flex-direction: column; gap: 4px; }
-    .filter-box label { font-size: 0.6rem; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-    .ledger-input { border: 1px solid var(--c-border); padding: 0.5rem 0.8rem; border-radius: 10px; font-size: 0.8rem; font-weight: 600; color: var(--c-navy); background: #fcfdfe; }
+    /* KPI Cards */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
+    .kpi-card { background: white; padding: 1.25rem; border-radius: 16px; border: 1px solid var(--saas-border); box-shadow: var(--saas-shadow); }
+    .kpi-label { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
+    .kpi-val { font-size: 1.5rem; font-weight: 900; color: var(--saas-navy); font-family: 'JetBrains Mono'; }
 
-    .table-container { flex: 1 1 auto; overflow-y: auto; background: white; border-radius: 16px; border: 1px solid var(--c-border); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04); padding: 1rem; }
-    .section-label { font-size: 0.65rem; font-weight: 900; color: var(--c-blue); text-transform: uppercase; letter-spacing: 1.5px; margin: 1.5rem 0 0.5rem 0.5rem; }
+    /* 3. CONTENT AREA */
+    .report-content { flex: 1 1 auto; overflow-y: auto; padding: 2rem; }
+    .report-section { background: white; border-radius: 20px; border: 1px solid var(--saas-border); box-shadow: var(--saas-shadow); padding: 1.5rem; margin-bottom: 2rem; }
+    .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .section-label { font-size: 0.75rem; font-weight: 900; color: var(--saas-primary); text-transform: uppercase; letter-spacing: 1.5px; }
 
-    .master-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 2rem; }
-    .master-table thead th { position: sticky; top: 0; background: #f8fafc; padding: 0.8rem; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; color: var(--c-navy); border-bottom: 1px solid var(--c-border); border-right: 1px solid var(--c-border); z-index: 10; }
-    .master-table td { padding: 0.8rem; border-bottom: 1px solid var(--c-border); border-right: 1px solid var(--c-border); font-size: 0.85rem; color: var(--c-text); }
+    /* Table Styling */
+    .master-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .master-table thead th { position: sticky; top: 0; background: #f8fafc; padding: 0.8rem; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; color: var(--saas-navy); border-bottom: 2px solid var(--saas-border); }
+    .master-table td { padding: 1rem; border-bottom: 1px solid var(--saas-border); font-size: 0.85rem; vertical-align: middle; }
+    .record-row { cursor: pointer; transition: 0.2s; }
+    .record-row:hover { background: #f0f7ff !important; }
 
-    .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700; color: var(--c-navy); }
-    .btn-gen { background: var(--c-navy); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; cursor: pointer; transition: 0.3s; }
-    .btn-export { background: #166534; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; cursor: pointer; }
+    /* Badges & Inputs */
+    .badge-performance { font-size: 0.6rem; font-weight: 900; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; }
+    .ledger-input { border: 1px solid var(--saas-border); padding: 0.5rem 0.8rem; border-radius: 10px; font-size: 0.75rem; font-weight: 800; background: #fcfdfe; }
+    .btn-action { background: var(--saas-navy); color: white; border: none; padding: 0.6rem 1.5rem; border-radius: 10px; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* --- DETAIL SIDE PANEL (The Form) --- */
+    .detail-panel { width: 450px !important; border-left: none; box-shadow: -10px 0 30px rgba(0,0,0,0.1); }
+    .detail-header { background: var(--saas-navy); color: white; padding: 2rem; }
+    .detail-body { padding: 2rem; background: var(--saas-bg); }
+    .info-card { background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 1.25rem; border: 1px solid var(--saas-border); }
 </style>
 
-<div id="preloader">
-    <div class="loader-text" style="color: white; font-weight: 900; letter-spacing: 2px;">PREPARING AUDIT DATA...</div>
-</div>
+<div class="report-container animate__animated animate__fadeIn">
 
-<div id="ledger-viewport">
+    <!-- LOADING PRELOADER -->
+    <div id="preloader">
+        <svg class="svg-logo" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg>
+        <div class="loader-text">GENERATING REPORT...</div>
+    </div>
+
+    <!-- HEADER / CONTROL PANEL -->
     <header class="report-header">
-        <div class="header-branding">
-            <div class="title-logo-icon"><i class="fa-solid fa-chart-line"></i></div>
-            <div>
-                <h4>Operations Performance</h4>
-                <p class="small text-muted mb-0 fw-700" style="font-size: 0.6rem;">SAAS PERFORMANCE AUDIT</p>
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <div class="title-logo-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                <div>
+                    <h4 class="fw-900 mb-0 letter-spacing-tight">Executive Performance Audit</h4>
+                    <p class="small text-muted mb-0 fw-800" style="font-size: 0.65rem;">GENERATED FOR: {{ session.get('location_name')|upper }}</p>
+                </div>
             </div>
-        </div>
 
-        <div class="d-flex gap-3 align-items-end">
-            <div class="filter-box">
-                <label>Period Start</label>
-                <input type="date" id="startDate" class="ledger-input" value="{{ start_date or '' }}">
+            <div class="d-flex gap-2 align-items-end">
+                <div class="d-flex flex-column">
+                    <label class="extra-small fw-900 text-muted ms-1 mb-1">PERIOD START</label>
+                    <input type="date" id="startDate" class="ledger-input" value="{{ start_date or '' }}">
+                </div>
+                <div class="d-flex flex-column">
+                    <label class="extra-small fw-900 text-muted ms-1 mb-1">PERIOD END</label>
+                    <input type="date" id="endDate" class="ledger-input" value="{{ end_date or '' }}">
+                </div>
+                <button onclick="runReport()" class="btn-action shadow-sm"><i class="fa-solid fa-bolt me-1"></i> RUN REPORT</button>
+                <div class="vr mx-2"></div>
+                <button onclick="exportPerformanceExcel()" class="btn btn-success fw-900" style="font-size: 0.7rem; padding: 0.7rem 1.2rem; border-radius: 10px;">
+                    <i class="fa-solid fa-file-excel me-2"></i>EXPORT XLS
+                </button>
             </div>
-            <div class="filter-box">
-                <label>Period End</label>
-                <input type="date" id="endDate" class="ledger-input" value="{{ end_date or '' }}">
-            </div>
-            <button onclick="runReport()" class="btn-gen">GENERATE REPORT</button>
-
-            <div class="vr mx-2"></div>
-
-            <button onclick="exportPerformanceExcel()" class="btn-export">
-                <i class="fa-solid fa-file-excel me-2"></i>EXPORT FULL AUDIT (.XLSX)
-            </button>
         </div>
     </header>
 
-    <main class="table-container">
-        <!-- SECTION 1: CONSOLIDATED MONTHLY SUMMARY -->
-        <div class="section-label">Monthly Service Site Distribution Summary</div>
-        <table class="master-table" id="monthlyStatsLedger">
-            <thead>
-                <tr>
-                    <th style="width: 25%;">Service Month</th>
-                    <th style="text-align: center;">In-Plant Units</th>
-                    <th style="text-align: center;">Out-Plant Units</th>
-                    <th style="text-align: center; background: #f1f5f9;">Grand Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for stat in service_stats %}
-                <tr>
-                    <td class="mono">{{ stat.month }}</td>
-                    <td class="mono" style="text-align: center; color: var(--c-blue);">{{ stat.in_plant_count or 0 }}</td>
-                    <td class="mono" style="text-align: center; color: var(--c-teal);">{{ stat.out_plant_count or 0 }}</td>
-                    <td class="mono" style="text-align: center; font-weight: 900; background: #f8fafc;">{{ stat.grand_total or 0 }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <main class="report-content">
 
-        <!-- SECTION 2: DETAILED COMPANY AUDIT -->
-        <div class="section-label">Detailed Client Service Audit</div>
-        <table class="master-table" id="companyServiceAudit">
-            <thead>
-                <tr>
-                    <th style="width: 35%;">Company Name</th>
-                    <th style="width: 25%;">Service Location</th>
-                    <th style="text-align: center;">Units Completed</th>
-                    <th style="text-align: center;">Operational Load</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in company_audit %}
-                <tr>
-                    <td class="fw-800" style="color: var(--c-navy);">{{ row.company_name }}</td>
-                    <td>
-                        {% if row.service_location == 'In-Plant' %}
-                        <span style="color: var(--c-blue); font-weight: 700;"><i class="fa-solid fa-industry me-2"></i>In-Plant</span>
-                        {% else %}
-                        <span style="color: var(--c-teal); font-weight: 700;"><i class="fa-solid fa-truck-fast me-2"></i>Out-Plant</span>
-                        {% endif %}
-                    </td>
-                    <td class="mono" style="text-align: center;">{{ row.total_units }}</td>
-                    <td style="text-align: center;">
-                        {% if row.total_units > 10 %}<span class="badge bg-danger" style="font-size: 0.6rem;">HIGH VOLUME</span>
-                        {% elif row.service_location == 'Out-Plant' %}<span class="badge bg-warning text-dark" style="font-size: 0.6rem;">FIELD LOAD</span>
-                        {% else %}<span class="badge bg-light text-muted" style="font-size: 0.6rem;">STABLE</span>{% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <!-- KPI KPI KPI -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <span class="kpi-label">Total Units Processed</span>
+                <span class="kpi-val">{{ company_audit|sum(attribute='total_units') }}</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Field Service (Out-Plant)</span>
+                <span class="kpi-val">{{ service_stats|sum(attribute='out_plant_count') }}</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Bays Utilization (In-Plant)</span>
+                <span class="kpi-val">{{ service_stats|sum(attribute='in_plant_count') }}</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Top Performer Count</span>
+                <span class="kpi-val text-primary">{% if tech_performance %}{{ tech_performance[0].total_completed }}{% else %}0{% endif %}</span>
+            </div>
+        </div>
 
-        <!-- SECTION 3: PERSONNEL PRODUCTIVITY -->
-        <div class="section-label">Personnel Productivity</div>
-        <table class="master-table" id="techProductivityLedger">
-            <thead>
-                <tr><th style="width: 80px; text-align: center;">Rank</th><th>Technician Name</th><th style="text-align: center;">Total Units Released</th></tr>
-            </thead>
-            <tbody>
-                {% for tech in tech_performance %}
-                <tr><td class="mono" style="text-align: center;">#{{ loop.index }}</td><td class="fw-800">{{ tech.name }}</td><td class="mono" style="text-align: center; color: var(--c-teal);">{{ tech.total_completed }}</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <!-- SECTION 1: MONTHLY SUMMARY -->
+        <div class="report-section">
+            <div class="section-head">
+                <span class="section-label">1. Site Distribution Summary</span>
+            </div>
+            <table class="master-table" id="monthlyStatsLedger">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Service Month</th>
+                        <th class="text-center">In-Plant (Bays)</th>
+                        <th class="text-center">Out-Plant (Field)</th>
+                        <th class="text-center" style="background: #f1f5f9;">Grand Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in service_stats %}
+                    <tr class="record-row" data-bs-toggle="offcanvas" data-bs-target="#monthDetail-{{ loop.index }}">
+                        <td class="fw-900 text-navy">{{ stat.month }}</td>
+                        <td class="text-center fw-800 text-primary">{{ stat.in_plant_count or 0 }}</td>
+                        <td class="text-center fw-800 text-success">{{ stat.out_plant_count or 0 }}</td>
+                        <td class="text-center fw-900 text-navy" style="background: #f8fafc;">{{ stat.grand_total or 0 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SECTION 2: CLIENT AUDIT -->
+        <div class="report-section">
+            <div class="section-head">
+                <span class="section-label">2. Client Behavior & Operational Load</span>
+                <input type="text" id="clientSearch" class="ledger-input" placeholder="Quick search client..." onkeyup="searchClients()" style="width: 250px;">
+            </div>
+            <table class="master-table" id="companyServiceAudit">
+                <thead>
+                    <tr>
+                        <th style="width: 35%;">Organization Name</th>
+                        <th style="width: 25%;">Primary Location</th>
+                        <th class="text-center">Units Completed</th>
+                        <th class="text-center">Operational Load</th>
+                    </tr>
+                </thead>
+                <tbody id="clientBody">
+                    {% for row in company_audit %}
+                    <tr class="record-row" data-bs-toggle="offcanvas" data-bs-target="#clientDetail-{{ loop.index }}">
+                        <td class="fw-900 text-navy">{{ row.company_name }}</td>
+                        <td>
+                            {% if row.service_location == 'In-Plant' %}
+                            <span class="text-primary fw-800"><i class="fa-solid fa-warehouse me-2"></i>BAYS</span>
+                            {% else %}
+                            <span class="text-success fw-800"><i class="fa-solid fa-truck-fast me-2"></i>FIELD</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center fw-800" style="font-family: 'JetBrains Mono';">{{ row.total_units }}</td>
+                        <td class="text-center">
+                            {% if row.total_units > 10 %}<span class="badge-performance bg-danger text-white">High Volume</span>
+                            {% elif row.service_location == 'Out-Plant' %}<span class="badge-performance bg-warning text-dark">Mobile Ops</span>
+                            {% else %}<span class="badge-performance bg-light text-muted">Stable</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SECTION 3: TECH PRODUCTIVITY -->
+        <div class="report-section">
+            <div class="section-head">
+                <span class="section-label">3. Personnel Output Efficiency</span>
+            </div>
+            <table class="master-table" id="techProductivityLedger">
+                <thead>
+                    <tr>
+                        <th style="width: 100px;">Rank</th>
+                        <th>Technician Name</th>
+                        <th class="text-center">Total Unit Releases</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tech in tech_performance %}
+                    <tr class="record-row" data-bs-toggle="offcanvas" data-bs-target="#techDetail-{{ loop.index }}">
+                        <td class="fw-900 text-navy" style="font-family: 'JetBrains Mono';">#{{ loop.index }}</td>
+                        <td class="fw-800">{{ tech.name }}</td>
+                        <td class="text-center">
+                            <span class="fw-900 text-navy" style="font-size: 1rem;">{{ tech.total_completed }}</span>
+                            <div class="extra-small text-muted fw-bold">UNITS</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </main>
 </div>
 
+<!-- SIDE PANELS FOR DETAILS (The Drill-Down Form) -->
+{% for tech in tech_performance %}
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="techDetail-{{ loop.index }}">
+    <div class="detail-header shadow-sm">
+        <h2 class="fw-900 mb-1">{{ tech.name }}</h2>
+        <p class="mb-0 opacity-75 small fw-bold text-uppercase">Performance Drill-down</p>
+    </div>
+    <div class="offcanvas-body detail-body">
+        <div class="info-card">
+            <span class="kpi-label">Release Productivity</span>
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="h1 fw-900 mb-0">{{ tech.total_completed }}</span>
+                <span class="badge bg-success text-white">ACTIVE</span>
+            </div>
+            <p class="extra-small text-muted mt-2 mb-0">Total count of service tickets finalized and released by this technician within the selected date range.</p>
+        </div>
+        <div class="alert alert-info border-0 rounded-4 shadow-sm small fw-bold">
+            <i class="fa-solid fa-circle-info me-2"></i> Technical metrics are pulled directly from finalized service manifests.
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% for row in company_audit %}
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="clientDetail-{{ loop.index }}">
+    <div class="detail-header shadow-sm" style="background: var(--saas-primary);">
+        <h2 class="fw-900 mb-1 text-white">{{ row.company_name }}</h2>
+        <p class="mb-0 opacity-75 small fw-bold text-white text-uppercase">Client Behavior Audit</p>
+    </div>
+    <div class="offcanvas-body detail-body">
+        <div class="info-card">
+            <span class="kpi-label">Service Distribution</span>
+            <div class="fw-900 h4 mb-2 text-navy">{{ row.service_location|upper }}</div>
+            <span class="extra-small text-muted fw-bold">Primary service node utilized by the client.</span>
+        </div>
+        <div class="info-card">
+            <span class="kpi-label">Total Operational Load</span>
+            <div class="fw-900 h2 mb-0 text-primary">{{ row.total_units }} Units</div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 <script>
+    // PRELOADER DISMISS
     window.addEventListener('load', () => {
         setTimeout(() => {
-            document.getElementById('preloader').style.opacity = '0';
-            document.getElementById('preloader').style.visibility = 'hidden';
-            document.getElementById('ledger-viewport').classList.add('is-active');
+            const preloader = document.getElementById('preloader');
+            if(preloader) {
+                preloader.style.opacity = '0';
+                setTimeout(() => { preloader.style.display = 'none'; }, 600);
+            }
         }, 800);
     });
 
@@ -169,14 +302,22 @@
         window.location.href = `/staff/reports?start_date=${start}&end_date=${end}`;
     }
 
+    function searchClients() {
+        const val = document.getElementById('clientSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('#clientBody tr');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(val) ? '' : 'none';
+        });
+    }
+
     function exportPerformanceExcel() {
         var wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById("monthlyStatsLedger")), "Monthly Site Summary");
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById("companyServiceAudit")), "Client Behavior Audit");
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById("techProductivityLedger")), "Tech Productivity");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById("monthlyStatsLedger")), "Site Summary");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById("companyServiceAudit")), "Client Audit");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById("techProductivityLedger")), "Tech Output");
 
         var dateStr = new Date().toISOString().slice(0, 10);
-        XLSX.writeFile(wb, "Coolaire_Performance_Report_" + dateStr + ".xlsx");
+        XLSX.writeFile(wb, "Coolaire_Ops_Performance_" + dateStr + ".xlsx");
     }
 </script>
 {% endblock %}

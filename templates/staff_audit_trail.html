@@ -1,214 +1,357 @@
 {% extends "base_staff.html" %}
+
 {% block content %}
 <!-- Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
-    /* VARIABLES */
+    /* VARIABLES - UNIFIED DESIGN SYSTEM */
     :root {
-        --saas-primary: #002d72;
-        --saas-accent: #3b82f6;
+        --saas-primary: #2563eb;
+        --saas-navy: #0f172a;
+        --saas-slate: #64748b;
+        --saas-border: #e2e8f0;
+        --saas-bg: #f8fafc;
+        --saas-bg-white: #ffffff;
         --saas-success: #10b981;
         --saas-warning: #f59e0b;
         --saas-danger: #ef4444;
-        --saas-text: #1f2937;
-        --saas-light-text: #6b7280;
-        --saas-border: #e5e7eb;
-        --saas-bg: #f3f4f6;
-        --saas-bg-white: #ffffff;
-        --saas-radius: 0.75rem;
+        --saas-radius: 14px;
         --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
     }
 
-    /* 1. APP LAYOUT */
-    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); }
+    /* PRELOADER OVERLAY - CONFINED TO CONTENT AREA */
+    #preloader {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: #ffffff; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; z-index: 10000;
+        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+    .svg-logo { width: 70px; height: 70px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
+    @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+    .loader-text { color: var(--saas-primary); font-size: 0.8rem; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 1.5rem; }
 
+    /* 1. APP LAYOUT */
     .audit-container {
-        height: 100vh;
+        height: calc(100vh - 70px);
         display: flex;
         flex-direction: column;
-        font-family: 'Inter', sans-serif;
-        color: var(--saas-text);
+        background-color: var(--saas-bg);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--saas-navy);
+        position: relative;
     }
 
-    /* 2. HEADER (Fixed) */
+    /* 2. HEADER */
     .audit-header {
         flex: 0 0 auto;
         padding: 1.5rem 2rem;
         background-color: var(--saas-bg-white);
         border-bottom: 1px solid var(--saas-border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: var(--saas-shadow);
-        z-index: 10;
     }
     .fw-900 { font-weight: 900; }
     .letter-spacing-tight { letter-spacing: -1px; }
 
-    /* 3. CONTENT AREA (Scrollable) */
-    .audit-content {
-        flex: 1 1 auto;
-        overflow-y: auto;
-        padding: 2rem;
-    }
+    /* DATETIME DISPLAY */
+    .datetime-display { text-align: right; line-height: 1.2; white-space: nowrap; }
+    #live-time { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--saas-primary); font-size: 1.1rem; }
+    #live-date { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; }
 
-    .audit-card {
-        background-color: var(--saas-bg-white);
-        border: 1px solid var(--saas-border);
-        border-radius: var(--saas-radius);
-        box-shadow: var(--saas-shadow);
-        overflow: hidden;
+    /* Filter Tabs */
+    .filter-tabs {
+        display: flex; gap: 0.5rem; background: #f1f5f9; padding: 4px; border-radius: 10px; margin-top: 1.25rem; width: fit-content;
     }
+    .filter-btn {
+        border: none; background: transparent; padding: 6px 18px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; color: var(--saas-slate); text-transform: uppercase; transition: 0.2s;
+    }
+    .filter-btn.active { background: white; color: var(--saas-primary); box-shadow: var(--saas-shadow); }
 
-    /* Modern Table Styling */
-    .audit-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    .audit-table thead th {
-        position: sticky;
-        top: 0;
-        background-color: #f9fafb;
-        padding: 1rem 1.5rem;
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: var(--saas-light-text);
-        border-bottom: 1px solid var(--saas-border);
-        z-index: 5;
-    }
-    .audit-table tbody tr { transition: background-color 0.15s ease; }
-    .audit-table tbody tr:hover { background-color: #f8fafc; }
-    .audit-table td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
+    /* 3. TABLE CONTENT */
+    .audit-content { flex: 1 1 auto; overflow-y: auto; padding: 1.5rem 2rem; }
+    .master-table { border-collapse: separate; border-spacing: 0; width: 100%; background: white; border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); }
+    .master-table thead th { position: sticky; top: 0; background-color: #f8fafc; z-index: 10; text-transform: uppercase; font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); padding: 1rem; border-bottom: 2px solid var(--saas-border); }
 
-    /* Component Styling */
-    .timestamp-date { font-weight: 700; color: var(--saas-text); font-size: 0.85rem; }
-    .timestamp-time { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--saas-light-text); }
+    .record-row { cursor: pointer; transition: 0.2s; }
+    .record-row:hover { background-color: #f0f7ff !important; }
+    .master-table td { padding: 1rem; border-bottom: 1px solid var(--saas-border); font-size: 0.85rem; vertical-align: middle; }
 
-    .performer-badge {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    .performer-avatar {
-        width: 30px; height: 30px;
-        background: var(--saas-primary);
-        color: white;
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.7rem; font-weight: 800;
-    }
-
-    .action-pill {
-        padding: 0.3rem 0.75rem;
-        border-radius: 6px;
-        font-size: 0.65rem;
-        font-weight: 800;
-        letter-spacing: 0.5px;
-        display: inline-block;
-    }
+    /* Components */
+    .performer-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--saas-navy); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; margin-right: 12px; }
+    .action-pill { padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 0.6rem; letter-spacing: 0.5px; text-transform: uppercase; }
     .pill-success { background: #dcfce7; color: #15803d; }
     .pill-danger { background: #fee2e2; color: #b91c1c; }
     .pill-info { background: #eff6ff; color: #1d4ed8; }
 
-    .tech-details {
-        font-size: 0.85rem;
-        color: var(--saas-light-text);
-        font-weight: 500;
-    }
+    /* --- OFF-CANVAS DETAIL PANEL (The Forensic Form) --- */
+    .detail-panel { width: 480px !important; border-left: none; box-shadow: -10px 0 30px rgba(0,0,0,0.08); }
+    .detail-header { background: var(--saas-navy); color: white; padding: 2.5rem 2rem; }
+    .detail-body { padding: 2rem; background: var(--saas-bg); }
+    .info-card { background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 1.25rem; border: 1px solid var(--saas-border); }
+    .detail-label { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block; }
+    .detail-val { font-weight: 800; color: var(--saas-navy); font-size: 0.95rem; }
 
-    /* Live Badge Pulse */
-    .pulse-dot {
-        width: 8px; height: 8px;
-        background: var(--saas-accent);
-        border-radius: 50%;
-        display: inline-block;
-        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-    }
+    .tech-blob { background: #1e293b; color: #38bdf8; padding: 1rem; border-radius: 10px; font-family: 'JetBrains Mono'; font-size: 0.75rem; line-height: 1.5; overflow-x: auto; }
+
+    .pulse-dot { width: 8px; height: 8px; background: var(--saas-success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 </style>
 
 <div class="audit-container animate__animated animate__fadeIn">
 
+    <!-- LOADING PRELOADER -->
+    <div id="preloader">
+        <svg class="svg-logo" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg>
+        <div class="loader-text">VERIFYING LEDGER...</div>
+    </div>
+
     <!-- HEADER -->
     <header class="audit-header">
-        <div>
-            <h2 class="fw-900 mb-1 letter-spacing-tight">Security Audit Trail</h2>
-            <p class="text-muted small mb-0">Operational event ledger for <strong>{{ session.get('location_name') }}</strong></p>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-            <div class="badge bg-light border text-dark px-3 py-2 rounded-pill d-flex align-items-center gap-2">
-                <span class="pulse-dot"></span>
-                <span class="small fw-800">IMMUTABLE LEDGER</span>
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="bg-navy text-white p-3 rounded-4 me-3">
+                    <i class="fa-solid fa-shield-halved fs-4"></i>
+                </div>
+                <div>
+                    <!-- Added icon (fa-fingerprint) next to the title below -->
+                    <h4 class="fw-900 mb-0 letter-spacing-tight">
+                        <i class="fa-solid fa-fingerprint me-2 text-primary"></i>Security Audit Trail
+                    </h4>
+                    <p class="text-muted small mb-0"><span class="pulse-dot me-1"></span> BAS-NODE: <strong>{{ session.get('location_name') }}</strong> Immutable Ledger</p>
+                </div>
             </div>
-            <button onclick="window.location.reload()" class="btn btn-sm btn-white border fw-bold px-3 py-2 rounded-pill shadow-sm">
-                <i class="fa-solid fa-rotate me-1"></i> Refresh
-            </button>
+            <div class="d-flex gap-3 align-items-center">
+                <div class="input-group shadow-sm" style="width: 300px;">
+                    <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted small"></i></span>
+                    <input type="text" id="recordSearch" class="form-control border-start-0 shadow-none" style="font-size: 0.85rem;" placeholder="Search logs...">
+                </div>
+                <button onclick="window.location.reload()" class="btn btn-white border fw-900 shadow-sm px-3">
+                    <i class="fa-solid fa-rotate text-primary"></i>
+                </button>
+
+                <!-- LIVE DATETIME WITH SECURITY ICON (12 HOUR FORMAT) -->
+                <div class="d-flex align-items-center gap-3 datetime-display border-start ps-4">
+                    <i class="fa-solid fa-shield-check text-primary fs-4" style="opacity: 0.8;"></i>
+                    <div>
+                        <div id="live-date">--- --, ----</div>
+                        <div id="live-time">00:00:00 AM</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-tabs shadow-sm">
+            <button class="filter-btn active" onclick="filterType('all')">All Events</button>
+            <button class="filter-btn" onclick="filterType('human')">Staff Actions</button>
+            <button class="filter-btn" onclick="filterType('system')">System Automations</button>
         </div>
     </header>
 
-    <!-- CONTENT -->
+    <!-- TABLE CONTENT -->
     <main class="audit-content">
-        <div class="audit-card">
-            <div class="table-responsive">
-                <table class="audit-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 200px;">Event Timestamp</th>
-                            <th>Performer</th>
-                            <th>Action Type</th>
-                            <th>Technical Manifest / Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for log in logs %}
-                        <tr>
-                            <td>
-                                <div class="timestamp-date">{{ log.created_at.strftime('%Y-%m-%d') }}</div>
-                                <div class="timestamp-time">{{ log.created_at.strftime('%I:%M:%S %p') }}</div>
-                            </td>
-                            <td>
-                                <div class="performer-badge">
-                                    <div class="performer-avatar">
-                                        {{ log.performer.full_name[0] if log.performer else 'S' }}
+        <table class="master-table" id="masterTable">
+            <thead>
+                <tr>
+                    <th style="width: 15%">Timestamp</th>
+                    <th style="width: 20%">Performer</th>
+                    <th style="width: 15%">Action Type</th>
+                    <th style="width: 35%">Forensic Manifest</th>
+                    <th style="width: 15%">Source IP</th>
+                </tr>
+            </thead>
+            <tbody id="recordsBody">
+                {% for log in logs %}
+                    <tr class="record-row"
+                        data-performer="{% if log.performer %}human{% else %}system{% endif %}"
+                        data-bs-toggle="offcanvas" data-bs-target="#offcanvas-{{ log.id }}">
+                        <td>
+                            <div class="fw-900 text-navy">{{ log.created_at.strftime('%Y-%m-%d') }}</div>
+                            <div class="extra-small text-muted fw-bold" style="font-family: 'JetBrains Mono';">{{ log.created_at.strftime('%I:%M:%S %p') }}</div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="performer-avatar">
+                                    {{ log.performer.full_name[0] if log.performer else 'S' }}
+                                </div>
+                                <div>
+                                    <div class="fw-800 text-dark" style="font-size: 0.85rem;">
+                                        {{ log.performer.full_name if log.performer else 'System Engine' }}
                                     </div>
-                                    <span class="fw-600" style="font-size: 0.9rem;">
-                                        {{ log.performer.full_name if log.performer else 'System Automation' }}
-                                    </span>
+                                    <div class="extra-small text-muted fw-bold">
+                                        {{ log.performer.role.name if log.performer and log.performer.role else 'AUTOMATION' }}
+                                    </div>
                                 </div>
-                            </td>
-                            <td>
-                                {% if 'Started' in log.action or 'Approved' in log.action or 'Complete' in log.action %}
-                                    <span class="action-pill pill-success">{{ log.action|upper }}</span>
-                                {% elif 'Expired' in log.action or 'Rejected' in log.action or 'Failed' in log.action %}
-                                    <span class="action-pill pill-danger">{{ log.action|upper }}</span>
-                                {% else %}
-                                    <span class="action-pill pill-info">{{ log.action|upper }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="tech-details">
+                            </div>
+                        </td>
+                        <td>
+                            {% set action = log.action | lower %}
+                            <span class="action-pill
+                                {% if 'started' in action or 'approved' in action or 'complete' in action %}pill-success
+                                {% elif 'expired' in action or 'rejected' in action or 'failed' in action %}pill-danger
+                                {% else %}pill-info{% endif %}">
+                                {{ log.action }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="extra-small text-muted fw-bold text-truncate" style="max-width: 350px;">
                                 {{ log.details }}
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center py-5">
-                                <div class="opacity-25 mb-3">
-                                    <i class="fa-solid fa-shield-halved fa-4x"></i>
-                                </div>
-                                <h5 class="fw-800 text-muted">No security events found</h5>
-                                <p class="small text-muted">A record of all system interactions will appear here.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-navy" style="font-family: 'JetBrains Mono'; font-size: 0.75rem;">
+                                {{ log.ip_address or '127.0.0.1' }}
+                            </div>
+                            <div class="extra-small text-muted"><i class="fa-solid fa-laptop-code me-1"></i> {{ log.device_type or 'Authorized Client' }}</div>
+                        </td>
+                    </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <i class="fa-solid fa-shield-virus fs-1 opacity-25 mb-3"></i>
+                        <h5 class="fw-800 text-muted">Ledger is empty</h5>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div id="noResults" class="text-center py-5" style="display:none;">
+            <i class="fa-solid fa-magnifying-glass fs-1 text-muted opacity-25 mb-3"></i>
+            <h5 class="fw-800">No events match your criteria.</h5>
         </div>
     </main>
 </div>
 
+<!-- FORENSIC SIDE PANELS (The Audit Form) -->
+{% for log in logs %}
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="offcanvas-{{ log.id }}">
+    <div class="detail-header shadow-sm">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge bg-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Security Forensic Log</span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <h2 class="fw-900 mb-1">Event Details</h2>
+        <p class="mb-0 opacity-75 small fw-bold" style="font-family: 'JetBrains Mono';">Transaction Hash: #{{ log.id }}</p>
+    </div>
+    <div class="offcanvas-body detail-body">
+
+        <!-- Performer Card -->
+        <div class="info-card shadow-sm">
+            <span class="detail-label">Event Performer</span>
+            <div class="d-flex align-items-center mt-2">
+                <div class="performer-avatar" style="width: 45px; height: 45px; font-size: 1rem;">
+                    {{ log.performer.full_name[0] if log.performer else 'S' }}
+                </div>
+                <div>
+                    <div class="fw-900 text-navy">{{ log.performer.full_name if log.performer else 'System Automation' }}</div>
+                    <div class="extra-small text-muted fw-bold">{{ log.performer.email if log.performer else 'internal.engine@coolaire.bas' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Manifest -->
+        <div class="info-card shadow-sm">
+            <span class="detail-label mb-2">Technical Manifest</span>
+            <p class="small fw-800 text-navy mb-3">{{ log.details }}</p>
+
+            <div class="row g-2 border-top pt-3">
+                <div class="col-6">
+                    <span class="detail-label">Access IP</span>
+                    <span class="detail-val" style="font-family: 'JetBrains Mono';">{{ log.ip_address or '---' }}</span>
+                </div>
+                <div class="col-6">
+                    <span class="detail-label">Auth Method</span>
+                    <span class="detail-val">Session Cookie</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Raw Data Payload -->
+        <div class="info-card shadow-sm">
+            <span class="detail-label mb-2">Technical Footprint (UA)</span>
+            <div class="tech-blob">
+                {{ log.user_agent or 'Mozilla/5.0 (Authorized Workshop Terminal) Node-BAS-Engine' }}
+            </div>
+        </div>
+
+        <div class="alert alert-info border-0 rounded-4 shadow-sm small fw-bold">
+            <i class="fa-solid fa-circle-info me-2"></i>
+            This event is immutable and logged permanently to the central BAS security database for compliance.
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+    /**
+     * INSTRUCTION: updateClock
+     * This function calculates the current system date and time.
+     * It formats the date as shorthand (e.g., MON JAN 1) and the time in 12-hour AM/PM format.
+     * It updates the header display every 1000ms.
+     */
+    function updateClock() {
+        const now = new Date();
+        const dateOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+        const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
+
+        const dateEl = document.getElementById('live-date');
+        const timeEl = document.getElementById('live-time');
+
+        if(dateEl) dateEl.innerText = now.toLocaleDateString('en-US', dateOptions).toUpperCase();
+        if(timeEl) timeEl.innerText = now.toLocaleTimeString('en-US', timeOptions);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    /**
+     * INSTRUCTION: filterType
+     * This function is triggered by the tab buttons (All, Staff, System).
+     * It updates the active visual state of the buttons and sets the global currentFilter variable.
+     * It then triggers applySearchAndFilter to refresh the table.
+     */
+    let currentFilter = 'all';
+    function filterType(type) {
+        currentFilter = type;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText.toLowerCase().includes(type) || (type === 'all' && btn.innerText.includes('All')));
+        });
+        applySearchAndFilter();
+    }
+
+    /**
+     * INSTRUCTION: applySearchAndFilter
+     * This core logic parses the search input and the selected category filter.
+     * It iterates through each audit row and toggles visibility based on whether the
+     * data matches both the search string and the performer type.
+     */
+    function applySearchAndFilter() {
+        const val = document.getElementById('recordSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('.record-row');
+        let count = 0;
+
+        rows.forEach(row => {
+            const performerMatch = (currentFilter === 'all' || row.dataset.performer === currentFilter);
+            const searchMatch = row.innerText.toLowerCase().includes(val);
+            if(performerMatch && searchMatch) { row.style.display = ''; count++; } else { row.style.display = 'none'; }
+        });
+
+        document.getElementById('noResults').style.display = (count === 0) ? 'block' : 'none';
+    }
+
+    document.getElementById('recordSearch').addEventListener('input', applySearchAndFilter);
+
+    /**
+     * INSTRUCTION: Preloader dismissal
+     * Monitors the window load event. Once all assets are ready, it fades out
+     * the preloader screen and removes it from the view to reveal the audit trail.
+     */
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const preloader = document.getElementById('preloader');
+            if(preloader) {
+                preloader.style.opacity = '0';
+                setTimeout(() => { preloader.style.display = 'none'; }, 600);
+            }
+        }, 800);
+    });
+</script>
 {% endblock %}

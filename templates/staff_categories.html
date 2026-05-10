@@ -2,35 +2,50 @@
 
 {% block content %}
 <!-- Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
-    /* MODERN CORE VARIABLES */
+    /* VARIABLES - UNIFIED SYSTEM */
     :root {
-        --saas-navy: #002d72;
-        --saas-accent: #3b82f6;
-        --saas-success: #10b981;
-        --saas-danger: #ef4444;
-        --saas-text: #1e293b;
-        --saas-light-text: #64748b;
-        --saas-border: #f1f5f9;
+        --saas-primary: #2563eb;
+        --saas-navy: #0f172a;
+        --saas-slate: #64748b;
+        --saas-border: #e2e8f0;
         --saas-bg: #f8fafc;
-        --saas-radius: 1rem;
-        --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+        --saas-bg-white: #ffffff;
+        --saas-success: #10b981;
+        --saas-warning: #f59e0b;
+        --saas-danger: #ef4444;
+        --saas-radius: 14px;
+        --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
     }
 
-    /* 1. LAYOUT ENGINE (AUTO-SIZE) */
-    html, body { height: 100%; overflow: hidden; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; }
-
+    /* 1. APP LAYOUT */
     .dashboard-container {
-        height: 100vh;
+        height: calc(100vh - 70px);
         display: flex;
         flex-direction: column;
-        padding: 2rem;
+        background-color: var(--saas-bg);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--saas-navy);
+        position: relative;
+        padding: 1.5rem;
         gap: 1.5rem;
     }
 
-    /* 2. HEADER SECTION */
+    /* STANDARD WHITE SAAS PRELOADER */
+    #preloader {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: #ffffff; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; z-index: 10000;
+        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+    .svg-logo { width: 70px; height: 70px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
+    @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+    .loader-text { color: var(--saas-primary); font-size: 0.8rem; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 1.5rem; }
+
+    /* 2. HEADER - ALIGNED */
     .header-section {
         flex: 0 0 auto;
         display: flex;
@@ -42,239 +57,279 @@
         border: 1px solid var(--saas-border);
         box-shadow: var(--saas-shadow);
     }
-    .page-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; }
+    .page-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; font-size: 1.5rem; }
+
+    /* FIXED DATETIME STYLING - PREVENTS WRAPPING */
+    .datetime-display {
+        text-align: right;
+        min-width: fit-content;
+        white-space: nowrap; /* Forces text to stay on one line */
+    }
+    #live-date {
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: var(--saas-slate);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        line-height: 1;
+        margin-bottom: 2px;
+    }
+    #live-time {
+        font-family: 'JetBrains Mono';
+        font-weight: 700;
+        color: var(--saas-primary);
+        font-size: 1.2rem;
+        line-height: 1;
+    }
 
     /* 3. DUAL COLUMN GRID */
     .main-grid {
         flex: 1 1 auto;
         display: grid;
-        grid-template-columns: 350px 1fr;
+        grid-template-columns: 380px 1fr;
         gap: 1.5rem;
         min-height: 0;
     }
 
-    /* 4. LEFT COLUMN: REGISTRATION FORM */
+    /* 4. FORM CARD */
     .form-card {
         background: #ffffff;
         border-radius: var(--saas-radius);
         border: 1px solid var(--saas-border);
         box-shadow: var(--saas-shadow);
-        padding: 2rem;
+        padding: 2.25rem;
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
     }
-
-    .custom-label { font-size: 0.7rem; font-weight: 800; color: var(--saas-light-text); text-transform: uppercase; letter-spacing: 1px; }
+    .custom-label { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; display: block; }
     .modern-input {
-        background: #f8fafc;
-        border: 2px solid transparent;
-        padding: 1rem;
-        border-radius: 12px;
-        font-weight: 600;
-        transition: all 0.2s;
+        background: #f8fafc; border: 2px solid transparent; padding: 0.75rem 1rem; border-radius: 10px; font-weight: 700; transition: 0.2s; width: 100%; font-size: 0.8rem;
     }
-    .modern-input:focus {
-        background: #fff;
-        border-color: var(--saas-accent);
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-        outline: none;
-    }
+    .modern-input:focus { border-color: var(--saas-primary); background: white; outline: none; }
 
-    .btn-register {
-        background: var(--saas-navy);
-        color: white;
-        border: none;
-        padding: 1rem;
-        border-radius: 12px;
-        font-weight: 900;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.75rem;
-        transition: all 0.3s;
-    }
-    .btn-register:hover { background: var(--saas-accent); transform: translateY(-2px); }
+    .btn-register { background: var(--saas-navy); color: white; border: none; padding: 1rem; border-radius: 12px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 0.75rem; text-transform: uppercase; letter-spacing: 1px; transition: 0.3s; }
+    .btn-register:hover { background: var(--saas-primary); transform: translateY(-2px); }
 
-    /* 5. RIGHT COLUMN: LIST VIEW */
+    /* 5. DIRECTORY LIST */
     .list-container {
-        flex: 1 1 auto;
-        overflow-y: auto;
-        background: #ffffff;
-        border-radius: var(--saas-radius);
-        border: 1px solid var(--saas-border);
-        box-shadow: var(--saas-shadow);
-        display: flex;
-        flex-direction: column;
+        flex: 1 1 auto; overflow-y: auto; background: #ffffff; border-radius: var(--saas-radius); border: 1px solid var(--saas-border); box-shadow: var(--saas-shadow);
     }
-
-    .list-header {
-        position: sticky; top: 0; background: #fff; z-index: 10;
-        padding: 1.5rem 2rem;
-        border-bottom: 2px solid var(--saas-border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
     .category-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    .category-table td { padding: 1.25rem 2rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
-    .category-row:hover { background-color: #fcfdfe; }
+    .category-table thead th { position: sticky; top: 0; background: #f9fafb; padding: 1.25rem 2rem; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; color: var(--saas-slate); border-bottom: 2px solid var(--saas-border); z-index: 10; }
+    .category-table td { padding: 1rem 2rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
 
-    /* MODERN COMPONENTS */
-    .cat-avatar {
-        width: 42px; height: 42px;
-        background: #eff6ff; color: var(--saas-accent);
-        border-radius: 12px;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: 800; font-size: 1.1rem;
-        border: 1px solid rgba(59, 130, 246, 0.1);
-    }
+    .category-row { cursor: pointer; transition: 0.2s; }
+    .category-row:hover { background-color: #f0f7ff; }
 
-    .btn-delete {
-        width: 38px; height: 38px;
-        border-radius: 10px;
-        border: 1px solid #fee2e2;
-        background: #fff;
-        color: var(--saas-danger);
-        display: flex; align-items: center; justify-content: center;
-        transition: all 0.2s;
-    }
-    .btn-delete:hover { background: var(--saas-danger); color: white; border-color: var(--saas-danger); }
+    /* COMPONENTS */
+    .cat-avatar { width: 44px; height: 44px; background: #eff6ff; color: var(--saas-primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.1rem; border: 1px solid #dbeafe; }
+    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.6rem; font-weight: 900; background: #ecfdf5; color: var(--saas-success); text-transform: uppercase; }
 
-    /* FLUID TYPE */
-    html { font-size: clamp(14px, 0.4vw + 0.5rem, 18px); }
-    .page-title { font-size: clamp(1.4rem, 2vw, 1.8rem); }
+    .btn-action-sm { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--saas-border); background: white; color: var(--saas-slate); display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .btn-action-sm:hover { border-color: var(--saas-primary); color: var(--saas-primary); }
+    .btn-delete:hover { border-color: var(--saas-danger); color: var(--saas-danger); }
 
-    /* SCROLLBAR */
-    .list-container::-webkit-scrollbar { width: 6px; }
-    .list-container::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    /* --- DETAIL SIDE PANEL --- */
+    .detail-panel { width: 450px !important; border-left: none; box-shadow: -10px 0 30px rgba(0,0,0,0.08); }
+    .detail-header { background: var(--saas-navy); color: white; padding: 2.5rem 2rem; }
+    .detail-body { padding: 2rem; background: var(--saas-bg); }
+    .info-card { background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 1.25rem; border: 1px solid var(--saas-border); }
+    .detail-label { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block; }
 </style>
 
 <div class="dashboard-container animate__animated animate__fadeIn">
 
+    <!-- PRELOADER -->
+    <div id="preloader">
+        <svg class="svg-logo" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg>
+        <div class="loader-text">SYNCING PORTFOLIO...</div>
+    </div>
+
     <!-- HEADER SECTION -->
     <header class="header-section">
         <div class="d-flex align-items-center gap-3">
-            <div class="bg-primary text-white p-2 rounded-3 shadow-sm" style="background: var(--saas-navy) !important;">
-                <i class="fa-solid fa-tags"></i>
+            <div class="bg-navy text-white p-2 rounded-3 shadow-sm" style="background: var(--saas-navy) !important; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-tags fs-4"></i>
             </div>
-            <h3 class="page-title">Service Categories</h3>
+            <div>
+                <h3 class="page-title">Service Categories</h3>
+                <p class="small text-muted mb-0 fw-bold font-monospace">MASTER_PORTFOLIO // SYSTEM_GLOBAL</p>
+            </div>
         </div>
 
-        <div class="input-group" style="max-width: 350px;">
-            <span class="input-group-text bg-light border-0 ps-3"><i class="fa-solid fa-magnifying-glass text-muted small"></i></span>
-            <input type="text" id="categorySearch" class="form-control bg-light border-0 py-2 fw-600" placeholder="Quick find service...">
+        <!-- RIGHT AREA: SEARCH + FIXED CLEAN DATETIME -->
+        <div class="d-flex align-items-center gap-4">
+            <div class="input-group" style="max-width: 300px;">
+                <span class="input-group-text bg-light border-0 ps-3"><i class="fa-solid fa-search text-muted small"></i></span>
+                <input type="text" id="categorySearch" class="form-control bg-light border-0 py-2 fw-700 shadow-none" style="font-size: 0.8rem;" placeholder="Search category...">
+            </div>
+
+            <div class="datetime-display">
+                <div id="live-date">--- --, ----</div>
+                <div id="live-time">00:00:00 AM</div>
+            </div>
         </div>
     </header>
 
-    <!-- MAIN CONTENT GRID -->
     <main class="main-grid">
-
-        <!-- LEFT: FORM COLUMN -->
-        <aside class="form-card">
+        <!-- LEFT: FORM -->
+        <aside class="form-card shadow-sm">
             <div>
                 <h5 class="fw-900 text-dark mb-1">New Service</h5>
-                <p class="small text-muted mb-0">Register a new unit type to the live queue system.</p>
+                <p class="small text-muted fw-bold">Register a new unit type to the kiosk manifest.</p>
             </div>
 
-            <form action="/staff/categories" method="POST" class="d-flex flex-column gap-4">
+            <form action="/staff/categories" method="POST" class="d-flex flex-column gap-3">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
                 <div>
-                    <label class="custom-label">Service Title</label>
-                    <input type="text" name="category_name" class="modern-input w-100 mt-2"
-                           placeholder="e.g. Preventive Maintenance" required>
+                    <label class="custom-label">Service Category Title</label>
+                    <input type="text" name="category_name" class="modern-input" placeholder="e.g. Refrigeration Repair" required>
                 </div>
-
-                <button type="submit" class="btn-register">
+                <button type="submit" class="btn-register shadow-lg mt-2">
                     <i class="fa-solid fa-plus-circle"></i> ADD TO PORTFOLIO
                 </button>
             </form>
 
-            <div class="mt-auto p-3 rounded-4" style="background: #f8fafc; border: 1px dashed #e2e8f0;">
-                <div class="d-flex gap-2">
-                    <i class="fa-solid fa-circle-info text-accent"></i>
-                    <p class="extra-small text-muted fw-500 mb-0">
-                        Categories added here will instantly appear in the Client Kiosk and Staff Dispatcher.
-                    </p>
-                </div>
+            <div class="mt-auto p-4 rounded-4" style="background: #f8fafc; border: 1px dashed #cbd5e1;">
+                <p class="extra-small text-muted fw-bold mb-0">
+                    <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                    Instruction: Categories appear instantly in the Kiosk and Dispatcher modules upon registration.
+                </p>
             </div>
         </aside>
 
-        <!-- RIGHT: LIST COLUMN -->
-        <section class="list-container">
-            <div class="list-header">
-                <h6 class="fw-900 m-0">Active Service Portfolio</h6>
-                <span class="badge bg-light border text-primary fw-900 rounded-pill px-3" id="catCount">
-                    {{ categories|length }} Total
-                </span>
-            </div>
-
-            <div class="table-responsive">
-                <table class="category-table" id="categoryTable">
-                    <tbody>
-                        {% for cat in categories %}
-                        <tr class="category-row animate__animated animate__fadeIn">
-                            <td style="width: 60px;">
-                                <div class="cat-avatar">{{ cat.name[0] | upper }}</div>
-                            </td>
-                            <td>
-                                <div class="fw-800 text-dark category-name" style="font-size: 1rem;">{{ cat.name }}</div>
-                                <div class="extra-small text-success fw-900"><i class="fa-solid fa-circle-check me-1"></i> ACTIVE STATUS</div>
-                            </td>
-                            <td class="text-end">
-                                <div class="d-flex justify-content-end gap-2">
-                                    <a href="{{ url_for('delete_category', id=cat.id) }}"
-                                       class="btn-delete" title="Archive Category"
-                                       onclick="return confirm('Archive this service category?')">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="3" class="text-center py-5">
-                                <div class="opacity-25 mb-3">
-                                    <i class="fa-solid fa-layer-group fa-4x"></i>
-                                </div>
-                                <h5 class="fw-900 text-muted">No Categories Registered</h5>
-                                <p class="small text-muted">Use the sidebar to create your first service type.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <!-- RIGHT: TABLE -->
+        <section class="list-container shadow-sm">
+            <table class="category-table">
+                <thead>
+                    <tr>
+                        <th>Identity</th>
+                        <th>Category Name</th>
+                        <th>State</th>
+                        <th class="text-end">System Management</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in categories %}
+                    <tr class="category-row animate__animated animate__fadeIn" data-bs-toggle="offcanvas" data-bs-target="#detailPanel{{ cat.id }}">
+                        <td><div class="cat-avatar">{{ cat.name[0] | upper }}</div></td>
+                        <td>
+                            <div class="fw-900 text-navy" style="font-size: 1rem;">{{ cat.name }}</div>
+                            <div class="extra-small text-muted fw-bold font-monospace">HASH: #CAT-{{ 1000 + cat.id }}</div>
+                        </td>
+                        <td><span class="status-badge">Live_Portfolio</span></td>
+                        <td class="text-end" onclick="event.stopPropagation()">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button class="btn-action-sm" title="Modify" data-bs-toggle="modal" data-bs-target="#editModal{{ cat.id }}">
+                                    <i class="fa-solid fa-pen-nib"></i>
+                                </button>
+                                <a href="{{ url_for('delete_category', id=cat.id) }}" class="btn-action-sm btn-delete text-danger" title="Archive" onclick="return confirm('Instruction: Remove this service from the global manifest?')">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </section>
-
     </main>
 </div>
 
+<!-- MODALS & SIDE PANELS -->
+{% for cat in categories %}
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="detailPanel{{ cat.id }}">
+    <div class="detail-header shadow-sm">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge bg-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Category Audit</span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <h2 class="fw-900 mb-1">{{ cat.name }}</h2>
+        <p class="mb-0 opacity-75 small fw-bold">Instruction: Reviewing Registry #CAT-{{ 1000 + cat.id }}</p>
+    </div>
+    <div class="offcanvas-body detail-body">
+        <div class="info-card shadow-sm">
+            <span class="detail-label">Service Title</span>
+            <div class="fw-900 text-navy h5 mb-0">{{ cat.name }}</div>
+        </div>
+        <div class="info-card shadow-sm">
+            <label class="detail-label">Instruction</label>
+            <p class="extra-small fw-bold text-muted mb-0">Changes to this category will affect all hubs and the main customer entry kiosk.</p>
+        </div>
+        <button class="btn btn-navy w-100 py-3 rounded-4 fw-900 text-uppercase mt-4" style="background: var(--saas-navy); color: white;" data-bs-toggle="modal" data-bs-target="#editModal{{ cat.id }}">
+            Modify Service Data
+        </button>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal{{ cat.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+            <div class="modal-header bg-navy text-white p-4" style="background: var(--saas-navy) !important;">
+                <h5 class="modal-title fw-900">Update Category</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/staff/categories/edit/{{ cat.id }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body p-4">
+                    <label class="custom-label">Updated Service Title</label>
+                    <input type="text" name="category_name" class="modern-input" value="{{ cat.name }}" required>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="submit" class="btn btn-navy fw-900 w-100 py-3 rounded-4 shadow-lg" style="background: var(--saas-navy); color: white;">PUSH CHANGES</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('categorySearch');
-    const tableRows = document.querySelectorAll('.category-row');
-    const catCount = document.getElementById('catCount');
+    /**
+     * INSTRUCTION: liveClock
+     * Calculates the current Date and Time.
+     * Formats the time into a 12-hour AM/PM string.
+     * Prevents text wrapping by using proper CSS properties.
+     */
+    function updateClock() {
+        const now = new Date();
+        const dateOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+        const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
 
-    // Real-time Filtering Logic
-    searchInput.addEventListener('input', function(e) {
-        const term = e.target.value.toLowerCase();
-        let visibleCount = 0;
+        const dateEl = document.getElementById('live-date');
+        const timeEl = document.getElementById('live-time');
 
-        tableRows.forEach(row => {
-            const name = row.querySelector('.category-name').textContent.toLowerCase();
-            if(name.includes(term)) {
-                row.style.display = "";
-                visibleCount++;
-            } else {
-                row.style.display = "none";
-            }
+        if(dateEl) dateEl.innerText = now.toLocaleDateString('en-US', dateOptions).toUpperCase();
+        if(timeEl) timeEl.innerText = now.toLocaleTimeString('en-US', timeOptions);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    /**
+     * INSTRUCTION: categorySearch
+     * Listens to the search input field and filters rows.
+     */
+    document.getElementById('categorySearch').addEventListener('input', function() {
+        const val = this.value.toLowerCase();
+        const rows = document.querySelectorAll('.category-row');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(val) ? '' : 'none';
         });
-
-        catCount.innerText = `${visibleCount} Found`;
     });
-});
+
+    /**
+     * INSTRUCTION: preloader dismissal
+     * Fades out and removes the preloader overlay once the window has loaded.
+     */
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const preloader = document.getElementById('preloader');
+            if(preloader) {
+                preloader.style.opacity = '0';
+                setTimeout(() => { preloader.style.display = 'none'; }, 600);
+            }
+        }, 800);
+    });
 </script>
 {% endblock %}

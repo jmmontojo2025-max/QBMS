@@ -1,174 +1,197 @@
 {% extends "base.html" %}
 {% block content %}
 <!-- Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
 <style>
-    /* MODERN CORE VARIABLES */
     :root {
-        --saas-navy: #002d72;
-        --saas-accent: #3b82f6;
-        --saas-text: #1e293b;
-        --saas-light-text: #64748b;
-        --saas-bg: #f8fafc;
-        --saas-border: #e2e8f0;
-        --saas-radius: 1.25rem;
+        --hub-navy: #0f172a;
+        --hub-primary: #2563eb;
+        --hub-border: #e2e8f0;
+        --hub-slate: #64748b;
+        --hub-bg: #ffffff;
     }
 
-    /* 1. SELECTION CANVAS */
-    body, html { height: 100%; margin: 0; font-family: 'Inter', sans-serif; }
+    body {
+        background-color: var(--hub-bg) !important;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
 
-    .gateway-canvas {
+    .gateway-wrapper {
         min-height: 100vh;
         display: flex;
-        flex-direction: column;
-        justify-content: center;
-        background-color: var(--saas-bg);
-        background-image:
-            radial-gradient(at 0% 0%, rgba(0, 45, 114, 0.03) 0px, transparent 50%),
-            radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.03) 0px, transparent 50%);
-        padding: 4rem 2rem;
-    }
-
-    /* 2. HEADER HUD */
-    .initialization-pill {
-        display: inline-flex;
         align-items: center;
-        gap: 0.75rem;
-        background: #fff;
-        padding: 0.5rem 1.25rem;
-        border-radius: 999px;
-        border: 1px solid var(--saas-border);
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        margin-bottom: 1.5rem;
+        justify-content: center;
+        padding: 3rem 1.5rem;
     }
-    .pulse-indicator {
-        width: 8px; height: 8px;
-        background: var(--saas-accent);
-        border-radius: 50%;
-        box-shadow: 0 0 10px var(--saas-accent);
-        animation: pulse-ring 2s infinite;
+
+    /* HEADER SECTION */
+    .biz-label {
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--hub-slate);
+        letter-spacing: 1.5px;
+        margin-bottom: 1rem;
+        display: inline-block;
     }
-    @keyframes pulse-ring { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
 
-    .page-title { font-weight: 900; color: var(--saas-navy); letter-spacing: -1.5px; margin-bottom: 0.5rem; }
-    .page-subtitle { color: var(--saas-light-text); font-size: 1.1rem; max-width: 600px; margin: 0 auto 4rem auto; }
+    .page-title {
+        font-weight: 800;
+        color: var(--hub-navy);
+        letter-spacing: -1.5px;
+        font-size: 2.2rem;
+        margin-bottom: 0.5rem;
+    }
 
-    /* 3. TERMINAL MODULE CARDS */
-    .terminal-card {
+    .page-subtitle {
+        color: var(--hub-slate);
+        font-size: 1rem;
+        font-weight: 500;
+        max-width: 500px;
+        margin: 0 auto 4rem auto;
+    }
+
+    /* HUB/NODE CARDS */
+    .node-card {
         background: #ffffff;
-        border: 1px solid var(--saas-border);
-        border-radius: var(--saas-radius);
-        padding: 2.5rem 2rem;
-        height: 100%;
+        border: 1.5px solid var(--hub-border);
+        border-radius: 20px;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
         flex-direction: column;
         align-items: center;
-        text-align: center;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        text-decoration: none;
+        height: 100%;
         position: relative;
-        overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
     }
 
-    .terminal-card:hover {
-        transform: translateY(-10px);
-        border-color: var(--saas-accent);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    .node-card:hover {
+        border-color: var(--hub-primary);
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
     }
-    .terminal-card::after {
-        content: ""; position: absolute; top: 0; left: 0; right: 0; height: 0;
-        background: var(--saas-navy); transition: height 0.3s ease;
-    }
-    .terminal-card:hover::after { height: 6px; }
 
-    .hub-icon-wrapper {
-        width: 64px; height: 64px;
-        background: #f8fafc;
-        border: 1px solid var(--saas-border);
-        border-radius: 18px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.75rem; color: var(--saas-light-text);
+    /* Matches the Brand Mark from Login Page */
+    .node-icon-wrapper {
+        width: 60px;
+        height: 60px;
+        background: var(--hub-navy);
+        color: #ffffff;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
         margin-bottom: 1.5rem;
-        transition: all 0.3s;
-    }
-    .terminal-card:hover .hub-icon-wrapper {
-        background: var(--saas-navy);
-        color: white;
-        transform: scale(1.1) rotate(-5deg);
+        transition: transform 0.3s;
     }
 
-    .node-id {
+    .node-card:hover .node-icon-wrapper {
+        background: var(--hub-primary);
+        transform: scale(1.1) rotate(-3deg);
+    }
+
+    .node-code {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: var(--saas-accent);
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: var(--hub-primary);
         background: #eff6ff;
-        padding: 0.25rem 0.75rem;
+        padding: 0.3rem 0.8rem;
         border-radius: 6px;
         margin-bottom: 1rem;
+        text-transform: uppercase;
     }
 
-    .branch-name { font-weight: 800; color: var(--saas-text); font-size: 1.25rem; margin-bottom: 1.5rem; }
+    .node-name {
+        font-weight: 800;
+        color: var(--hub-navy);
+        font-size: 1.2rem;
+        margin-bottom: 1.5rem;
+    }
 
-    .btn-init {
+    .node-action {
         margin-top: auto;
         font-size: 0.75rem;
         font-weight: 900;
+        color: var(--hub-slate);
         text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--saas-light-text);
-        display: flex; align-items: center; gap: 0.5rem;
-        transition: color 0.3s;
+        letter-spacing: 0.5px;
+        transition: color 0.2s;
     }
-    .terminal-card:hover .btn-init { color: var(--saas-accent); }
-    .terminal-card:hover .fa-arrow-right { transform: translateX(5px); }
 
-    .return-link {
-        font-weight: 700; color: var(--saas-light-text);
-        text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
-        transition: all 0.2s; margin-top: 4rem;
+    .node-card:hover .node-action {
+        color: var(--hub-primary);
     }
-    .return-link:hover { color: var(--saas-navy); }
 
-    html { font-size: clamp(14px, 0.4vw + 0.5rem, 18px); }
-    .page-title { font-size: clamp(1.8rem, 3vw, 2.5rem); }
+    /* FOOTER LINKS */
+    .back-link {
+        font-weight: 700;
+        color: var(--hub-slate);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        transition: 0.2s;
+        margin-top: 5rem;
+        font-size: 0.85rem;
+    }
+    .back-link:hover { color: var(--hub-navy); }
+
+    .pulse-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--hub-primary);
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+    }
 </style>
 
-<div class="gateway-canvas">
+<div class="gateway-wrapper">
     <div class="container animate__animated animate__fadeIn">
 
         <!-- HEADER -->
         <div class="text-center mb-5">
-            <div class="mb-4 animate__animated animate__zoomIn">
-                <img src="{{ url_for('static', filename='logo.png') }}" style="height: 64px;" onerror="this.src='https://placehold.co/300x80/002d72/ffffff?text=COOLAIRE'">
+            <div class="mb-4">
+                <img src="{{ url_for('static', filename='logo.png') }}" style="height: 50px;" onerror="this.style.display='none'">
             </div>
 
-            <div class="initialization-pill mx-auto">
-                <span class="pulse-indicator"></span>
-                <span class="small fw-900 text-dark" style="letter-spacing: 1px;">NODE SELECTION REQUIRED</span>
+            <div class="biz-label">
+                <span class="pulse-dot"></span> System Synchronization Required
             </div>
 
-            <h1 class="page-title">Identify Terminal Node</h1>
-            <p class="page-subtitle">Select your designated physical service hub to synchronize the broadcast environment.</p>
+            <h1 class="page-title">Initialize Terminal Node</h1>
+            <p class="page-subtitle">Select your physical service hub to synchronize the environment protocols and local queue data.</p>
         </div>
 
-        <!-- GRID - Sorted Alphabetically by name -->
+        <!-- HUB GRID -->
         <div class="row g-4 justify-content-center">
             {% for l in locs|sort(attribute='name') %}
-            <div class="col-sm-6 col-md-4 col-lg-3 animate__animated animate__fadeInUp" style="animation-delay: {{ loop.index * 100 }}ms;">
-                <a href="{{ url_for('set_branch', loc_id=l.id) }}" class="terminal-card">
-                    <span class="node-id">HUB_{{ l.code }}</span>
+            <div class="col-sm-6 col-md-4 col-lg-3">
+                <a href="{{ url_for('set_branch', loc_id=l.id) }}" class="node-card animate__animated animate__fadeInUp" style="animation-delay: {{ loop.index * 50 }}ms;">
+                    <span class="node-code">TERMINAL_{{ l.code }}</span>
 
-                    <div class="hub-icon-wrapper shadow-sm">
-                        <i class="fa-solid fa-tower-observation"></i>
+                    <div class="node-icon-wrapper shadow-sm">
+                        <i class="fa-solid fa-tower-broadcast"></i>
                     </div>
 
-                    <h3 class="branch-name">{{ l.name }}</h3>
+                    <h3 class="node-name">{{ l.name }}</h3>
 
-                    <div class="btn-init">
-                        Initialize Session <i class="fa-solid fa-arrow-right transition-all"></i>
+                    <div class="node-action">
+                        Sync Session <i class="fa-solid fa-chevron-right ms-1"></i>
                     </div>
                 </a>
             </div>
@@ -177,12 +200,16 @@
 
         <!-- FOOTER -->
         <div class="text-center">
-            <a href="/login" class="return-link">
-                <i class="fa-solid fa-circle-left"></i>
-                <span>Return to Client Portal</span>
+            <a href="/login" class="back-link">
+                <i class="fa-solid fa-arrow-left-long"></i>
+                <span>Return to Primary Authentication</span>
             </a>
         </div>
 
     </div>
 </div>
+
+<footer class="text-center pb-4 text-muted extra-small fw-bold opacity-50" style="letter-spacing: 1px;">
+    &copy; 2026 COOLAIRE FLEET // PROTOCOL_SELECT_V2
+</footer>
 {% endblock %}

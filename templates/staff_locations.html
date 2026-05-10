@@ -2,215 +2,304 @@
 
 {% block content %}
 <!-- Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
     :root {
-        --saas-navy: #002d72;
-        --saas-accent: #3b82f6;
+        --saas-primary: #2563eb;
+        --saas-navy: #0f172a;
+        --saas-slate: #64748b;
+        --saas-border: #e2e8f0;
+        --saas-bg: #f8fafc;
         --saas-success: #10b981;
         --saas-danger: #ef4444;
-        --saas-text: #1e293b;
-        --saas-light-text: #64748b;
-        --saas-border: #f1f5f9;
-        --saas-bg: #f8fafc;
-        --saas-radius: 1rem;
-        --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+        --saas-radius: 14px;
+        --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
     }
 
-    html, body { height: 100%; background-color: var(--saas-bg); margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; }
-
+    /* 1. LAYOUT ENGINE - Scoped to block content only */
     .dashboard-container {
-        height: 100vh;
         display: flex;
         flex-direction: column;
-        padding: 1.5rem;
-        gap: 1rem;
-        box-sizing: border-box;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--saas-navy);
+        position: relative; /* Crucial for Scoped Loader */
+        gap: 1.5rem;
+        min-height: 100%;
     }
 
+    /* 2. SCOPED INNER LOADER (Does not affect side menu) */
+    #inner-loader {
+        position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px;
+        background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(4px);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 2000; transition: 0.6s;
+    }
+    .svg-draw { width: 60px; height: 60px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
+    @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+
+    /* 3. HEADER SECTION (DateTime on Top Right) */
     .header-section {
         flex: 0 0 auto;
         display: flex;
         justify-content: space-between;
         align-items: center;
         background: #fff;
-        padding: 1rem 2rem;
+        padding: 1.25rem 2rem;
         border-radius: var(--saas-radius);
         border: 1px solid var(--saas-border);
         box-shadow: var(--saas-shadow);
     }
+    .page-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; font-size: 1.5rem; }
 
-    .main-grid {
-        flex: 1;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-        gap: 1.5rem;
-        min-height: 0;
-    }
+    .datetime-block { text-align: right; border-left: 2px solid var(--saas-border); padding-left: 1.5rem; }
+    #live-time { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--saas-primary); font-size: 1.3rem; line-height: 1; }
+    #live-date { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* 4. INSTRUCTION TEXT */
+    .instruction-text { font-size: 0.75rem; color: var(--saas-slate); font-weight: 600; line-height: 1.4; }
+
+    /* 5. GRID SYSTEM */
+    .main-grid { flex: 1 1 auto; display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem; min-height: 0; }
 
     .form-card {
-        background: #ffffff;
-        border-radius: var(--saas-radius);
-        border: 1px solid var(--saas-border);
-        box-shadow: var(--saas-shadow);
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        height: fit-content;
+        background: #ffffff; border-radius: var(--saas-radius); border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow); padding: 2rem; display: flex; flex-direction: column; gap: 1.2rem;
+        height: fit-content; position: sticky; top: 0;
     }
 
     .list-container {
-        display: flex;
-        flex-direction: column;
-        background: #ffffff;
-        border-radius: var(--saas-radius);
-        border: 1px solid var(--saas-border);
-        box-shadow: var(--saas-shadow);
-        overflow: hidden;
+        background: #ffffff; border-radius: var(--saas-radius); border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow); overflow: hidden;
     }
 
-    .table-wrapper {
-        flex: 1;
-        overflow-y: auto;
-    }
+    /* UI COMPONENTS */
+    .custom-label { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; display: block; }
+    .modern-input { background: #f8fafc; border: 2px solid transparent; padding: 0.75rem 1rem; border-radius: 10px; font-weight: 700; transition: 0.2s; width: 100%; font-size: 0.85rem; }
+    .modern-input:focus { border-color: var(--saas-primary); background: white; outline: none; }
 
-    .hub-table { width: 100%; border-collapse: collapse; }
-    .hub-table th {
-        position: sticky; top: 0; background: #f9fafb; z-index: 5;
-        padding: 1rem; font-size: 0.7rem; font-weight: 800;
-        text-transform: uppercase; color: var(--saas-light-text);
-        border-bottom: 2px solid var(--saas-border);
-    }
-    .hub-table td { padding: 1rem; border-bottom: 1px solid var(--saas-border); }
+    .directory-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .directory-table thead th { position: sticky; top: 0; background: #f9fafb; padding: 1.25rem 2rem; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; color: var(--saas-slate); border-bottom: 2px solid var(--saas-border); z-index: 10; }
+    .directory-table td { padding: 1rem 2rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; }
 
-    .status-glow {
-        padding: 0.4rem 0.8rem; border-radius: 999px; font-size: 0.65rem; font-weight: 900;
-        display: inline-flex; align-items: center; gap: 0.4rem;
-    }
-    .status-online { background: rgba(16, 185, 129, 0.1); color: var(--saas-success); }
-    .status-offline { background: #f1f5f9; color: var(--saas-light-text); }
+    .btn-action-primary { background: var(--saas-navy); color: white; border: none; padding: 1rem; border-radius: 12px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 0.75rem; text-transform: uppercase; letter-spacing: 1px; transition: 0.3s; width: 100%; }
+    .btn-action-primary:hover { background: var(--saas-primary); transform: translateY(-2px); }
 
-    .pulse-dot {
-        width: 8px; height: 8px; background: var(--saas-success); border-radius: 50%;
-        animation: status-pulse 2s infinite;
-    }
-    @keyframes status-pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-    .code-badge {
-        background: #0f172a; color: white; padding: 4px 10px; border-radius: 6px;
-        font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
-    }
-
-    .capacity-badge {
-        background: #eff6ff; color: #1d4ed8; padding: 4px 10px; border-radius: 6px;
-        font-weight: 700; font-size: 0.8rem; border: 1px solid #dbeafe;
-    }
-
-    .btn-initialize {
-        background: var(--saas-navy); color: white; border: none; padding: 1rem;
-        border-radius: 12px; font-weight: 800; width: 100%;
-    }
+    .status-glow { padding: 4px 12px; border-radius: 20px; font-size: 0.6rem; font-weight: 900; display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; color: var(--saas-slate); }
+    .status-online { background: #ecfdf5; color: var(--saas-success); }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 </style>
 
-<div class="dashboard-container">
+<div class="dashboard-container animate__animated animate__fadeIn">
 
-    <!-- HEADER -->
+    <!-- SCOPED LOADER (Side menu remains clickable) -->
+    <div id="inner-loader">
+        <svg class="svg-draw" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg>
+        <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; letter-spacing: 4px; margin-top: 1rem; color: var(--saas-primary);">SYNCING INFRASTRUCTURE...</div>
+    </div>
+
+    <!-- HEADER SECTION -->
     <header class="header-section">
-        <div class="d-flex align-items-center gap-3">
-            <i class="fa-solid fa-tower-observation fa-2x text-primary"></i>
-            <div>
-                <h3 class="m-0 fw-bold" style="color: var(--saas-navy);">Hub Network</h3>
-                <p class="small text-muted m-0">INFRASTRUCTURE_NODES // ACTIVE</p>
-            </div>
+        <div>
+            <div class="instruction-text text-uppercase extra-small fw-bold mb-1">Infrastructure // Hub Network</div>
+            <h3 class="page-title">Manage Workshop Nodes</h3>
         </div>
-        <div class="badge bg-primary rounded-pill px-4">{{ locations|length }} Nodes</div>
+
+        <!-- RIGHT TOP DATETIME (12-HOUR FORMAT) -->
+        <div class="datetime-block">
+            <div id="live-date">--- --, ----</div>
+            <div id="live-time">00:00:00 AM</div>
+        </div>
     </header>
 
     <main class="main-grid">
-
-        <!-- LEFT: FORM (Update to include Capacity) -->
-        {% if has_perm('locations') %}
-        <aside class="form-card animate__animated animate__fadeInLeft">
-            <h5 class="fw-900 mb-1">Provision New Hub</h5>
-            <p class="small text-muted mb-3">Add a physical terminal broadcast node.</p>
-
-            <form action="{{ url_for('staff_locations') }}" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                <div class="mb-3">
-                    <label class="small fw-bold text-muted text-uppercase">Branch Name</label>
-                    <input type="text" name="name" class="form-control" placeholder="e.g. Manila Hub" required>
+        <!-- LEFT: PROVISION COLUMN -->
+        <aside>
+            <div class="form-card shadow-sm">
+                <div>
+                    <h5 class="fw-900 text-dark mb-1">Provision Node</h5>
+                    <p class="instruction-text">Instruction: Use this form to register a new physical workshop terminal into the central system.</p>
                 </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="small fw-bold text-muted text-uppercase">Code Prefix</label>
-                        <input type="text" name="code" class="form-control" placeholder="MNL" maxlength="10" required>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="small fw-bold text-muted text-uppercase">Max Capacity</label>
-                        <input type="number" name="capacity" class="form-control" placeholder="20" value="20" min="1" required>
-                    </div>
-                </div>
+                <form action="{{ url_for('staff_locations') }}" method="POST" id="provisionForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                <button type="submit" class="btn-initialize">
-                    <i class="fa-solid fa-plus-circle me-2"></i> ACTIVATE NODE
-                </button>
-            </form>
-        </aside>
-        {% endif %}
+                    <div class="mb-3">
+                        <label class="custom-label">Full Branch Name</label>
+                        <input type="text" name="name" class="modern-input" placeholder="e.g. North Sector Hub" required>
+                    </div>
 
-        <!-- RIGHT: TABLE (Updated with Capacity Column) -->
-        <section class="list-container animate__animated animate__fadeIn">
-            <div class="table-wrapper">
-                <table class="hub-table">
-                    <thead>
-                        <tr>
-                            <th>Identity</th>
-                            <th>Status</th>
-                            <th>Code</th>
-                            <th>Capacity</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for loc in locations %}
-                        <tr>
-                            <td>
-                                <div class="fw-bold text-dark">{{ loc.name }}</div>
-                                <div class="extra-small text-muted">Node ID: {{ 1000 + loc.id }}</div>
-                            </td>
-                            <td>
-                                {% if loc.is_online %}
-                                    <div class="status-glow status-online"><span class="pulse-dot"></span> LIVE</div>
-                                {% else %}
-                                    <div class="status-glow status-offline">OFFLINE</div>
-                                {% endif %}
-                            </td>
-                            <td><span class="code-badge">{{ loc.code }}</span></td>
-                            <td><span class="capacity-badge"><i class="fa-solid fa-truck-ramp-box me-1"></i> {{ loc.capacity }}</span></td>
-                            <td class="text-end">
-                                <a href="{{ url_for('edit_location', loc_id=loc.id) }}" class="btn btn-sm btn-light border"><i class="fa-solid fa-edit"></i></a>
-                                <a href="{{ url_for('delete_location', loc_id=loc.id) }}"
-                                   class="btn btn-sm btn-danger"
-                                   onclick="return confirm('Delete hub?')"><i class="fa-solid fa-trash"></i></a>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
-                                <i class="fa-solid fa-network-wired fa-3x mb-3 opacity-25"></i>
-                                <p>No hubs found in the network registry.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <label class="custom-label">Identifier Code</label>
+                            <input type="text" name="code" class="modern-input" placeholder="NSH-01" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="custom-label">Unit Capacity</label>
+                            <input type="number" name="capacity" class="modern-input" value="20" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-action-primary shadow-lg">
+                        <i class="fa-solid fa-plus-circle"></i> INITIALIZE DEPLOYMENT
+                    </button>
+                </form>
             </div>
-        </section>
+        </aside>
 
+        <!-- RIGHT: TABLE COLUMN -->
+        <section class="list-container shadow-sm">
+            <div class="p-3 bg-light border-bottom">
+                <p class="instruction-text mb-0"><i class="fa-solid fa-list-check me-2"></i> Instruction: Review active workshop nodes. Click any row to perform an infrastructure audit.</p>
+            </div>
+            <table class="directory-table">
+                <thead>
+                    <tr>
+                        <th>Node Identity</th>
+                        <th>Network Status</th>
+                        <th>Identifier</th>
+                        <th>Capacity</th>
+                        <th class="text-end">Management</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for loc in locations %}
+                    <tr class="row-interactive animate__animated animate__fadeIn" data-bs-toggle="offcanvas" data-bs-target="#panel{{ loc.id }}">
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="p-2 rounded-3 bg-light text-primary border"><i class="fa-solid fa-server"></i></div>
+                                <div>
+                                    <div class="fw-900 text-navy">{{ loc.name }}</div>
+                                    <div class="extra-small text-muted fw-bold font-monospace">UUID: #{{ 1000 + loc.id }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if loc.is_online %}
+                            <div class="status-glow status-online"><span class="status-dot"></span> LIVE_ACTIVE</div>
+                            {% else %}
+                            <div class="status-glow">OFFLINE_STBY</div>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-dark font-monospace" style="font-size: 0.7rem;">{{ loc.code }}</span></td>
+                        <td><span class="fw-800 text-navy">{{ loc.capacity }} Units</span></td>
+                        <td class="text-end" onclick="event.stopPropagation()">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button class="btn btn-sm border fw-900 extra-small px-3" data-bs-toggle="modal" data-bs-target="#editModal{{ loc.id }}">EDIT</button>
+                                <a href="{{ url_for('delete_location', loc_id=loc.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Instruction: Permanent Decommission? This cannot be undone.')">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
     </main>
 </div>
+
+<!-- MODALS & SIDE PANELS -->
+{% for loc in locations %}
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="panel{{ loc.id }}" style="width: 450px !important; border: none; box-shadow: -10px 0 30px rgba(0,0,0,0.1);">
+    <div class="detail-header" style="background: var(--saas-navy); color: white; padding: 2.5rem 2rem;">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge bg-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Infrastructure Audit</span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <h2 class="fw-900 mb-1 text-white">{{ loc.name }}</h2>
+        <p class="instruction-text text-white opacity-75">Instruction: Reviewing health and allocation limits for node {{ loc.code }}.</p>
+    </div>
+    <div class="offcanvas-body p-4" style="background: var(--saas-bg);">
+        <div class="bg-white p-3 rounded-4 border mb-3 shadow-sm">
+            <label class="custom-label">Status Report</label>
+            <div class="h5 fw-900 {{ 'text-success' if loc.is_online else 'text-muted' }}">
+                {{ 'NODE_OPERATIONAL' if loc.is_online else 'NODE_DISCONNECTED' }}
+            </div>
+        </div>
+        <div class="bg-white p-3 rounded-4 border shadow-sm mb-4">
+            <label class="custom-label">Operational Note</label>
+            <p class="small fw-bold text-muted mb-0">Instruction: Reconfiguring this node will broadcast changes across the hub dispatcher network immediately.</p>
+        </div>
+        <button class="btn btn-navy w-100 py-3 rounded-4 fw-900" style="background: var(--saas-navy); color: white;" data-bs-toggle="modal" data-bs-target="#editModal{{ loc.id }}">
+            RECONFIGURE HUB
+        </button>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal{{ loc.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+            <div class="modal-header bg-navy text-white p-4" style="background: var(--saas-navy) !important;">
+                <div>
+                    <h5 class="modal-title fw-900">Configure Node</h5>
+                    <p class="extra-small mb-0 opacity-75 fw-bold">Instruction: Update network code or physical capacity limits.</p>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('edit_location', loc_id=loc.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="custom-label">Updated Hub Name</label>
+                        <input type="text" name="name" class="modern-input" value="{{ loc.name }}" required>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="custom-label">New Code</label>
+                            <input type="text" name="code" class="modern-input" value="{{ loc.code }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="custom-label">Total Slots</label>
+                            <input type="number" name="capacity" class="modern-input" value="{{ loc.capacity }}" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="submit" class="btn btn-navy fw-900 w-100 py-3 rounded-4 shadow-lg" style="background: var(--saas-navy); color: white;">SAVE CONFIGURATION</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+    // 1. Live Clock (12-Hour Format)
+    function updateClock() {
+        const now = new Date();
+        const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+
+        // Instruction: Use hour12: true for a 1-12 hour range with AM/PM indicator
+        const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
+
+        const dateEl = document.getElementById('live-date');
+        const timeEl = document.getElementById('live-time');
+
+        if(dateEl) dateEl.innerText = now.toLocaleDateString('en-US', dateOptions).toUpperCase();
+        if(timeEl) timeEl.innerText = now.toLocaleTimeString('en-US', timeOptions);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 2. Scoped Loader Function
+    // Instruction: This dismisses the loader only within the content area, keeping the side menu accessible.
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const loader = document.getElementById('inner-loader');
+            if(loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 600);
+            }
+        }, 800);
+    });
+
+    // Instruction: Trigger loader on form submissions for visual feedback.
+    document.getElementById('provisionForm').addEventListener('submit', () => {
+        const loader = document.getElementById('inner-loader');
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+    });
+</script>
 {% endblock %}

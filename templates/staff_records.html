@@ -2,196 +2,274 @@
 
 {% block content %}
 <!-- Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
-    /* VARIABLES */
+    /* VARIABLES - UNIFIED DESIGN SYSTEM */
     :root {
-        --saas-primary: #002d72; /* Using your navy as the primary */
-        --saas-accent: #3b82f6;
+        --saas-primary: #2563eb;
+        --saas-navy: #0f172a;
+        --saas-slate: #64748b;
+        --saas-border: #e2e8f0;
+        --saas-bg: #f8fafc;
+        --saas-bg-white: #ffffff;
         --saas-success: #10b981;
         --saas-warning: #f59e0b;
         --saas-danger: #ef4444;
-        --saas-text: #1f2937;
-        --saas-light-text: #6b7280;
-        --saas-border: #e5e7eb;
-        --saas-bg: #f3f4f6;
-        --saas-bg-white: #ffffff;
-        --saas-radius: 0.75rem; /* 12px */
+        --saas-radius: 14px;
         --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
     }
 
+    /* PRELOADER OVERLAY - CONFINED TO CONTENT AREA */
+    #preloader {
+        position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px;
+        background: #ffffff; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; z-index: 10000;
+        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+    .svg-logo { width: 70px; height: 70px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
+    @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+    .loader-text { color: var(--saas-primary); font-size: 0.8rem; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 1.5rem; }
+
     /* 1. APP LAYOUT */
     .ledger-container {
-        height: 100vh;
         display: flex;
         flex-direction: column;
         background-color: var(--saas-bg);
-        font-family: 'Inter', sans-serif;
-        color: var(--saas-text);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--saas-navy);
+        position: relative;
+        min-height: 100%;
     }
 
-    /* 2. HEADER / CONTROL PANEL (Fixed) */
+    /* 2. HEADER / CONTROL PANEL */
     .ledger-header {
         flex: 0 0 auto;
-        padding: 1.5rem;
+        padding: 1.5rem 2rem;
         background-color: var(--saas-bg-white);
-        border-bottom: 1px solid var(--saas-border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
+        border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+        margin-bottom: 1.5rem;
     }
     .fw-900 { font-weight: 900; }
     .letter-spacing-tight { letter-spacing: -1px; }
 
-    /* 3. TABLE CONTENT (Scrollable) */
-    .ledger-content {
-        flex: 1 1 auto;
-        overflow-y: auto; /* Independent scroll */
-        padding: 1.5rem;
+    /* CLEAN DATETIME - NO BOXES / NO LINES */
+    .datetime-display { text-align: right; line-height: 1.2; white-space: nowrap; }
+    #live-time { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--saas-primary); font-size: 1.3rem; }
+    #live-date { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Filter Tabs */
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 10px;
+        margin-top: 1.25rem;
+        width: fit-content;
+    }
+    .filter-btn {
+        border: none;
+        background: transparent;
+        padding: 6px 18px;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: var(--saas-slate);
+        text-transform: uppercase;
+        transition: 0.2s;
+    }
+    .filter-btn.active {
+        background: white;
+        color: var(--saas-primary);
+        box-shadow: var(--saas-shadow);
     }
 
-    /* Modern Table Styling */
+    /* 3. TABLE CONTENT */
+    .ledger-content {
+        flex: 1 1 auto;
+    }
+
     .master-table {
         border-collapse: separate;
         border-spacing: 0;
         width: 100%;
+        background: white;
+        border-radius: var(--saas-radius);
+        box-shadow: var(--saas-shadow);
+        overflow: hidden;
     }
     .master-table thead th {
         position: sticky;
         top: 0;
-        background-color: var(--saas-bg);
+        background-color: #f8fafc;
         z-index: 10;
         text-transform: uppercase;
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: var(--saas-light-text);
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid var(--saas-border);
+        font-size: 0.65rem;
+        font-weight: 900;
+        color: var(--saas-slate);
+        padding: 1.25rem 1rem;
+        border-bottom: 2px solid var(--saas-border);
     }
-    .master-table tbody tr {
-        background-color: var(--saas-bg-white);
-        transition: background-color 0.15s ease-in-out;
-    }
-    .master-table tbody tr:hover {
-        background-color: #eff6ff;
-    }
+
+    .record-row { cursor: pointer; transition: 0.2s; }
+    .record-row:hover { background-color: #f0f7ff !important; }
+
     .master-table td {
-        padding: 0.75rem 1rem;
+        padding: 1.25rem 1rem;
         border-bottom: 1px solid var(--saas-border);
         font-size: 0.85rem;
+        vertical-align: middle;
     }
-    /* Date Grouping Header */
+
     .date-group-header td {
-        background-color: var(--saas-bg);
-        font-weight: 800;
-        font-size: 0.8rem;
-        color: var(--saas-primary);
+        background-color: #f8fafc;
+        font-weight: 900;
+        font-size: 0.75rem;
+        color: var(--saas-navy);
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 1px;
+        padding: 0.75rem 1.5rem !important;
     }
 
     /* Refined Components */
-    .avatar-flip { width: 36px; height: 36px; perspective: 1000px; margin-right: 12px; }
+    .avatar-flip { width: 38px; height: 38px; perspective: 1000px; margin-right: 12px; }
     .avatar-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
-    tr:hover .avatar-inner { transform: rotateY(180deg); }
-    .avatar-front, .avatar-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 800; font-size: 0.8rem; }
-    .avatar-front { background: #e0e7ff; color: #4338ca; }
-    .avatar-back { background: var(--saas-primary); color: white; transform: rotateY(180deg); }
+    .record-row:hover .avatar-inner { transform: rotateY(180deg); }
+    .avatar-front, .avatar-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 0.75rem; }
+    .avatar-front { background: #eff6ff; color: var(--saas-primary); border: 1px solid #dbeafe; }
+    .avatar-back { background: var(--saas-navy); color: white; transform: rotateY(180deg); }
 
-    .plate-badge { display: inline-block; background: var(--saas-text); color: white; padding: 0.25rem 0.6rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; }
+    .plate-badge { display: inline-block; background: var(--saas-navy); color: white; padding: 4px 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; }
 
-    .status-pill { padding: 0.25rem 0.75rem; border-radius: 999px; font-weight: 700; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 0.4rem; border: 1px solid transparent; }
-    .status-done { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
-    .status-serving { background: #fef9c3; color: #854d0e; border-color: #fef08a; }
-    .status-waiting { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
-    .status-expired { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+    .status-pill { padding: 5px 12px; border-radius: 20px; font-weight: 900; font-size: 0.65rem; display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; }
+    .status-done { background: #dcfce7; color: #15803d; }
+    .status-serving { background: #dbeafe; color: #1d4ed8; }
+    .status-waiting { background: #fef3c7; color: #b45309; }
+    .status-expired { background: #fee2e2; color: #b91c1c; }
 
-    .tech-avatar-mini { width: 28px; height: 28px; border-radius: 50%; background: var(--saas-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; border: 2px solid var(--saas-bg-white); }
-    .tech-avatar-stack { display: flex; padding-left: 10px; }
-    .tech-avatar-stack .tech-avatar-mini { margin-left: -10px; }
+    .tech-avatar-mini { width: 24px; height: 24px; border-radius: 6px; background: var(--saas-navy); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 800; border: 2px solid white; }
+    .tech-avatar-stack { display: flex; }
+    .tech-avatar-stack .tech-avatar-mini { margin-left: -8px; }
+
+    /* DETAIL PANEL */
+    .detail-panel { width: 480px !important; border-left: none; box-shadow: -10px 0 30px rgba(0,0,0,0.08); }
+    .detail-header { background: var(--saas-navy); color: white; padding: 2.5rem 2rem; }
+    .detail-body { padding: 2rem; background: var(--saas-bg); }
+    .info-card { background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 1.25rem; border: 1px solid var(--saas-border); }
+    .detail-label { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block; }
+    .detail-val { font-weight: 800; color: var(--saas-navy); font-size: 0.95rem; }
+
+    /* AUDIT TIMELINE */
+    .audit-timeline { position: relative; padding-left: 30px; }
+    .audit-timeline::before { content: ''; position: absolute; left: 7px; top: 5px; bottom: 5px; width: 2px; background: var(--saas-border); }
+    .timeline-item { position: relative; margin-bottom: 1.5rem; }
+    .timeline-item::after { content: ''; position: absolute; left: -27px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: white; border: 2px solid var(--saas-primary); }
+    .timeline-item.active::after { background: var(--saas-primary); box-shadow: 0 0 8px var(--saas-primary); }
 </style>
 
 <div class="ledger-container animate__animated animate__fadeIn">
 
+    <!-- LOADING PRELOADER -->
+    <div id="preloader">
+        <svg class="svg-logo" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg>
+        <div class="loader-text">SYNCING MASTER LEDGER...</div>
+    </div>
+
     <!-- HEADER / CONTROL PANEL -->
     <header class="ledger-header">
-        <!-- Left: Title & Count -->
-        <div class="d-flex align-items-center">
-            <div class="bg-primary text-white p-3 rounded-3 me-3 d-none d-md-flex">
-                <i class="fa-solid fa-box-archive fs-4"></i>
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="bg-navy text-white p-3 rounded-4 me-3" style="background: var(--saas-navy) !important; width: 54px; height: 54px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-box-archive fs-4"></i>
+                </div>
+                <div>
+                    <h4 class="fw-900 mb-0 letter-spacing-tight">Master Service Ledger</h4>
+                    <p class="text-muted small mb-0 fw-bold">
+                        TOTAL_RECORDS: <strong id="recordCount" class="text-primary">{{ records|length }}</strong>
+                    </p>
+                </div>
             </div>
-            <div>
-                <h4 class="fw-900 mb-0 letter-spacing-tight">Master Service Ledger</h4>
-                <p class="text-muted small mb-0">
-                    <strong id="recordCount" class="text-primary">{{ records|length }}</strong> records found for {{ session.get('location_name') }}
-                </p>
+
+            <!-- RIGHT AREA: SEARCH + CLEAN DATETIME -->
+            <div class="d-flex align-items-center gap-4">
+                <div class="input-group shadow-sm" style="width: 320px;">
+                    <span class="input-group-text bg-light border-0 ps-3"><i class="fa-solid fa-magnifying-glass text-muted small"></i></span>
+                    <input type="text" id="recordSearch" class="form-control bg-light border-0 py-2 fw-700 shadow-none" style="font-size: 0.8rem;" placeholder="Search plate, company, or ticket...">
+                </div>
+
+                <button onclick="exportTableToCSV('Coolaire-Ledger-Export.csv')" class="btn btn-white border fw-900 shadow-sm px-3">
+                    <i class="fa-solid fa-file-csv me-2 text-success"></i> EXPORT
+                </button>
+
+                <div class="datetime-display">
+                    <div id="live-date">--- --, ----</div>
+                    <div id="live-time">00:00:00 AM</div>
+                </div>
             </div>
         </div>
-        <!-- Right: Actions -->
-        <div class="d-flex gap-2 justify-content-md-end flex-wrap">
-            <div class="input-group" style="max-width: 350px;">
-                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                <input type="text" id="recordSearch" class="form-control bg-light border-start-0" placeholder="Search records...">
-            </div>
-            <button onclick="exportTableToCSV('coolaire-{{ session.get('location_code') }}-ledger.csv')" class="btn btn-light border fw-600">
-                <i class="fa-solid fa-file-csv me-2 text-success"></i> Export
-            </button>
+
+        <!-- STATUS TABS -->
+        <div class="filter-tabs shadow-sm">
+            <button class="filter-btn active" onclick="filterStatus('all')">All History</button>
+            <button class="filter-btn" onclick="filterStatus('serving')">Ongoing</button>
+            <button class="filter-btn" onclick="filterStatus('done')">Completed</button>
+            <button class="filter-btn" onclick="filterStatus('expired')">No-Show</button>
         </div>
     </header>
 
-    <!-- TABLE CONTENT (Scrollable) -->
+    <!-- TABLE CONTENT -->
     <main class="ledger-content">
         <table class="master-table" id="masterTable">
             <thead>
                 <tr>
-                    <th>Reference</th>
-                    <th>Client / Company</th>
-                    <th>Asset Details</th>
-                    <th>Technical Team</th>
-                    <th>Service</th>
-                    <th class="text-center">Status</th>
+                    <th style="width: 12%">Ticket</th>
+                    <th style="width: 25%">Client / Company</th>
+                    <th style="width: 20%">Asset Details</th>
+                    <th style="width: 20%">Staff Assigned</th>
+                    <th style="width: 15%">Service Type</th>
+                    <th style="width: 8%" class="text-center">Status</th>
                 </tr>
             </thead>
             <tbody id="recordsBody">
                 {% set current_date = [] %}
                 {% for r in records %}
-                    {# DATE GROUPING LOGIC #}
+                    {# DATE GROUPING #}
                     {% set record_date = r.created_at.strftime('%Y-%m-%d') %}
                     {% if record_date not in current_date %}
                         {% if current_date.append(record_date) %}{% endif %}
                         <tr class="date-group-header">
-                            <td colspan="6">
-                                {{ r.created_at.strftime('%A, %B %d, %Y') }}
-                            </td>
+                            <td colspan="6"><i class="fa-solid fa-calendar-check me-2 text-primary"></i>{{ r.created_at.strftime('%A, %B %d, %Y') }}</td>
                         </tr>
                     {% endif %}
 
-                    <tr class="record-row">
+                    <tr class="record-row" data-status="{{ r.status }}" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-{{ r.id }}">
                         <td>
-                            <div class="fw-bold">{{ r.ticket_number }}</div>
-                            {% if r.booking %}
-                                <div class="small text-muted">#{{ r.booking.ref_id }}</div>
-                            {% endif %}
+                            <div class="fw-900 text-navy">{{ r.ticket_number }}</div>
+                            <div class="extra-small text-muted fw-bold font-monospace">REF: #{{ r.booking.ref_id if r.booking else 'W-IN' }}</div>
                         </td>
                         <td>
                              <div class="d-flex align-items-center">
                                 <div class="avatar-flip">
                                     <div class="avatar-inner">
                                         <div class="avatar-front">{% if r.booking and r.booking.customer %}{{ r.booking.customer.company_name[:2] | upper }}{% else %}WK{% endif %}</div>
-                                        <div class="avatar-back"><i class="fa-solid fa-user-tie"></i></div>
+                                        <div class="avatar-back"><i class="fa-solid fa-eye"></i></div>
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="fw-700 text-dark">{{ r.booking.customer.company_name if r.booking and r.booking.customer else "Walk-in Guest" }}</div>
-                                    <div class="small text-muted">{{ r.created_at.strftime('%I:%M %p') }}</div>
+                                    <div class="fw-800 text-dark">{{ r.booking.customer.company_name if r.booking and r.booking.customer else r.booking.guest_name if r.booking else "Walk-in Guest" }}</div>
+                                    <div class="extra-small text-muted fw-bold">{{ r.created_at.strftime('%I:%M %p') }}</div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <div class="plate-badge">{% if r.booking %}{{ r.booking.plate_number }}{% else %}WALK-IN UNIT{% endif %}</div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="plate-badge">{{ r.booking.plate_number if r.booking else 'NO PLATE' }}</span>
+                                <span class="extra-small fw-900 text-muted">{{ r.booking.service_location if r.booking else 'In-Plant' }}</span>
+                            </div>
                         </td>
                         <td>
                              <div class="d-flex align-items-center">
@@ -200,73 +278,188 @@
                                         <div class="tech-avatar-mini" title="{{ tech.name }}">{{ tech.name[0] | upper }}</div>
                                     {% endfor %}
                                 </div>
-                                <span class="ms-2 small text-muted text-truncate" style="max-width: 150px;">
-                                    {% if r.assigned_techs %}{{ r.assigned_techs|map(attribute='name')|join(', ') }}{% else %}N/A{% endif %}
+                                <span class="ms-2 extra-small fw-bold text-muted">
+                                    {% if r.assigned_techs %}{{ r.assigned_techs|length }} Team{% else %}N/A{% endif %}
                                 </span>
                             </div>
                         </td>
                         <td>
-                            <div class="small fw-600">{% if r.booking %}{{ r.booking.service_type }}{% else %}General Maintenance{% endif %}</div>
+                            <div class="small fw-800 text-navy text-truncate" style="max-width: 150px;">{{ r.booking.service_type if r.booking else "Standard Maintenance" }}</div>
                         </td>
                         <td class="text-center">
-                            <div class="d-inline-flex align-items-center gap-2">
-                                <span class="status-pill status-{{ r.status }}">
-                                    {% if r.status == 'done' %}<i class="fa-solid fa-circle-check"></i>COMPLETED
-                                    {% elif r.status == 'serving' %}<i class="fa-solid fa-gear fa-spin"></i>SERVING
-                                    {% elif r.status == 'expired' %}<i class="fa-solid fa-user-slash"></i>NO-SHOW
-                                    {% else %}<i class="fa-solid fa-clock"></i>WAITING{% endif %}
-                                </span>
-                                {% if r.status == 'expired' %}
-                                <a href="/staff/revert-ticket/{{ r.id }}" class="btn btn-sm btn-light border" title="Restore to Queue" onclick="return confirm('Restore this ticket to the live queue?')">
-                                    <i class="fa-solid fa-rotate-left"></i>
-                                </a>
-                                {% endif %}
-                            </div>
+                            <span class="status-pill status-{{ r.status }}">
+                                {% if r.status == 'done' %}DONE
+                                {% elif r.status == 'serving' %}SERVING
+                                {% elif r.status == 'expired' %}NO-SHOW
+                                {% else %}WAITING{% endif %}
+                            </span>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
+        <div id="noResults" class="text-center py-5" style="display:none;">
+            <i class="fa-solid fa-magnifying-glass fs-1 text-muted opacity-25 mb-3"></i>
+            <h5 class="fw-800">No records match your search criteria.</h5>
+        </div>
     </main>
 </div>
 
+<!-- AUDIT SIDE PANELS -->
+{% for r in records %}
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="offcanvas-{{ r.id }}">
+    <div class="detail-header shadow-sm">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge bg-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Audit Detail</span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <h2 class="fw-900 mb-1">{{ r.ticket_number }}</h2>
+        <p class="mb-0 opacity-75 small fw-bold font-monospace">UUID_REF: #{{ r.booking.ref_id if r.booking else '000000' }}</p>
+    </div>
+    <div class="offcanvas-body detail-body">
+
+        <div class="info-card shadow-sm">
+            <div class="row g-3">
+                <div class="col-6">
+                    <span class="detail-label">Plate Number</span>
+                    <span class="detail-val">{{ r.booking.plate_number if r.booking else 'N/A' }}</span>
+                </div>
+                <div class="col-6">
+                    <span class="detail-label">Service Type</span>
+                    <span class="detail-val">{{ r.booking.service_type if r.booking else 'Standard' }}</span>
+                </div>
+                <div class="col-6 border-top pt-2">
+                    <span class="detail-label">Job Order (JO)</span>
+                    <span class="detail-val">{{ r.booking.job_order or '---' }}</span>
+                </div>
+                <div class="col-6 border-top pt-2">
+                    <span class="detail-label">Location Type</span>
+                    <span class="detail-val">{{ r.booking.service_location if r.booking else 'In-Plant' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-card shadow-sm">
+            <span class="detail-label mb-3">Time Audit Timeline</span>
+            <div class="audit-timeline">
+                <div class="timeline-item active">
+                    <div class="extra-small fw-900 text-primary">ARRIVAL / CHECK-IN</div>
+                    <div class="fw-800 text-navy">{{ r.created_at.strftime('%I:%M %p') }}</div>
+                    <div class="extra-small text-muted">{{ r.created_at.strftime('%b %d, %Y') }}</div>
+                </div>
+                <div class="timeline-item {% if r.start_time %}active{% endif %}">
+                    <div class="extra-small fw-900">WORKFLOOR DISPATCH</div>
+                    <div class="fw-800 text-navy">{{ r.start_time.strftime('%I:%M %p') if r.start_time else 'NOT STARTED' }}</div>
+                </div>
+                <div class="timeline-item {% if r.end_time %}active{% endif %}">
+                    <div class="extra-small fw-900">FINAL RELEASE</div>
+                    <div class="fw-800 text-navy">{{ r.end_time.strftime('%I:%M %p') if r.end_time else 'STILL ACTIVE' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-card shadow-sm">
+            <span class="detail-label">Internal Documentation</span>
+            <p class="small fw-600 text-muted mb-0" style="line-height: 1.6;">
+                {{ r.internal_notes or 'No specific administrative notes were recorded for this service session.' }}
+            </p>
+        </div>
+
+        {% if r.status == 'expired' %}
+        <a href="/staff/revert-ticket/{{ r.id }}" class="btn btn-navy w-100 py-3 rounded-4 fw-900 text-uppercase" style="background: var(--saas-navy); color: white; letter-spacing: 1px;" onclick="return confirm('Instruction: Restore this ticket to live queue?')">
+            <i class="fa-solid fa-arrow-up-from-bracket me-2"></i> Re-activate Record
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
 <script>
-    // Search logic remains the same
-    document.getElementById('recordSearch').addEventListener('input', function() {
-        const val = this.value.toLowerCase();
+    /**
+     * INSTRUCTION: updateClock
+     * This function retrieves the current system date and time,
+     * formats them into readable strings (e.g., "Mon Jan 01, 2024" and "12:00:00 PM"),
+     * and updates the text content of the live-date and live-time elements.
+     */
+    function updateClock() {
+        const now = new Date();
+        const dateOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+        const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
+
+        const dateEl = document.getElementById('live-date');
+        const timeEl = document.getElementById('live-time');
+
+        if(dateEl) dateEl.innerText = now.toLocaleDateString('en-US', dateOptions).toUpperCase();
+        if(timeEl) timeEl.innerText = now.toLocaleTimeString('en-US', timeOptions);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    /**
+     * INSTRUCTION: filterStatus
+     * This function captures the user's selected status filter (e.g., 'all', 'serving').
+     * It updates the visual UI by toggling the 'active' class on the clicked tab button
+     * and then calls applySearchAndFilter() to refresh the visible table rows.
+     */
+    let currentFilter = 'all';
+    function filterStatus(status) {
+        currentFilter = status;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText.toLowerCase().includes(status) || (status === 'all' && btn.innerText.includes('All')));
+        });
+        applySearchAndFilter();
+    }
+
+    /**
+     * INSTRUCTION: applySearchAndFilter
+     * This function executes the core filtering logic. It loops through every data row
+     * and checks if it matches both the current status tab AND the text entered
+     * in the search input. It also hides date group headers if no visible records
+     * exist under that specific date.
+     */
+    function applySearchAndFilter() {
+        const val = document.getElementById('recordSearch').value.toLowerCase();
         const rows = document.querySelectorAll('.record-row');
         const headers = document.querySelectorAll('.date-group-header');
         let count = 0;
 
         rows.forEach(row => {
-            const isMatch = row.innerText.toLowerCase().includes(val);
-            row.style.display = isMatch ? '' : 'none';
-            if(isMatch) count++;
+            const statusMatch = (currentFilter === 'all' || row.dataset.status === currentFilter);
+            const searchMatch = row.innerText.toLowerCase().includes(val);
+            if(statusMatch && searchMatch) { row.style.display = ''; count++; } else { row.style.display = 'none'; }
         });
 
         headers.forEach(header => {
             let next = header.nextElementSibling;
             let hasVisible = false;
             while(next && !next.classList.contains('date-group-header')) {
-                if(next.style.display !== 'none') {
-                    hasVisible = true;
-                    break;
-                }
+                if(next.style.display !== 'none') { hasVisible = true; break; }
                 next = next.nextElementSibling;
             }
             header.style.display = hasVisible ? '' : 'none';
         });
-        document.getElementById('recordCount').innerText = count;
-    });
 
-    // CSV Export logic remains the same
+        document.getElementById('recordCount').innerText = count;
+        document.getElementById('noResults').style.display = (count === 0) ? 'block' : 'none';
+    }
+
+    document.getElementById('recordSearch').addEventListener('input', applySearchAndFilter);
+
+    /**
+     * INSTRUCTION: exportTableToCSV
+     * This function extracts the text content from all currently visible table rows.
+     * It cleans the data by removing newlines and wrapping values in quotes,
+     * then generates a downloadable .csv file containing the ledger data.
+     */
     function exportTableToCSV(filename) {
         let csv = [];
-        let rows = document.querySelectorAll("table tr:not(.date-group-header)");
+        let rows = document.querySelectorAll("table tr.record-row");
         for (let i = 0; i < rows.length; i++) {
-            let row = [], cols = rows[i].querySelectorAll("td, th");
-            for (let j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/\n/g, " ").trim() + '"');
-            csv.push(row.join(","));
+            if (rows[i].style.display !== 'none') {
+                let row = [], cols = rows[i].querySelectorAll("td:not(:last-child)");
+                for (let j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/\n/g, " ").trim() + '"');
+                csv.push(row.join(","));
+            }
         }
         let csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
         let downloadLink = document.createElement("a");
@@ -275,5 +468,21 @@
         document.body.appendChild(downloadLink);
         downloadLink.click();
     }
+
+    /**
+     * INSTRUCTION: Preloader dismissal
+     * This listener waits for all images and resources to finish loading.
+     * Once ready, it applies a fade-out animation to the preloader overlay
+     * before removing it from the view completely to reveal the content.
+     */
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const preloader = document.getElementById('preloader');
+            if(preloader) {
+                preloader.style.opacity = '0';
+                setTimeout(() => { preloader.style.display = 'none'; }, 600);
+            }
+        }, 800);
+    });
 </script>
 {% endblock %}

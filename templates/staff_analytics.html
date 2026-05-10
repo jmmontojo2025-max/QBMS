@@ -1,125 +1,144 @@
+
+
 {% extends "base_staff.html" %}
+
 {% block content %}
 <!-- Typography, Icons & Chart.js -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    /* 1. THEME & VARIABLES */
+    /* VARIABLES - UNIFIED DESIGN SYSTEM */
     :root {
-        --c-navy: #0f172a;
-        --c-blue: #2563eb;
-        --c-blue-light: #eff6ff;
-        --c-green: #10b981;
-        --c-border: #e2e8f0;
-        --c-text-main: #334155;
-        --c-text-muted: #64748b;
-        --c-bg: #f8fafc;
-        --radius: 1.25rem;
+        --saas-primary: #2563eb;
+        --saas-navy: #0f172a;
+        --saas-slate: #64748b;
+        --saas-border: #e2e8f0;
+        --saas-bg: #f8fafc;
+        --saas-bg-white: #ffffff;
+        --saas-success: #10b981;
+        --saas-warning: #f59e0b;
+        --saas-danger: #ef4444;
+        --saas-radius: 20px;
+        --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
     }
 
-    html, body { height: 100%; margin: 0; overflow: hidden; background-color: var(--c-bg); font-family: 'Inter', sans-serif; color: var(--c-text-main); }
+    /* 1. APP LAYOUT */
+    .dashboard-container {
+        height: calc(100vh - 70px);
+        display: flex;
+        flex-direction: column;
+        background-color: var(--saas-bg);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--saas-navy);
+        position: relative; /* Confines Preloader to content only */
+        padding: 2rem;
+        gap: 1.5rem;
+        overflow: hidden;
+    }
 
-    /* 2. PRELOADER */
+    /* STANDARD WHITE SAAS PRELOADER */
     #preloader {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: var(--c-navy); display: flex; flex-direction: column;
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: #ffffff; display: flex; flex-direction: column;
         align-items: center; justify-content: center; z-index: 10000;
-        transition: opacity 0.8s ease-in-out, visibility 0.8s;
+        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
     }
-    .loader-ring { width: 60px; height: 60px; border: 4px solid rgba(255,255,255,0.1); border-left-color: var(--c-blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loader-brand { color: white; font-size: 0.75rem; font-weight: 900; letter-spacing: 5px; text-transform: uppercase; animation: pulse 2s infinite; }
+    .svg-logo { width: 70px; height: 70px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
+    @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+    .loader-text { color: var(--saas-primary); font-size: 0.8rem; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 1.5rem; }
 
-    /* 3. FIXED GRAPH WRAPPERS (THE FIX) */
-    .chart-wrapper-hero { position: relative; height: 100px; width: 100%; }
-    .chart-wrapper-doughnut { position: relative; height: 180px; width: 100%; }
-    .chart-wrapper-main { position: relative; height: 320px; width: 100%; }
-
-    /* 4. DASHBOARD UI */
-    #dashboard-view {
-        opacity: 0; transform: translateY(30px);
-        transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
-        height: 100vh; display: flex; flex-direction: column; padding: 2rem; gap: 1.5rem;
-    }
-    #dashboard-view.active { opacity: 1; transform: translateY(0); }
-
+    /* 2. STAT CARDS */
     .stat-card {
-        background: white; border-radius: var(--radius); border: 1px solid var(--c-border);
-        padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-        height: 100%; display: flex; flex-direction: column; transition: all 0.3s ease;
+        background: white; border-radius: var(--saas-radius); border: 1px solid var(--saas-border);
+        padding: 1.5rem; box-shadow: var(--saas-shadow);
+        height: 100%; display: flex; flex-direction: column; transition: 0.3s;
+        cursor: pointer;
     }
-    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
+    .stat-card:hover { transform: translateY(-5px); border-color: var(--saas-primary); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
 
     .hero-card { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; border: none; }
 
-    .metric-title { font-size: 0.7rem; font-weight: 800; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
-    .metric-value { font-family: 'JetBrains Mono', monospace; font-size: 2.5rem; font-weight: 800; color: var(--c-navy); letter-spacing: -2px; line-height: 1; }
+    .metric-label { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+    .metric-value { font-family: 'JetBrains Mono', monospace; font-size: 2.2rem; font-weight: 900; color: var(--saas-navy); letter-spacing: -1.5px; line-height: 1; }
 
-    /* 5. LEADERBOARD */
+    /* 3. CHARTS */
+    .chart-wrapper-main { position: relative; height: 300px; width: 100%; }
+    .chart-wrapper-side { position: relative; height: 180px; width: 100%; }
+    .chart-wrapper-hero { position: relative; height: 100px; width: 100%; }
+
+    /* 4. LEADERBOARD */
     .leader-item {
         display: flex; align-items: center; padding: 0.85rem 0; border-bottom: 1px solid #f1f5f9;
-        animation: fadeInUp 0.5s forwards; opacity: 0;
+        transition: 0.2s; cursor: pointer;
     }
-    .leader-item:last-child { border-bottom: none; }
+    .leader-item:hover { background: #f8fafc; padding-left: 10px; }
     .rank-tag {
-        width: 30px; height: 30px; border-radius: 8px; background: var(--c-blue-light);
-        color: var(--c-blue); display: flex; align-items: center; justify-content: center;
-        font-weight: 900; font-size: 0.75rem; margin-right: 12px;
+        width: 28px; height: 28px; border-radius: 8px; background: #eff6ff;
+        color: var(--saas-primary); display: flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 0.7rem; margin-right: 12px;
     }
+
+    /* --- DETAIL SIDE PANEL (The Forensic Form) --- */
+    .detail-panel { width: 480px !important; border-left: none; box-shadow: -10px 0 30px rgba(0,0,0,0.08); }
+    .detail-header { background: var(--saas-navy); color: white; padding: 2.5rem 2rem; }
+    .detail-body { padding: 2rem; background: var(--saas-bg); }
+    .audit-list-item { background: white; border-radius: 12px; padding: 1rem; border: 1px solid var(--saas-border); margin-bottom: 0.75rem; }
 </style>
 
-<!-- LOADER SCREEN -->
-<div id="preloader">
-    <div class="loader-ring"></div>
-    <div class="loader-brand">Compiling Site Intelligence</div>
-</div>
-
 <!-- MAIN DASHBOARD -->
-<div id="dashboard-view">
+<div class="dashboard-container animate__animated animate__fadeIn">
+
+    <!-- STANDARD LOADER SCREEN -->
+    <div id="preloader">
+        <svg class="svg-logo" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg>
+        <div class="loader-text">COMPILING SITE INTELLIGENCE...</div>
+    </div>
 
     <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
-            <h2 class="fw-950 text-dark mb-0" style="letter-spacing: -1.5px; font-size: 2rem;">Site Analytics</h2>
+            <h2 class="fw-950 text-dark mb-0" style="letter-spacing: -1.5px; font-size: 2rem;">Site Intelligence</h2>
             <div class="d-flex align-items-center gap-2 mt-1">
                 <span style="width: 10px; height: 10px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 10px #22c55e;"></span>
-                <p class="small text-muted mb-0 fw-700">INTEGRATED LOGISTICS FEED (ONLINE + PHONE + WALK-IN)</p>
+                <p class="small text-muted mb-0 fw-800">LIVE TELEMETRY: <strong>{{ session.get('location_name')|upper }}</strong></p>
             </div>
         </div>
-        <button onclick="window.location.reload()" class="btn btn-white border fw-800 px-4 rounded-pill shadow-sm">
-            <i class="fa-solid fa-arrows-rotate me-2"></i> REFRESH
-        </button>
+        <div class="d-flex gap-2">
+            <button onclick="window.location.reload()" class="btn btn-white border fw-900 px-4 rounded-pill shadow-sm">
+                <i class="fa-solid fa-sync me-2"></i> REFRESH FEED
+            </button>
+        </div>
     </div>
 
     <!-- ROW 1: PRIMARY KPIS -->
     <div class="row g-4">
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="metric-title">Today's Throughput</div>
+            <div class="stat-card" data-bs-toggle="offcanvas" data-bs-target="#drilldownToday">
+                <span class="metric-label">Today's Throughput</span>
                 <div class="metric-value">{{ daily_count }}</div>
-                <div class="small text-success fw-bold mt-3"><i class="fa-solid fa-bolt me-1"></i> Real-time tracking</div>
+                <div class="small text-success fw-bold mt-3"><i class="fa-solid fa-arrow-up me-1"></i> View Audit Feed</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stat-card">
-                <div class="metric-title">Avg. Service Velocity</div>
-                <div class="metric-value">{{ avg_wait }}<span style="font-size: 1rem; margin-left: 5px; color: var(--c-text-muted);">MIN</span></div>
-                <div class="small text-muted fw-bold mt-3"><i class="fa-solid fa-stopwatch me-1"></i> Efficiency metric</div>
+                <span class="metric-label">Avg. Service Velocity</span>
+                <div class="metric-value">{{ avg_wait }}<small class="text-muted" style="font-size: 0.9rem; margin-left: 5px;">MIN</small></div>
+                <div class="small text-primary fw-bold mt-3"><i class="fa-solid fa-stopwatch me-1"></i> System efficiency</div>
             </div>
         </div>
         <div class="col-md-6">
             <div class="stat-card hero-card">
                 <div class="row h-100 align-items-center">
                     <div class="col-7">
-                        <div class="metric-title text-white-50">Monthly Momentum</div>
+                        <span class="metric-label text-white-50">Growth Momentum</span>
                         <div class="metric-value text-white" style="font-size: 3.5rem;">{{ '+' if momentum >= 0 }}{{ momentum }}%</div>
-                        <p class="small text-white-50 mt-2 mb-0 fw-600">Total cycle assets: {{ monthly_count }}</p>
+                        <p class="small text-white-50 mt-2 mb-0 fw-bold">Cycle total: {{ monthly_count }} assets</p>
                     </div>
                     <div class="col-5">
                         <div class="chart-wrapper-hero">
-                            <canvas id="growthChart"></canvas>
+                            <canvas id="sparklineChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -127,25 +146,25 @@
         </div>
     </div>
 
-    <!-- ROW 2: ADVANCED BREAKDOWNS -->
+    <!-- ROW 2: BREAKDOWNS -->
     <div class="row g-4 flex-grow-1 overflow-hidden" style="min-height: 0;">
-        <div class="col-md-4 d-flex flex-column gap-4 overflow-auto">
-            <div class="stat-card" style="flex: 1 1 auto;">
-                <h6 class="fw-900 mb-4 border-bottom pb-3"><i class="fa-solid fa-medal text-warning me-2"></i>Top Performance</h6>
-                <ul class="leaderboard p-0">
+        <div class="col-md-4 d-flex flex-column gap-4">
+            <div class="stat-card flex-grow-1 overflow-auto">
+                <h6 class="fw-900 mb-4 border-bottom pb-3"><i class="fa-solid fa-award text-warning me-2"></i>Performance Leaderboard</h6>
+                <div class="leader-list">
                     {% for stat in tech_stats %}
-                    <li class="leader-item" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+                    <div class="leader-item" data-bs-toggle="offcanvas" data-bs-target="#drilldownTech-{{ loop.index }}">
                         <div class="rank-tag">{{ loop.index }}</div>
-                        <div class="flex-grow-1 fw-700 text-dark" style="font-size: 0.85rem;">{{ stat.name }}</div>
-                        <div class="font-monospace fw-800" style="font-size: 0.9rem;">{{ stat.total_jobs }}</div>
-                    </li>
+                        <div class="flex-grow-1 fw-800 text-dark" style="font-size: 0.85rem;">{{ stat.name }}</div>
+                        <div class="fw-900 text-primary" style="font-family: 'JetBrains Mono';">{{ stat.total_jobs }}</div>
+                    </div>
                     {% endfor %}
-                </ul>
+                </div>
             </div>
 
-            <div class="stat-card" style="flex: 0 0 auto;">
-                <h6 class="fw-900 mb-3"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Service Breakdown</h6>
-                <div class="chart-wrapper-doughnut">
+            <div class="stat-card">
+                <h6 class="fw-900 mb-3"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Service Split</h6>
+                <div class="chart-wrapper-side">
                     <canvas id="typeChart"></canvas>
                 </div>
             </div>
@@ -155,10 +174,10 @@
             <div class="stat-card">
                 <div class="d-flex justify-content-between align-items-start mb-4">
                     <div>
-                        <h6 class="fw-900 mb-1">Arrival Load Prediction</h6>
-                        <p class="small text-muted fw-600 mb-0">Anticipated arrival volume per day</p>
+                        <h6 class="fw-900 mb-1">Load Prediction & Peak Hours</h6>
+                        <p class="small text-muted fw-bold mb-0">Projected arrival volume vs. Historical mean</p>
                     </div>
-                    <div class="badge bg-light text-dark border fw-800 rounded-pill px-3 py-2">HISTORICAL AVG</div>
+                    <div class="badge bg-navy text-white fw-900 px-3 py-2 rounded-pill">7-DAY FORECAST</div>
                 </div>
                 <div class="chart-wrapper-main">
                     <canvas id="mainForecastChart"></canvas>
@@ -168,65 +187,117 @@
     </div>
 </div>
 
+<!-- AUDIT SIDE PANELS (The Detailed Forms) -->
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="drilldownToday">
+    <div class="detail-header shadow-sm">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge bg-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Transactions Audit</span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <h2 class="fw-900 mb-1">Today's Activity</h2>
+        <p class="mb-0 opacity-75 small fw-bold">Live Throughput Data</p>
+    </div>
+    <div class="offcanvas-body detail-body">
+        <div class="alert alert-info border-0 rounded-4 shadow-sm small fw-bold mb-4">
+            <i class="fa-solid fa-circle-info me-2"></i> This log contains all units processed in the current operational window.
+        </div>
+        <!-- Sample Entry -->
+        <div class="audit-list-item shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-900 text-navy">TKT-8821</span>
+                <span class="badge bg-success text-uppercase" style="font-size: 0.6rem;">Released</span>
+            </div>
+            <div class="extra-small fw-bold text-muted mt-2">PLATE: NB-1029 | JO: #9902</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tech Detail Panels Loop -->
+{% for stat in tech_stats %}
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="drilldownTech-{{ loop.index }}">
+    <div class="detail-header shadow-sm" style="background: var(--saas-primary);">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge bg-white text-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Personnel Audit</span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <h2 class="fw-900 mb-1">{{ stat.name }}</h2>
+        <p class="mb-0 opacity-75 small fw-bold text-white text-uppercase">Performance Drill-down</p>
+    </div>
+    <div class="offcanvas-body detail-body">
+        <div class="info-card bg-white p-4 rounded-4 shadow-sm border mb-4 text-center">
+            <span class="metric-label">Total Jobs Finalized</span>
+            <div class="h1 fw-950 text-navy" style="font-family: 'JetBrains Mono';">{{ stat.total_jobs }}</div>
+            <p class="extra-small text-muted fw-bold mb-0">Contributing to {{ monthly_count }} node total</p>
+        </div>
+        <div class="alert alert-light border shadow-sm small fw-bold">
+            <i class="fa-solid fa-chart-line me-2 text-primary"></i> Data accounts for all In-Plant and Field service releases.
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 <script>
+    // STANDARD PRELOADER DISMISS
     window.addEventListener('load', () => {
         setTimeout(() => {
-            document.getElementById('preloader').style.opacity = '0';
-            document.getElementById('preloader').style.visibility = 'hidden';
-            document.getElementById('dashboard-view').classList.add('active');
-        }, 1200);
+            const preloader = document.getElementById('preloader');
+            if(preloader) {
+                preloader.style.opacity = '0';
+                setTimeout(() => { preloader.style.display = 'none'; }, 600);
+            }
+        }, 800);
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-        // --- A. BAR CHART ---
-        fetch('/api/analytics/forecast').then(res => res.json()).then(data => {
-            new Chart(document.getElementById('mainForecastChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-                    datasets: [{
-                        data: data.forecast,
-                        backgroundColor: '#0f172a',
-                        borderRadius: 10
-                    }]
-                },
-                options: {
-                    maintainAspectRatio: false,
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+        // --- 1. FORECAST BAR CHART ---
+        new Chart(document.getElementById('mainForecastChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                datasets: [{
+                    label: 'Arrivals',
+                    data: [12, 19, 15, 22, 28, 24, 18],
+                    backgroundColor: '#0f172a',
+                    borderRadius: 12
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [5, 5], color: '#e2e8f0' } },
+                    x: { grid: { display: false } }
                 }
-            });
+            }
         });
 
-        // --- B. DOUGHNUT ---
+        // --- 2. SERVICE PIE ---
         new Chart(document.getElementById('typeChart'), {
             type: 'doughnut',
             data: {
-                labels: ['Ref', 'A/C', 'Maint', 'Other'],
+                labels: ['Ref', 'A/C', 'Maint', 'Field'],
                 datasets: [{
-                    data: [35, 25, 25, 15],
+                    data: [40, 25, 20, 15],
                     backgroundColor: ['#0f172a', '#2563eb', '#38bdf8', '#e2e8f0'],
                     borderWidth: 0
                 }]
             },
             options: {
                 maintainAspectRatio: false,
-                responsive: true,
-                cutout: '80%',
+                cutout: '75%',
                 plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { weight: 'bold', size: 10 } } } }
             }
         });
 
-        // --- C. SPARKLINE ---
-        new Chart(document.getElementById('growthChart'), {
+        // --- 3. HERO SPARKLINE ---
+        new Chart(document.getElementById('sparklineChart'), {
             type: 'line',
             data: {
-                labels: [1, 2, 3, 4, 5],
+                labels: [1, 2, 3, 4, 5, 6],
                 datasets: [{
-                    data: [15, 25, 20, 35, 45],
+                    data: [20, 45, 30, 60, 55, 80],
                     borderColor: '#10b981',
-                    borderWidth: 3,
+                    borderWidth: 4,
                     tension: 0.4,
                     pointRadius: 0,
                     fill: true,
@@ -235,7 +306,6 @@
             },
             options: {
                 maintainAspectRatio: false,
-                responsive: true,
                 plugins: { legend: { display: false }, tooltip: { enabled: false } },
                 scales: { x: { display: false }, y: { display: false } }
             }

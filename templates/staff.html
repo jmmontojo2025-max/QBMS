@@ -1,146 +1,192 @@
 {% extends "base_staff.html" %}
 {% block content %}
 <!-- Google Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
-    /* VARIABLES - SaaS Style */
+    /* VARIABLES - SYSTEM DESIGN SYSTEM */
     :root {
         --saas-primary: #3b82f6;
-        --saas-text: #1f2937;
         --saas-navy: #0f172a;
-        --saas-light-text: #4b5563;
+        --saas-slate: #64748b;
         --saas-border: #e5e7eb;
-        --saas-bg-light: #f9fafb;
+        --saas-bg-light: #f8fafc;
         --saas-bg-white: #ffffff;
         --saas-success: #10b981;
-        --saas-radius: 12px;
-        --saas-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+        --saas-warning: #f59e0b;
+        --saas-danger: #ef4444;
+        --saas-info: #0ea5e9;
+        --saas-radius: 16px;
+        --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
     }
 
-    html, body {
-        height: 100%; margin: 0; overflow: hidden;
-        background-color: var(--saas-bg-light); font-family: 'Inter', sans-serif;
+    /* GLOBAL PAGE SCROLLBAR CONFIGURATION */
+    .sn-content {
+        position: relative;
+        overflow-y: auto !important;
+        height: calc(100vh - 70px);
+        padding: 0 !important;
+        scrollbar-width: thin;
+        scrollbar-color: var(--saas-border) transparent;
     }
 
-    /* 1. PROFESSIONAL PRELOADER STYLES */
+    body {
+        background-color: var(--saas-bg-light);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-image: radial-gradient(#cbd5e1 0.5px, transparent 0.5px);
+        background-size: 24px 24px;
+        overflow: hidden;
+    }
+
+    /* 1. SYNCING DATA PRELOADER (WHITE BACKGROUND) */
     #preloader {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: var(--saas-navy); display: flex; flex-direction: column;
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: #ffffff; display: flex; flex-direction: column;
         align-items: center; justify-content: center; z-index: 10000;
-        transition: opacity 0.8s ease-in-out;
+        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
     }
-    .loader-logo-wrap { position: relative; width: 80px; height: 80px; margin-bottom: 1.5rem; }
-    .svg-logo { width: 80px; height: 80px; fill: none; stroke: var(--saas-primary); stroke-width: 3; stroke-dasharray: 300; animation: logo-draw 2s infinite alternate ease-in-out; }
-    @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.3; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+    .svg-logo { width: 60px; height: 60px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2s infinite alternate ease-in-out; }
+    @keyframes logo-draw { 0% { stroke-dashoffset: 300; } 100% { stroke-dashoffset: 0; } }
+    .loader-text { color: var(--saas-primary); font-size: 0.75rem; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 1rem; }
 
-    .loader-text {
-        color: white;
-        font-size: 0.75rem;
-        font-weight: 400; /* THIN FONT */
-        letter-spacing: 4px;
-        text-transform: uppercase;
-        animation: pulse 1.5s infinite;
-    }
-
-    /* 2. ENTRANCE ANIMATION FOR CONTENT */
+    /* 2. ENTRANCE ANIMATION */
     #staff-viewport {
-        opacity: 0; transform: translateY(20px);
-        transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-        height: 100%;
+        opacity: 0; transform: translateY(10px);
+        transition: all 0.8s ease-out;
     }
     #staff-viewport.is-active { opacity: 1; transform: translateY(0); }
 
-    .dashboard-container { height: 100vh; display: flex; flex-direction: column; padding: 1.5rem; gap: 1.5rem; }
+    /* DETAILED INSTRUCTION BLOCKS */
+    .op-instruction {
+        background: #fff; border: 1px solid var(--saas-border); border-left: 4px solid var(--saas-primary);
+        padding: 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: var(--saas-shadow);
+    }
+    .op-instruction h6 { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; color: var(--saas-primary); letter-spacing: 1px; margin-bottom: 8px; }
+    .op-instruction p { margin: 0; font-size: 0.75rem; color: var(--saas-slate); line-height: 1.5; font-weight: 600; }
+    .op-instruction b { color: var(--saas-navy); }
+
+    /* DASHBOARD ELEMENTS */
+    .dashboard-container { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
 
     .hub-command-strip {
-        flex: 0 0 auto; background-color: var(--saas-bg-white); border: 1px solid var(--saas-border);
+        background-color: var(--saas-bg-white); border: 1px solid var(--saas-border);
         border-radius: var(--saas-radius); padding: 1.5rem; box-shadow: var(--saas-shadow);
-        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;
     }
-    .hub-title { font-weight: 800; letter-spacing: -0.05em; margin-bottom: 0.25rem; color: #000; }
+    .hub-title { font-weight: 900; letter-spacing: -1.5px; color: #000; font-size: 2rem; margin: 0; }
+    .live-clock { font-family: 'JetBrains Mono'; font-weight: 700; color: var(--saas-primary); font-size: 0.85rem; letter-spacing: 1px; padding: 6px 12px; background: #eff6ff; border-radius: 8px; }
 
+    /* STATUS BADGES & CAPACITY */
     .hub-status-badge {
         background-color: var(--saas-bg-light); color: var(--saas-light-text);
-        padding: 0.4rem 1rem; border-radius: 9999px; font-size: 0.75rem;
-        font-weight: 600; border: 1px solid var(--saas-border); white-space: nowrap;
-        display: flex; align-items: center; gap: 12px;
+        padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.75rem;
+        font-weight: 700; border: 1px solid var(--saas-border);
+        display: flex; align-items: center; gap: 15px;
     }
     .status-pulse { animation: status-blink 2s infinite; }
     @keyframes status-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-    .stat-pill { display: flex; flex-direction: column; align-items: center; padding: 0.75rem 1.25rem; background-color: var(--saas-bg-light); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); min-width: 100px; }
-    .stat-pill .label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--saas-light-text); margin-bottom: 0.25rem; }
-    .stat-pill .value { font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1; color: #000; }
+    .stat-pill {
+        display: flex; flex-direction: column; align-items: center;
+        padding: 0.75rem 1.25rem; background-color: var(--saas-bg-light);
+        border: 1px solid var(--saas-border); border-radius: 12px; min-width: 110px;
+    }
+    .stat-pill .label { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: var(--saas-slate); margin-bottom: 0.25rem; }
+    .stat-pill .value { font-weight: 800; font-family: 'JetBrains Mono'; color: #000; font-size: 1.1rem; }
 
-    .main-grid { flex: 1 1 auto; display: grid; grid-template-columns: 2fr 1.25fr 260px; gap: 1.5rem; min-height: 0; }
-    .column { display: flex; flex-direction: column; min-height: 0; }
-    .column-header { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-    .column-title { font-weight: 700; margin-bottom: 0; color: #000; }
-    .column-content { flex: 1 1 auto; overflow-y: auto; padding-right: 8px; }
+    /* LOCATION BADGES (RESORED) */
+    .loc-tag { font-size: 0.65rem; font-weight: 900; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .loc-in { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .loc-out { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; animation: pulse-red 2s infinite; }
+    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-    .work-card { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); overflow: hidden; height: 100%; display: flex; flex-direction: column; }
-    .work-card-header { padding: 1rem; border-bottom: 1px solid var(--saas-border); display: flex; justify-content: space-between; align-items: flex-start; background-color: var(--saas-bg-light); }
-    .ticket-number { font-weight: 800; line-height: 1; letter-spacing: -0.05em; color: var(--saas-primary); font-size: 1.3rem; }
-    .plate-number-badge { background-color: var(--saas-text); color: white; padding: 0.3rem 0.7rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; margin-top: 0.5rem; display: inline-block; }
+    /* 3-COLUMN GRID SYSTEM */
+    .main-grid { display: grid; grid-template-columns: 2.2fr 1.2fr 300px; gap: 1.5rem; align-items: start; }
+    .column-title { font-weight: 900; color: var(--saas-navy); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; }
 
-    .queue-card-large { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); margin-bottom: 1.25rem; padding: 1.5rem; display: flex; flex-direction: column; }
-    .queue-card-large .ticket-num-large { font-weight: 800; line-height: 1; letter-spacing: -0.05em; color: #000; font-size: 1.8rem; }
+    /* INDIVIDUAL COLUMN SCROLLBARS */
+    .column-scroll-area {
+        max-height: 850px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--saas-border) transparent;
+    }
+    .column-scroll-area::-webkit-scrollbar { width: 4px; }
+    .column-scroll-area::-webkit-scrollbar-thumb { background: var(--saas-border); border-radius: 10px; }
 
-    .roster-card { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: var(--saas-radius); box-shadow: var(--saas-shadow); height: 100%; display: flex; flex-direction: column; }
-    .roster-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--saas-border); }
+    /* CARD STYLING WITH TOP STRIP */
+    .ticket-card {
+        background-color: var(--saas-bg-white); border: 1px solid var(--saas-border);
+        border-radius: 14px; box-shadow: var(--saas-shadow); position: relative;
+        overflow: hidden; transition: transform 0.2s ease; margin-bottom: 1rem;
+    }
+    .ticket-card:hover { transform: translateY(-3px); border-color: var(--saas-primary); }
+    .status-strip { height: 6px; width: 100%; }
+    .bg-ongoing { background-color: var(--saas-primary); }
+    .bg-queue { background-color: var(--saas-warning); }
 
-    .tech-status-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 0.75rem; flex-shrink: 0; }
-    .dot-online { background-color: var(--saas-success); } .dot-busy { background-color: #f59e0b; } .dot-offline { background-color: #9ca3af; }
+    .card-header-inner { padding: 1.25rem; border-bottom: 1px solid var(--saas-border); display: flex; justify-content: space-between; align-items: flex-start; background: #fcfcfc; }
+    .ticket-id { font-weight: 900; color: var(--saas-navy); font-size: 1.6rem; letter-spacing: -1.5px; line-height: 1; }
+    .plate-badge { background-color: var(--saas-navy); color: white; padding: 4px 10px; border-radius: 6px; font-family: 'JetBrains Mono'; font-size: 0.85rem; font-weight: 700; margin-top: 8px; display: inline-block; }
+    .service-text { font-size: 0.75rem; font-weight: 800; color: var(--saas-primary); text-transform: uppercase; background: #eff6ff; padding: 5px 12px; border-radius: 6px; margin-top: 10px; display: inline-block; }
 
-    /* MODAL FIXES */
-    .modal { z-index: 11000 !important; }
-    .modal-backdrop { z-index: 10500 !important; }
-    .extra-small { font-size: 0.65rem; }
-    .tech-pill { background: #eff6ff; color: #1e40af; border: 1px solid #dbeafe; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
+    /* ROSTER CARD */
+    .roster-card { background-color: var(--saas-bg-white); border: 1px solid var(--saas-border); border-radius: 16px; box-shadow: var(--saas-shadow); overflow: hidden; }
+    .roster-header { padding: 1.25rem 1rem; background-color: var(--saas-navy); color: white; display: flex; align-items: center; gap: 10px; }
+    .roster-header h5 { margin-bottom: 0; font-weight: 900; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; }
+
+    .tech-status-dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 1rem; flex-shrink: 0; }
+    .dot-online { background-color: var(--saas-success); box-shadow: 0 0 8px var(--saas-success); }
+    .dot-busy { background-color: var(--saas-warning); box-shadow: 0 0 8px var(--saas-warning); }
+    .dot-offline { background-color: #9ca3af; }
+
+    .btn-saas { border-radius: 12px; font-weight: 800; padding: 10px 20px; text-transform: uppercase; font-size: 0.75rem; transition: 0.3s; }
 </style>
-
 
 <!-- 1. PRELOADER -->
 <div id="preloader">
-    <div class="loader-logo-wrap"><svg class="svg-logo" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg></div>
-    <div class="loader-text">COOLAIRE CONSOLIDATED INC.</div>
+    <svg class="svg-logo" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg>
+    <div class="loader-text">SYNCING DATA...</div>
 </div>
 
-<!-- 2. MAIN CONTENT VIEWPORT -->
+<!-- 2. MAIN VIEWPORT -->
 <div id="staff-viewport">
 <div class="dashboard-container">
 
     <header class="hub-command-strip">
         <div class="d-flex align-items-center flex-grow-1">
-            <div class="me-4 d-none d-md-block"><i class="fa-solid fa-cloud-bolt fa-3x text-primary"></i></div>
+            <div class="me-4 d-none d-lg-block"><i class="fa-solid fa-microchip fa-3x text-primary opacity-25"></i></div>
             <div>
-                <h2 class="hub-title">{{ session.get('location_name', 'Terminal') }} Console</h2>
-                <div class="hub-status-badge">
+                <div class="live-clock mb-2" id="live-datetime">--/--/-- | 00:00:00</div>
+                <h1 class="hub-title">{{ session.get('location_name', 'Terminal') }} Console</h1>
+                <div class="hub-status-badge mt-1">
                     <span><i class="fa-solid fa-server me-1"></i> {{ session.get('location_code', '---') }}</span>
                     <span class="vr opacity-25" style="height: 15px;"></span>
-
                     <span title="Kiosk Status">
-                        <i class="fa-solid fa-tablet-screen-button {% if current_location and current_location.kiosk_online %}text-success status-pulse{% else %}text-danger opacity-50{% endif %}"></i>
+                        KIOSK: <i class="fa-solid fa-tablet-screen-button {% if current_location and current_location.kiosk_online %}text-success status-pulse{% else %}text-danger opacity-50{% endif %}"></i>
                     </span>
                     <span title="TV Monitor Status">
-                        <i class="fa-solid fa-tv {% if current_location and current_location.tv_online %}text-success status-pulse{% else %}text-danger opacity-50{% endif %}"></i>
+                        TV: <i class="fa-solid fa-tv {% if current_location and current_location.tv_online %}text-success status-pulse{% else %}text-danger opacity-50{% endif %}"></i>
                     </span>
                 </div>
             </div>
         </div>
+
         <div class="d-flex align-items-center gap-3">
-            <div class="stat-pill" style="min-width: 170px; border-left: 4px solid var(--saas-primary);">
-                <label class="label">Total Units On-Site</label>
-                <div class="value fw-bold">{{ current_occupancy }}/{{ max_capacity }}</div>
+            <div class="stat-pill" style="min-width: 180px; border-left: 4px solid var(--saas-primary);">
+                <label class="label">Utilization</label>
+                <div class="value">{{ current_occupancy }}/{{ max_capacity }}</div>
                 <div class="progress mt-1" style="height: 4px; width: 100%;"><div class="progress-bar {% if capacity_percent >= 90 %}bg-danger{% else %}bg-primary{% endif %}" style="width: {{ capacity_percent }}%"></div></div>
             </div>
-            <div class="stat-pill"><label class="label">Queue</label><div class="value">{{ waiting_tickets|length }}</div></div>
-            <div class="stat-pill"><label class="label">On Floor</label><div class="value">{{ serving_list|length }}</div></div>
+            <div class="stat-pill"><label class="label">In Queue</label><div class="value text-warning">{{ waiting_tickets|length }}</div></div>
+            <div class="stat-pill"><label class="label">On Floor</label><div class="value text-primary">{{ serving_list|length }}</div></div>
+
             <div class="action-button-group d-flex gap-2">
-                <button type="button" class="btn btn-primary fw-bold btn-sm shadow-sm" data-bs-toggle="modal" data-bs-target="#manualCheckinModal"><i class="fa-solid fa-phone-volume me-1"></i> PHONE BOOKING</button>
-                <a href="/tv" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-display"></i></a>
-                <a href="/kiosk" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-ticket"></i></a>
+                <button type="button" class="btn btn-primary fw-bold btn-saas shadow-sm" data-bs-toggle="modal" data-bs-target="#manualCheckinModal"><i class="fa-solid fa-phone-volume me-1"></i> PHONE BOOKING</button>
+                <a href="/tv" target="_blank" class="btn btn-outline-primary btn-saas"><i class="fa-solid fa-display"></i></a>
             </div>
         </div>
     </header>
@@ -148,42 +194,57 @@
     <main class="main-grid">
         <!-- COLUMN 1: ACTIVE WORKFLOOR -->
         <section class="column">
-            <div class="column-header"><h5 class="column-title">Active Workfloor</h5></div>
-            <div class="column-content">
+            <h5 class="column-title"><i class="fa-solid fa-screwdriver-wrench text-primary"></i> Active Workfloor</h5>
+
+            <div class="op-instruction">
+                <h6>Serving Units Operations Guide</h6>
+                <p>Units displayed here are currently undergoing maintenance or repairs inside the service bays.<br>
+                1. <b>Service Site:</b> Verify if work is <b>In-Plant</b> or <b>Out-Plant</b> field service.<br>
+                2. <b>Tracking:</b> Encoding the <b>Job Order (JO)</b> number is mandatory before release.<br>
+                3. <b>Completion:</b> Record the actual clock times for labor efficiency auditing.</p>
+            </div>
+
+            <div class="column-scroll-area">
                 <div class="row g-3">
                     {% for s in serving_list %}
-                    <div class="col-md-12 col-xl-6">
-                        <div class="work-card shadow-sm border-warning border-2">
-                            <div class="work-card-header">
+                    <div class="col-xl-6">
+                        <div class="ticket-card">
+                            <div class="status-strip bg-ongoing"></div>
+                            <div class="card-header-inner">
                                 <div>
-                                    <div class="ticket-number">{{ s.ticket_number }}</div>
-                                    <div class="d-flex gap-2 align-items-center mt-1 flex-wrap">
-                                        <span class="plate-number-badge">{% if s.booking %}{{ s.booking.plate_number }}{% else %}WALK-IN{% endif %}</span>
-                                        {% if s.booking and s.booking.job_order %}<span class="badge bg-dark text-white" style="font-family: 'JetBrains Mono'; font-size: 0.65rem;">#{{ s.booking.job_order }}</span>{% endif %}
-                                        <span class="badge {% if s.booking.service_location == 'In-Plant' %}bg-info{% else %}bg-danger animate__animated animate__pulse animate__infinite{% endif %} text-white" style="font-size: 0.6rem; padding: 4px 6px; border-radius: 4px;">{{ s.booking.service_location | upper if s.booking else 'IN-PLANT' }}</span>
+                                    <div class="ticket-id">{{ s.ticket_number }}</div>
+                                    <span class="plate-badge">{% if s.booking %}{{ s.booking.plate_number }}{% else %}WALK-IN{% endif %}</span>
+
+                                    <!-- IN-PLANT / OUT-PLANT BADGE -->
+                                    <div class="mt-2">
+                                        <span class="loc-tag {% if s.booking and s.booking.service_location == 'Out-Plant' %}loc-out{% else %}loc-in{% endif %}">
+                                            <i class="fa-solid {% if s.booking and s.booking.service_location == 'Out-Plant' %}fa-truck-pickup{% else %}fa-house-chimney-window{% endif %} me-1"></i>
+                                            {{ s.booking.service_location if s.booking else 'In-Plant' }}
+                                        </span>
                                     </div>
-                                    <div class="small fw-700 text-primary mt-1">{% if s.booking %}{{ s.booking.service_type }}{% endif %}</div>
+
+                                    <span class="service-text">{% if s.booking %}{{ s.booking.service_type }}{% endif %}</span>
                                 </div>
-                                <div class="text-end"><span class="badge bg-warning text-dark fw-bold" style="border-radius: 8px;">ON-GOING</span></div>
+                                <div class="text-end"><span class="badge bg-warning text-dark fw-bold px-3 py-2" style="border-radius: 8px; font-size: 0.6rem;">SERVING</span></div>
                             </div>
-                            <div class="p-4 flex-grow-1">
+                            <div class="p-3">
                                 <div class="mb-3">
-                                    <label class="extra-small fw-600 text-muted text-uppercase">Personnel Assigned</label>
-                                    <div class="d-flex flex-wrap gap-2">{% for tech in s.assigned_techs %}<span class="tech-pill">{{ tech.name }}</span>{% endfor %}</div>
+                                    <label class="extra-small fw-800 text-muted text-uppercase d-block mb-2">Technicians Assigned</label>
+                                    <div class="d-flex flex-wrap gap-2">{% for tech in s.assigned_techs %}<span class="badge bg-light text-dark border p-2" style="font-size: 0.65rem;">{{ tech.name }}</span>{% endfor %}</div>
                                 </div>
                                 <form action="/staff/complete-work/{{ s.id }}" method="POST" class="border-top pt-3">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <div class="row g-2 mb-3 bg-light p-2 rounded border border-primary">
-                                        <div class="col-7"><label class="extra-small fw-700 text-primary">JOB ORDER (JO#)</label><input type="text" name="job_order" class="form-control form-control-sm fw-bold border-2" placeholder="JO-XXXX" value="{{ s.booking.job_order or '' }}"></div>
-                                        <div class="col-5"><label class="extra-small fw-700 text-primary">STD HOURS</label><input type="number" step="0.1" name="std_repair_hours" class="form-control form-control-sm fw-bold border-2" placeholder="Hours" value="{{ s.booking.std_repair_hours or '' }}"></div>
+                                    <div class="row g-2 mb-3 bg-light p-2 rounded-3 border">
+                                        <div class="col-7"><label class="extra-small fw-800 text-primary">OFFICIAL JO#</label><input type="text" name="job_order" class="form-control form-control-sm fw-bold" placeholder="JO-XXXX" value="{{ s.booking.job_order or '' }}"></div>
+                                        <div class="col-5"><label class="extra-small fw-800 text-primary">STD HRS</label><input type="number" step="0.1" name="std_repair_hours" class="form-control form-control-sm fw-bold" value="{{ s.booking.std_repair_hours or '' }}"></div>
                                     </div>
-                                    <div class="row g-2 mb-3">
-                                        <div class="col-6"><label class="small fw-600 text-muted">START TIME</label><input type="time" name="manual_start" class="form-control fw-bold border-2" required></div>
-                                        <div class="col-6"><label class="small fw-600 text-muted">END TIME</label><input type="time" name="manual_end" class="form-control fw-bold border-2" required></div>
+                                    <div class="row g-2 mb-4">
+                                        <div class="col-6"><label class="extra-small fw-800 text-muted text-uppercase">Work Start</label><input type="time" name="manual_start" class="form-control form-control-sm fw-bold" required></div>
+                                        <div class="col-6"><label class="extra-small fw-800 text-muted text-uppercase">Work End</label><input type="time" name="manual_end" class="form-control form-control-sm fw-bold" required></div>
                                     </div>
                                     <div class="d-flex gap-1">
                                         <button type="button" class="btn btn-light border px-3" data-bs-toggle="modal" data-bs-target="#jobDetails-{{ s.id }}"><i class="fa-solid fa-circle-info text-muted"></i></button>
-                                        <button type="submit" class="btn btn-primary fw-bold flex-grow-1">COMPLETE & RELEASE</button>
+                                        <button type="submit" class="btn btn-primary fw-bold flex-grow-1 btn-saas">COMPLETE & RELEASE</button>
                                     </div>
                                 </form>
                             </div>
@@ -196,44 +257,71 @@
 
         <!-- COLUMN 2: PENDING QUEUE -->
         <section class="column">
-            <div class="column-header"><h5 class="column-title">Pending Queue</h5></div>
-            <div class="column-content">
+            <h5 class="column-title"><i class="fa-solid fa-hourglass-half text-warning"></i> Pending Queue</h5>
+
+            <div class="op-instruction">
+                <h6>Deployment Instructions</h6>
+                <p>Units here have checked in and are waiting for an available workshop bay:<br>
+                1. <b>Location Check:</b> Red badges indicate <b>Out-Plant</b> field requests.<br>
+                2. <b>Staffing:</b> Assign the technician team based on expertise.<br>
+                3. <b>Deployment:</b> Dispatch moves the unit to "Ongoing" status.</p>
+            </div>
+
+            <div class="column-scroll-area">
                 {% for t in waiting_tickets %}
-                <div class="queue-card-large shadow-sm border-2">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <span class="ticket-num-large d-block">{{ t.ticket_number }}</span>
-                            <div class="d-flex gap-2 align-items-center">
-                                <span class="badge bg-dark text-white fw-bold">{{ t.booking.plate_number if t.booking else "WALK-IN" }}</span>
-                                <span class="badge {% if t.booking.service_location == 'In-Plant' %}bg-info{% else %}bg-danger{% endif %} text-white" style="font-size: 0.6rem; padding: 4px 6px;">{{ t.booking.service_location | upper if t.booking else 'IN-PLANT' }}</span>
+                <div class="ticket-card mb-3">
+                    <div class="status-strip bg-queue"></div>
+                    <div class="p-4">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="ticket-id" style="color: var(--saas-warning);">{{ t.ticket_number }}</span>
+                                <div class="mt-2">
+                                    <span class="plate-badge bg-dark">{{ t.booking.plate_number if t.booking else "WALK-IN" }}</span>
+
+                                    <!-- IN-PLANT / OUT-PLANT BADGE -->
+                                    <div class="mt-2">
+                                        <span class="loc-tag {% if t.booking and t.booking.service_location == 'Out-Plant' %}loc-out{% else %}loc-in{% endif %}">
+                                            <i class="fa-solid {% if t.booking and t.booking.service_location == 'Out-Plant' %}fa-truck-pickup{% else %}fa-house-chimney-window{% endif %} me-1"></i>
+                                            {{ t.booking.service_location if t.booking else 'In-Plant' }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="d-block"><span class="service-text" style="background: #fef3c7; color: #92400e;">{% if t.booking %}{{ t.booking.service_type }}{% endif %}</span></div>
                             </div>
-                            <span class="small fw-700 text-primary d-block mt-1">{{ t.booking.service_type if t.booking else "" }}</span>
+                            <a href="/staff/expire-ticket/{{ t.id }}" class="text-danger opacity-50" onclick="return confirm('Dismiss ticket?')"><i class="fa-solid fa-xmark fs-4"></i></a>
                         </div>
-                        <a href="/staff/expire-ticket/{{ t.id }}" class="text-danger opacity-50" onclick="return confirm('Dismiss ticket?')"><i class="fa-solid fa-xmark fs-4"></i></a>
+                        <div class="mt-3 small fw-900 text-dark">{% if t.booking and t.booking.customer %}{{ t.booking.customer.company_name }}{% elif t.booking %}{{ t.booking.guest_name }}{% else %}Guest Client{% endif %}</div>
+                        <hr class="my-4">
+                        <form action="/staff/start-work/{{ t.id }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <label class="d-block mb-2 extra-small fw-800 text-muted">ASSIGN TEAM FOR FLOOR DEPLOYMENT</label>
+                            {% if technicians|length > 0 %}
+                                <select name="technician_ids" class="form-select mb-3 fw-bold border-2" multiple required style="height: 100px;">{% for tech in technicians %}<option value="{{ tech.id }}"> {{ tech.name }}</option>{% endfor %}</select>
+                                <button type="submit" class="btn btn-warning w-100 fw-bold btn-saas text-dark">DISPATCH TO FLOOR</button>
+                            {% else %}
+                                <div class="alert alert-warning small py-2 mb-3 fw-bold text-center border-dashed">NO STAFF ON-DUTY</div>
+                            {% endif %}
+                        </form>
                     </div>
-                    <div class="mt-3 small fw-900 text-dark">{% if t.booking and t.booking.customer %}{{ t.booking.customer.company_name }}{% elif t.booking %}{{ t.booking.guest_name }}{% else %}Guest Client{% endif %}</div>
-                    <hr class="my-4">
-                    <form action="/staff/start-work/{{ t.id }}" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <label class="d-block mb-2 small fw-600 text-muted">ASSIGN TEAM</label>
-                        {% if technicians|length > 0 %}
-                            <select name="technician_ids" class="form-select mb-3 fw-bold border-2" multiple required>{% for tech in technicians %}<option value="{{ tech.id }}"> {{ tech.name }}</option>{% endfor %}</select>
-                            <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">DISPATCH TO FLOOR</button>
-                        {% else %}
-                            <div class="alert alert-warning extra-small py-2 mb-3 fw-bold text-center">NO STAFF READY</div>
-                            <button type="button" class="btn btn-secondary w-100" disabled>WAITING FOR STAFF</button>
-                        {% endif %}
-                    </form>
                 </div>
                 {% endfor %}
             </div>
         </section>
 
-        <!-- COLUMN 3: ROSTER -->
+        <!-- COLUMN 3: WORKSHOP ROSTER -->
         <section class="column">
-            <div class="roster-card shadow-sm border-2">
-                <div class="roster-header border-bottom"><h5 class="mb-0 fw-700" style="font-size: 1rem;">Personnel Status</h5></div>
-                <div class="column-content p-0">
+            <div class="roster-card">
+                <div class="roster-header">
+                    <i class="fa-solid fa-users-gear"></i>
+                    <h5>Workshop Roster</h5>
+                </div>
+                <div class="p-3 bg-light border-bottom">
+                    <div class="extra-small fw-700 text-muted">
+                        <h6>Staff Availability Guide</h6>
+                        <p>Only staff set to <b>Active (Green)</b> are available for ticket assignment. Toggle off during breaks or field work.</p>
+                    </div>
+                </div>
+                <div class="column-content">
                     {% for tech in roster %}
                         {% set assignment = busy_map.get(tech.id) %}
                         <div class="d-flex align-items-center py-3 px-3 border-bottom" style="{% if not tech.is_present %}opacity: 0.5; background: #f8fafc;{% endif %}">
@@ -241,21 +329,13 @@
                             <div class="flex-grow-1">
                                 <div class="fw-800 text-dark" style="font-size: 0.95rem;">{{ tech.name }}</div>
                                 <div class="small mt-1">
-                                    {% if not tech.is_present %}<span class="text-muted fw-600">OFF-DUTY</span>
+                                    {% if not tech.is_present %}<span class="text-muted fw-800 extra-small">OFF-DUTY</span>
                                     {% elif assignment %}
                                         <div class="d-flex flex-column gap-1">
-                                            <span class="text-warning fw-700" style="font-size: 0.7rem;">
-                                                <i class="fa-solid fa-thumbtack me-1"></i> TICKET: <strong>{{ assignment.ticket }}</strong>
-                                            </span>
-                                            <!-- MAPPED SERVICE TYPE -->
-                                            <span class="text-primary fw-700" style="font-size: 0.65rem; text-transform: uppercase;">
-                                                <i class="fa-solid fa-screwdriver-wrench me-1"></i> {{ assignment.service }}
-                                            </span>
-                                            <span class="text-muted fw-700" style="font-size: 0.65rem;">
-                                                UNIT: {{ assignment.plate }}
-                                            </span>
+                                            <span class="text-warning fw-800" style="font-size: 0.65rem; text-transform: uppercase;"><i class="fa-solid fa-thumbtack me-1"></i> {{ assignment.ticket }}</span>
+                                            <span class="text-primary fw-700" style="font-size: 0.6rem; text-transform: uppercase;">{{ assignment.service }}</span>
                                         </div>
-                                    {% else %}<span class="text-success fw-700" style="font-size: 0.7rem;">READY</span>{% endif %}
+                                    {% else %}<span class="text-success fw-800" style="font-size: 0.7rem;">READY</span>{% endif %}
                                 </div>
                             </div>
                             <div class="ms-2"><a href="/staff/technician/toggle/{{ tech.id }}"><i class="fa-solid {{ 'fa-toggle-on text-success' if tech.is_present else 'fa-toggle-off text-muted' }} fs-4"></i></a></div>
@@ -268,33 +348,37 @@
 </div>
 </div>
 
-<!-- 3. MODALS (Outside Animated Viewport to prevent Shadow Lock) -->
+<!-- MODALS -->
 
 <!-- PHONE BOOKING MODAL -->
 <div class="modal fade" id="manualCheckinModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
-            <div class="modal-header bg-dark text-white">
-                <h6 class="modal-title fw-bold"><i class="fa-solid fa-phone-volume me-2"></i> Manual Phone Booking</h6>
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+            <div class="modal-header bg-navy text-white p-4">
+                <h6 class="modal-title fw-bold"><i class="fa-solid fa-phone-volume me-2 text-primary"></i> Manual Booking Manifest</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="/staff/manual-checkin" method="POST" id="staffManifestForm">
                 <div class="modal-body p-4">
+                    <div class="op-instruction border-primary">
+                        <h6>Manifest Instructions</h6>
+                        <p>1. Identify the Client or Corporate account.<br>2. Add individual units to the manifest list below.<br>3. Review the summary and process all bookings simultaneously.</p>
+                    </div>
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="staff_manifest_data" id="staffManifestJson">
-                    <div class="mb-4 border-bottom pb-3"><label class="extra-small fw-700 text-muted mb-2">CLIENT / COMPANY NAME</label><input type="text" id="sClient" class="form-control fw-bold border-2" placeholder="e.g. San Miguel Corp"></div>
-                    <div id="staffManifestList" class="mb-4 d-none"><label class="extra-small fw-700 text-primary mb-2">CURRENT MANIFEST</label><div class="border-2 rounded bg-light p-2" id="staffTableItems" style="max-height: 120px; overflow-y: auto;"></div></div>
-                    <div class="bg-light p-3 rounded-3 border-2">
-                        <div class="row g-2 mb-3">
-                            <div class="col-4"><label class="extra-small fw-700">PLATE</label><input type="text" id="sPlate" class="form-control form-control-sm fw-bold"></div>
-                            <div class="col-4"><label class="extra-small fw-700">JO#</label><input type="text" id="sJO" class="form-control form-control-sm fw-bold" placeholder="JO-XXXX"></div>
-                            <div class="col-4"><label class="extra-small fw-700">SRH (Hrs)</label><input type="number" step="0.5" id="sSRH" class="form-control form-control-sm fw-bold" placeholder="2.5"></div>
-                            <div class="col-12 mt-2"><label class="extra-small fw-700">SERVICE TYPE</label><select id="sService" class="form-select form-select-sm fw-bold border-2"><option value="" selected disabled>Select Service...</option>{% for cat in categories %}<option value="{{ cat.name }}">{{ cat.name }}</option>{% endfor %}</select></div>
-                            <div class="col-12 mt-2"><label class="extra-small fw-700 d-block mb-1">LOCATION</label><div class="d-flex gap-3"><label class="small fw-bold"><input type="radio" name="sLoc" value="In-Plant" checked> In-Plant</label><label class="small fw-bold"><input type="radio" name="sLoc" value="Out-Plant"> Out-Plant</label></div></div>
+                    <div class="mb-4"><label class="extra-small fw-800 text-muted mb-2 text-uppercase">Client / Company Name</label><input type="text" id="sClient" class="form-control form-control-lg fw-bold border-2" placeholder="e.g. San Miguel Corp"></div>
+                    <div id="staffManifestList" class="mb-4 d-none"><label class="extra-small fw-800 text-primary mb-2">PENDING UNITS IN MANIFEST</label><div class="border-2 rounded-4 bg-light p-3" id="staffTableItems" style="max-height: 120px; overflow-y: auto;"></div></div>
+                    <div class="bg-light p-4 rounded-4 border-2 border-primary border-opacity-10">
+                        <div class="row g-3 mb-3">
+                            <div class="col-4"><label class="extra-small fw-800">PLATE</label><input type="text" id="sPlate" class="form-control fw-bold border-0 shadow-sm"></div>
+                            <div class="col-4"><label class="extra-small fw-800">JO#</label><input type="text" id="sJO" class="form-control fw-bold border-0 shadow-sm" placeholder="Optional"></div>
+                            <div class="col-4"><label class="extra-small fw-800">SRH</label><input type="number" step="0.5" id="sSRH" class="form-control fw-bold border-0 shadow-sm" placeholder="Hrs"></div>
+                            <div class="col-12 mt-2"><label class="extra-small fw-800">SERVICE CATEGORY</label><select id="sService" class="form-select fw-bold border-0 shadow-sm"><option value="" selected disabled>Select Service Type...</option>{% for cat in categories %}<option value="{{ cat.name }}">{{ cat.name }}</option>{% endfor %}</select></div>
+                            <div class="col-12 mt-2"><label class="extra-small fw-800 d-block mb-1">SERVICE LOCATION</label><div class="d-flex gap-3"><label class="small fw-bold"><input type="radio" name="sLoc" value="In-Plant" checked> In-Plant</label><label class="small fw-bold"><input type="radio" name="sLoc" value="Out-Plant"> Out-Plant</label></div></div>
                         </div>
-                        <button type="button" onclick="addStaffManifest()" class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm"><i class="fa-solid fa-plus me-1"></i> ADD TO LIST</button>
+                        <button type="button" onclick="addStaffManifest()" class="btn btn-navy btn-saas w-100 fw-bold py-2 shadow-sm text-white" style="background: var(--saas-navy);"><i class="fa-solid fa-plus-circle me-1"></i> ADD TO MANIFEST</button>
                     </div>
                 </div>
-                <div class="modal-footer bg-white border-top"><button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">CANCEL</button><button type="submit" id="staffSubmitBtn" class="btn btn-success px-4 fw-bold d-none shadow-sm">PROCESS ALL BOOKINGS</button></div>
+                <div class="modal-footer border-0 p-4 pt-0"><button type="submit" id="staffSubmitBtn" class="btn btn-success w-100 fw-bold d-none shadow-lg py-3">PROCESS ALL BOOKINGS</button></div>
             </form>
         </div>
     </div>
@@ -304,24 +388,24 @@
 <!-- MODAL: JOB DETAILS -->
 <div class="modal fade" id="jobDetails-{{ s.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content shadow-lg" style="border-radius: 12px;">
-            <div class="modal-header"><h5 class="modal-title fw-bold">Job Diagnostics: {{ s.ticket_number }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+            <div class="modal-header border-0 p-4 pb-0"><h5 class="modal-title fw-900">Diagnostics: {{ s.ticket_number }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body p-4">
+                <div class="op-instruction"><h6>Office Log Instructions</h6><p>Office notes are private and intended for internal tracking, billing discrepancies, or administrative follow-ups.</p></div>
                 <div class="row g-4">
                     <div class="col-md-6 border-end">
-                        <label class="small fw-bold text-muted text-uppercase">Booking Info</label>
-                        <div class="p-3 bg-light rounded-3 mt-1">
-                            <p class="small text-muted mb-1">Plate: <span class="fw-bold text-dark">{{ s.booking.plate_number if s.booking else 'N/A' }}</span></p>
-                            <p class="small text-muted mb-1">JO#: <span class="fw-bold text-dark">{{ s.booking.job_order or 'N/A' }}</span></p>
-                            <p class="small text-muted mb-1">Standard Hours: <span class="fw-bold text-dark">{{ s.booking.std_repair_hours or '0' }} hrs</span></p>
+                        <label class="extra-small fw-800 text-muted text-uppercase mb-2 text-primary">Booking Summary</label>
+                        <div class="p-4 bg-light rounded-4 border">
+                            <p class="small text-muted mb-2">Unit Plate: <span class="fw-bold text-dark">{{ s.booking.plate_number if s.booking else 'N/A' }}</span></p>
+                            <p class="small text-muted mb-2">Complexity: <span class="fw-bold text-dark">{{ s.booking.std_repair_hours or '0' }} hrs</span></p>
                             <p class="small text-muted mb-0">Service: <span class="fw-bold text-dark">{{ s.booking.service_type if s.booking else 'N/A' }}</span></p>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <label class="small fw-bold text-muted text-uppercase">Internal Notes</label>
-                        <form action="/staff/save-notes/{{ s.id }}" method="POST" class="mt-1">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><textarea name="notes" class="form-control mb-2" rows="3">{{ s.internal_notes or '' }}</textarea>
-                            <button type="submit" class="btn btn-primary w-100 btn-sm fw-bold">SAVE NOTES</button>
+                        <label class="extra-small fw-800 text-muted text-uppercase mb-2 text-primary">Internal Office Notes</label>
+                        <form action="/staff/save-notes/{{ s.id }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><textarea name="notes" class="form-control border-0 bg-light p-3 fw-600 mb-3 shadow-inner" rows="5" style="border-radius: 12px;">{{ s.internal_notes or '' }}</textarea>
+                            <button type="submit" class="btn btn-primary w-100 btn-saas py-2">UPDATE INTERNAL LOGS</button>
                         </form>
                     </div>
                 </div>
@@ -332,20 +416,28 @@
 {% endfor %}
 
 <script>
-    // PRELOADER SCRIPT
+    // LIVE CLOCK & DATE LOGIC
+    function updateClock() {
+        const now = new Date();
+        const options = { weekday: 'short', year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+        document.getElementById('live-datetime').textContent = now.toLocaleString('en-US', options).toUpperCase();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // PRELOADER DISMISSAL
     window.addEventListener('load', () => {
         setTimeout(() => {
             const preloader = document.getElementById('preloader');
             preloader.style.opacity = '0';
-            // CRITICAL: Fully remove preloader from view so it doesn't block interactions
             setTimeout(() => {
                 preloader.style.display = 'none';
                 document.getElementById('staff-viewport').classList.add('is-active');
-            }, 800);
+            }, 600);
         }, 1200);
     });
 
-    // MANIFEST LOGIC
+    // MANIFEST LOGIC (RETAINED)
     let staffManifest = [];
     function addStaffManifest() {
         const client = document.getElementById('sClient').value.trim();
@@ -370,9 +462,9 @@
         itemsDiv.innerHTML = "";
         staffManifest.forEach((m, idx) => {
             itemsDiv.innerHTML += `
-                <div class="d-flex justify-content-between small fw-bold border-bottom py-2">
-                    <span>${m.plate} [JO: ${m.jo || 'N/A'}] - ${m.service}</span>
-                    <i class="fa-solid fa-trash text-danger" style="cursor:pointer;" onclick="removeStaffManifest(${idx})"></i>
+                <div class="d-flex justify-content-between align-items-center small fw-bold border-bottom py-3">
+                    <span><i class="fa-solid fa-truck-front me-2 text-primary"></i>${m.plate} [${m.service}]</span>
+                    <i class="fa-solid fa-circle-minus text-danger fs-5" style="cursor:pointer;" onclick="removeStaffManifest(${idx})"></i>
                 </div>`;
         });
         document.getElementById('staffManifestJson').value = JSON.stringify(staffManifest);

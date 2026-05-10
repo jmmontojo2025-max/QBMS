@@ -1,189 +1,257 @@
 {% extends "base_staff.html" %}
+
 {% block content %}
-<!-- Typography & Animations -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-
-<div class="biz-console-wrapper animate__animated animate__fadeIn">
-
-    <!-- 1. HEADER SECTION -->
-    <div class="d-flex justify-content-between align-items-end mb-4">
-        <div>
-            <h3 class="fw-900 mb-1 text-dark letter-spacing-tight">Access Control Matrix</h3>
-            <p class="text-muted small mb-0">Configuring functional node authorizations for the Coolaire Infrastructure.</p>
-        </div>
-        <div class="text-end">
-            <div class="badge bg-dark text-warning border-warning border px-3 py-2 rounded-pill fw-800 shadow-sm">
-                <i class="fa-solid fa-shield-halved me-2"></i> LEVEL: SUPER_ADMIN_OVERRIDE
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. PERMISSION MATRIX CARD -->
-    <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-white">
-        <div class="card-header bg-navy text-white p-4 border-0 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <div class="header-icon-box me-3">
-                    <i class="fa-solid fa-lock-open"></i>
-                </div>
-                <div>
-                    <h6 class="fw-800 mb-0">Feature Authorization Ledger</h6>
-                    <p class="extra-small opacity-75 mb-0 font-monospace">ENCRYPTED_SESSION // WRITE_ACCESS_GRANTED</p>
-                </div>
-            </div>
-            <div class="status-pulse-container d-flex align-items-center gap-2">
-                <span class="pulse-dot-green"></span>
-                <span class="extra-small fw-800">LIVE_SYNC</span>
-            </div>
-        </div>
-
-        <form action="/staff/permissions" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 matrix-table">
-                    <thead>
-                        <tr class="bg-light bg-opacity-50">
-                            <th class="ps-5 py-4 border-0 small fw-900 text-muted">FUNCTIONAL MODULE</th>
-
-                            <!-- SUPER ADMIN (HARDCODED REFERENCE) -->
-                            <th class="text-center border-0">
-                                <div class="role-column-header">
-                                    <span class="clearance-tag tag-super-admin">SUPER_ADMIN</span>
-                                    <div class="extra-small text-muted mt-1 fw-700">Level 0</div>
-                                </div>
-                            </th>
-
-                            {% for role in roles %}
-                            <th class="text-center border-0">
-                                <div class="role-column-header">
-                                    <span class="clearance-tag tag-{{ role }}">{{ role|upper }}</span>
-                                    <div class="extra-small text-muted mt-1 fw-700">Level {{ loop.index }}</div>
-                                </div>
-                            </th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for feat_key, feat_name in features %}
-                        <tr class="matrix-row">
-                            <td class="ps-5 py-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="feat-icon-box me-3">
-                                        {% if 'analytics' in feat_key %}<i class="fa-solid fa-chart-line"></i>
-                                        {% elif 'notification' in feat_key %}<i class="fa-solid fa-envelope-open-text"></i>
-                                        {% elif 'records' in feat_key %}<i class="fa-solid fa-book-medical"></i>
-                                        {% elif 'audit' in feat_key %}<i class="fa-solid fa-fingerprint"></i>
-                                        {% elif 'verify' in feat_key %}<i class="fa-solid fa-user-shield"></i>
-                                        {% elif 'users' in feat_key %}<i class="fa-solid fa-users-gear"></i>
-                                        {% elif 'settings' in feat_key %}<i class="fa-solid fa-sliders"></i>
-                                        {% elif 'global' in feat_key %}<i class="fa-solid fa-globe"></i>
-                                        {% elif 'technician' in feat_key %}<i class="fa-solid fa-wrench"></i>
-                                        {% elif 'locations' in feat_key %}<i class="fa-solid fa-building"></i>
-                                        {% else %}<i class="fa-solid fa-cube"></i>{% endif %}
-                                    </div>
-                                    <div>
-                                        <div class="fw-800 text-dark mb-0">{{ feat_name }}</div>
-                                        <div class="extra-small text-muted font-monospace opacity-75">KEY: {{ feat_key|upper }}</div>
-                                    </div>
-                                </div>
-                            </td>
-
-                            <!-- SUPER ADMIN COLUMN (Always checked, always disabled) -->
-                            <td class="text-center bg-light bg-opacity-20">
-                                <div class="perm-switch-wrapper">
-                                    <label class="switch-container readonly">
-                                        <input type="checkbox" checked disabled>
-                                        <span class="switch-slider shadow-sm"></span>
-                                    </label>
-                                </div>
-                            </td>
-
-                            {% for role in roles %}
-                            <td class="text-center">
-                                <div class="perm-switch-wrapper">
-                                    <label class="switch-container">
-                                        <input type="checkbox"
-                                               name="{{ role }}_{{ feat_key }}"
-                                               {% if current_perms.get(role, {}).get(feat_key) %}checked{% endif %}>
-                                        <span class="switch-slider shadow-sm"></span>
-                                    </label>
-                                </div>
-                            </td>
-                            {% endfor %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- 3. FOOTER ACTIONS -->
-            <div class="p-4 bg-light border-top d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="bg-white p-2 rounded-circle shadow-sm">
-                        <i class="fa-solid fa-circle-info text-primary fs-5"></i>
-                    </div>
-                    <p class="extra-small text-muted fw-600 mb-0" style="max-width: 450px;">
-                        Level 0 (Super Admin) bypasses all checks. Updates to Admin, Coordinator, or Advisor will reflect immediately upon committing.
-                    </p>
-                </div>
-                <button type="submit" class="btn btn-deploy-matrix fw-950 px-5 py-3 shadow-lg">
-                    COMMIT AUTHORIZATION CHANGES <i class="fa-solid fa-cloud-arrow-up ms-2"></i>
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
     :root {
-        --coolaire-navy: #002d72;
-        --coolaire-green: #76b82a;
-        --coolaire-blue-light: #eff6ff;
+        --saas-primary: #2563eb;
+        --saas-navy: #0f172a;
+        --saas-slate: #64748b;
+        --saas-border: #e2e8f0;
+        --saas-bg: #f8fafc;
+        --saas-success: #10b981;
+        --saas-warning: #f59e0b;
+        --saas-danger: #ef4444;
+        --saas-radius: 14px;
+        --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
     }
 
-    .bg-navy { background-color: var(--coolaire-navy) !important; }
-    .letter-spacing-tight { letter-spacing: -1.5px; }
-    .fw-950 { font-weight: 950; }
-
-    .header-icon-box {
-        width: 45px; height: 45px; background: rgba(255,255,255,0.15);
-        border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;
-        display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--saas-navy);
+        position: relative;
+        gap: 1.25rem;
+        min-height: 100%;
     }
 
-    .matrix-table thead th { border-bottom: 2px solid #eee !important; padding: 25px 15px; }
-    .matrix-row { transition: all 0.2s; }
-    .matrix-row:hover { background-color: #f8fbff !important; }
-
-    .feat-icon-box {
-        width: 40px; height: 40px; background: var(--coolaire-blue-light);
-        color: var(--coolaire-navy); border-radius: 10px;
-        display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    /* INNER LOADER (Doesn't affect side menu) */
+    #inner-loader {
+        position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px;
+        background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(4px);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 1000; transition: 0.6s;
     }
+    .svg-draw { width: 60px; height: 60px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
+    @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
 
-    /* ROLE COLORS */
-    .clearance-tag { font-size: 0.65rem; font-weight: 900; padding: 4px 12px; border-radius: 6px; letter-spacing: 1px; border: 1px solid transparent; }
+    /* HEADER SYSTEM */
+    .matrix-header {
+        background: #fff; padding: 1.5rem 2rem; border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border); box-shadow: var(--saas-shadow);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; font-size: 1.5rem; }
 
-    .tag-super-admin { background: #000; color: #fff; border-color: var(--coolaire-green); }
-    .tag-admin { background: #0f172a; color: #ffc107; border-color: #ffc107; }
-    .tag-coordinator { background: #4f46e5; color: #fff; border-color: #4338ca; }
-    .tag-advisor { background: #0d9488; color: #fff; border-color: #0f766e; }
+    .datetime-block { text-align: right; border-left: 2px solid var(--saas-border); padding-left: 1.5rem; }
+    #live-time { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--saas-primary); font-size: 1.25rem; }
+    #live-date { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ACTION BAR */
+    .action-bar {
+        background: #fff; padding: 1rem 1.5rem; border-radius: var(--saas-radius);
+        border: 1px solid var(--saas-border); display: flex; align-items: center; gap: 1.5rem;
+    }
+    .search-box { flex: 1; position: relative; }
+    .search-box i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--saas-slate); }
+    .search-input { width: 100%; padding: 0.6rem 1rem 0.6rem 2.5rem; border-radius: 10px; border: 1px solid var(--saas-border); font-size: 0.85rem; font-weight: 600; }
+
+    /* TABLE CONTAINER */
+    .matrix-card { background: #fff; border-radius: var(--saas-radius); border: 1px solid var(--saas-border); box-shadow: var(--saas-shadow); overflow: hidden; }
+    .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .matrix-table thead th {
+        position: sticky; top: 0; background: #f9fafb; padding: 1.25rem 1rem;
+        font-size: 0.7rem; font-weight: 900; text-transform: uppercase; color: var(--saas-slate);
+        border-bottom: 2px solid var(--saas-border); z-index: 10; text-align: center;
+    }
+    .matrix-table thead th:first-child { text-align: left; padding-left: 2rem; }
+    .matrix-table td { padding: 1rem; border-bottom: 1px solid var(--saas-border); vertical-align: middle; transition: 0.2s; }
+    .matrix-row:hover { background-color: #f0f7ff; }
 
     /* SWITCH UI */
-    .switch-container { position: relative; display: inline-block; width: 48px; height: 24px; }
-    .switch-container input { opacity: 0; width: 0; height: 0; }
-    .switch-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e2e8f0; transition: .4s; border-radius: 34px; }
-    .switch-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-    input:checked + .switch-slider { background-color: var(--coolaire-green); }
-    input:checked + .switch-slider:before { transform: translateX(24px); }
+    .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e2e8f0; transition: .3s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--saas-success); }
+    input:checked + .slider:before { transform: translateX(20px); }
 
-    .readonly .switch-slider { background-color: #1a1a1a; cursor: not-allowed; }
-    .readonly .switch-slider:before { background-color: var(--coolaire-green); }
+    .readonly-switch .slider { background: var(--saas-navy); opacity: 0.8; cursor: not-allowed; }
+    .readonly-switch .slider:before { background: var(--saas-success); }
 
-    .btn-deploy-matrix { background: var(--coolaire-navy); color: white; border: none; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
-    .btn-deploy-matrix:hover { background: var(--coolaire-green); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(118, 184, 42, 0.3); }
+    /* BADGES */
+    .clearance-tag { font-size: 0.6rem; font-weight: 900; padding: 4px 10px; border-radius: 6px; display: block; margin-bottom: 5px; }
+    .tag-super { background: var(--saas-navy); color: white; }
+    .tag-role { background: var(--saas-primary); color: white; }
 
-    .pulse-dot-green { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #22c55e; animation: pulse-green 2s infinite; }
-    @keyframes pulse-green { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    .btn-commit { background: var(--saas-navy); color: white; border: none; padding: 1.25rem 2.5rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; transition: 0.3s; border-radius: 12px; }
+    .btn-commit:hover { background: var(--saas-primary); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
+
+    .instruction-text { font-size: 0.75rem; color: var(--saas-slate); font-weight: 600; line-height: 1.4; }
 </style>
+
+<div class="dashboard-container animate__animated animate__fadeIn">
+
+    <!-- SCOPED CONTENT LOADER -->
+    <div id="inner-loader">
+        <svg class="svg-draw" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg>
+        <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; letter-spacing: 4px; margin-top: 1rem; color: var(--saas-primary);">SYNCING PERMISSIONS...</div>
+    </div>
+
+    <!-- HEADER SECTION -->
+    <header class="matrix-header">
+        <div>
+            <h3 class="page-title">Manage User Access</h3>
+            <p class="instruction-text mb-0">Instruction: Define functional permissions and node authorization levels for system roles.</p>
+        </div>
+
+        <div class="datetime-block">
+            <div id="live-date">...</div>
+            <div id="live-time">00:00:00 AM</div>
+        </div>
+    </header>
+
+    <!-- ACTION & FILTER BAR -->
+    <div class="action-bar shadow-sm">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="featureSearch" class="search-input" placeholder="Instruction: Filter functional modules (e.g. 'audit')...">
+        </div>
+        <div class="instruction-text text-end" style="max-width: 300px;">
+            <i class="fa-solid fa-circle-info me-1"></i> Instruction: Use column headers to toggle all features for a specific role at once.
+        </div>
+    </div>
+
+    <!-- MATRIX TABLE -->
+    <form action="/staff/permissions" method="POST" id="permForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="matrix-card shadow-sm">
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th style="width: 300px;">Functional Module</th>
+                        <th>
+                            <span class="clearance-tag tag-super">SUPER_ADMIN</span>
+                            <small class="text-muted">LOCKED</small>
+                        </th>
+                        {% for role in roles %}
+                        <th>
+                            <span class="clearance-tag tag-role">{{ role|upper }}</span>
+                            <button type="button" class="btn btn-link p-0 extra-small fw-900 text-decoration-none" onclick="toggleColumn('{{ role }}')">TOGGLE_ALL</button>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody id="matrixBody">
+                    {% for feat_key, feat_name in features %}
+                    <tr class="matrix-row">
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="p-2 rounded-3 bg-light text-primary" style="width:35px; text-align:center;">
+                                    <i class="fa-solid fa-cube"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-900 text-navy" style="font-size: 0.85rem;">{{ feat_name }}</div>
+                                    <div class="extra-small font-monospace text-muted">{{ feat_key|upper }}</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- SUPER ADMIN COLUMN -->
+                        <td class="text-center">
+                            <label class="switch readonly-switch">
+                                <input type="checkbox" checked disabled>
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+
+                        <!-- DYNAMIC ROLES -->
+                        {% for role in roles %}
+                        <td class="text-center">
+                            <label class="switch">
+                                <input type="checkbox"
+                                       class="role-{{ role }}"
+                                       name="{{ role }}_{{ feat_key }}"
+                                       {% if current_perms.get(role, {}).get(feat_key) %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- FOOTER ACTIONS -->
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="p-3 rounded-4 bg-white border shadow-sm" style="max-width: 500px;">
+                <h6 class="extra-small fw-900 text-navy mb-1"><i class="fa-solid fa-shield-halved me-2"></i> SECURITY INSTRUCTION</h6>
+                <p class="extra-small text-muted fw-bold mb-0">Instruction: Changes to the authorization ledger take effect upon next user session initialization. Super Admin permissions are hardcoded.</p>
+            </div>
+            <button type="submit" class="btn-commit shadow-lg">
+                COMMIT AUTHORIZATION CHANGES <i class="fa-solid fa-cloud-arrow-up ms-2"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // 1. Live Clock (12-Hour Format)
+    function updateClock() {
+        const now = new Date();
+        const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+
+        // Instruction: hour12: true provides the AM/PM format
+        const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
+
+        const dateEl = document.getElementById('live-date');
+        const timeEl = document.getElementById('live-time');
+
+        if(dateEl) dateEl.innerText = now.toLocaleDateString('en-US', dateOptions).toUpperCase();
+        if(timeEl) timeEl.innerText = now.toLocaleTimeString('en-US', timeOptions);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 2. Search/Filter Function
+    document.getElementById('featureSearch').addEventListener('input', function(e) {
+        const term = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('.matrix-row');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(term) ? '' : 'none';
+        });
+    });
+
+    // 3. Toggle All (Column) Function
+    function toggleColumn(role) {
+        const checkboxes = document.querySelectorAll(`.role-${role}`);
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+    }
+
+    // 4. Scoped Content Loader
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const loader = document.getElementById('inner-loader');
+            if(loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 600);
+            }
+        }, 800);
+    });
+
+    // 5. Submit Feedback (Manual Loader trigger)
+    document.getElementById('permForm').addEventListener('submit', function() {
+        const loader = document.getElementById('inner-loader');
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+    });
+</script>
 {% endblock %}

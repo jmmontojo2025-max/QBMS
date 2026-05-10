@@ -4,249 +4,292 @@
 <!-- EXTERNAL ASSETS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-<div class="booking-terminal-wrapper d-flex align-items-center justify-content-center py-3 py-lg-5 animate__animated animate__fadeIn">
-    <div class="container-fluid px-2 px-md-4">
+<style>
+    :root {
+        --fleet-navy: #0f172a;
+        --fleet-primary: #2563eb;
+        --fleet-success: #10b981;
+        --fleet-warning: #f59e0b;
+        --fleet-border: #e2e8f0;
+        --fleet-bg: #ffffff; /* Forced pure white background */
+    }
+
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--fleet-bg); }
+
+    .booking-terminal-wrapper { min-height: 100vh; padding: 1rem 0; }
+
+    /* Main Card Styling - Removed shadows for cleaner white look */
+    .main-booking-card {
+        border: 1px solid var(--fleet-border);
+        background: white;
+    }
+
+    /* Manifest Section */
+    #manifestWrapper {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--fleet-border);
+    }
+
+    /* RESPONSIVE TABLE LOGIC */
+    .manifest-table-container { background: white; border-radius: 12px; border: 1px solid var(--fleet-border); }
+
+    @media (max-width: 768px) {
+        .manifest-table { display: none; } /* Hide table on mobile */
+        .manifest-cards { display: block !important; } /* Show cards on mobile */
+    }
+
+    .manifest-card-item {
+        background: white;
+        border: 1px solid var(--fleet-border);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Input Styling - Mobile optimized */
+    .biz-label {
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .biz-input-group {
+        display: flex;
+        align-items: center;
+        background: #f8fafc;
+        border: 1.5px solid var(--fleet-border);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        transition: all 0.2s;
+    }
+
+    .biz-input-group:focus-within {
+        border-color: var(--fleet-primary);
+        background: white;
+    }
+
+    .biz-select, .biz-input {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        font-weight: 700;
+        color: var(--fleet-navy);
+        font-size: 1rem !important; /* Prevents iOS zoom */
+    }
+
+    /* Step Indicators */
+    .step-hex {
+        background: var(--fleet-navy);
+        color: white;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-weight: 900;
+        font-size: 0.75rem;
+    }
+
+    .btn-add-manifest {
+        background: var(--fleet-navy);
+        color: white;
+        font-weight: 800;
+        border-radius: 12px;
+        padding: 1.2rem;
+        border: none;
+        width: 100%;
+        transition: 0.3s;
+    }
+
+    .radar-ping {
+        position: absolute; inset: 0;
+        border: 2px solid var(--fleet-primary);
+        border-radius: 1rem;
+        animation: radar-expand 2s infinite;
+    }
+    @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.6); opacity: 0; } }
+
+    /* Custom Scrollbar for Manifest */
+    #manifestBody { max-height: 400px; overflow-y: auto; }
+</style>
+
+<div class="booking-terminal-wrapper animate__animated animate__fadeIn">
+    <div class="container-fluid px-3 px-md-5">
         <div class="row justify-content-center">
-            <div class="col-12 col-lg-10 col-xl-9">
-                <div class="card border-0 rounded-4 overflow-hidden shadow-2xl main-booking-card">
+            <div class="col-xl-11">
 
-                    <!-- 1. TERMINAL HEADER -->
-                    <div class="card-header bg-white p-3 p-md-5 border-0 pb-0">
-                        <div class="d-flex justify-content-between align-items-center">
+                <div class="card main-booking-card rounded-4 border-1">
+                    <div class="card-body p-3 p-md-5">
+
+                        <!-- HEADER -->
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start mb-4 mb-md-5 gap-3">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="icon-scan-wrapper d-none d-sm-block">
+                                <div class="position-relative">
                                     <div class="radar-ping"></div>
-                                    <div class="bg-navy p-3 rounded-4 text-white position-relative shadow">
-                                        <i class="fa-solid fa-calendar-check fs-4 text-white ani-pulse-icon"></i>
+                                    <div class="bg-dark p-3 rounded-4 text-white position-relative">
+                                        <i class="fa-solid fa-truck-ramp-box fs-4"></i>
                                     </div>
                                 </div>
                                 <div>
-                                    <h3 class="fw-900 text-navy mb-1 ls-tight fs-4 fs-md-2">Service Deployment</h3>
-                                    <p class="text-muted small fw-600 mb-0 text-uppercase ls-1">
-                                        <i class="fa-solid fa-network-wired text-primary me-1 ani-heartbeat"></i> Fleet Manifest Manager
-                                    </p>
+                                    <h3 class="fw-900 text-navy mb-0 fs-4">Service Deployment</h3>
+                                    <p class="text-muted extra-small fw-bold mb-0">CLIENT_NODE: {{ current_user.company_name }}</p>
                                 </div>
                             </div>
-                            <div class="terminal-status-tag">
-                                <span class="pulse-dot-green"></span> SECURE_CONNECTION
+                            <div>
+                                <span class="badge bg-light text-success border px-3 py-2 rounded-pill fw-900" style="font-size: 0.6rem;">
+                                    <i class="fa-solid fa-circle-check me-1"></i> MANIFEST_SECURE
+                                </span>
                             </div>
                         </div>
 
-                        <!-- NEW: DEPLOYMENT MANIFEST TABLE -->
-                        <div id="manifestWrapper" class="d-none mt-5 animate__animated animate__fadeInDown">
-                            <div class="d-flex justify-content-between align-items-end mb-3">
-                                <h6 class="biz-label text-primary mb-0"><i class="fa-solid fa-list-check me-2"></i>Current Deployment Manifest</h6>
-                                <span class="badge bg-navy px-3" id="manifestCount">0 Assets</span>
+                        <!-- 2. DYNAMIC MANIFEST -->
+                        <div id="manifestWrapper" class="d-none animate__animated animate__fadeIn">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-900 text-navy mb-0"><i class="fa-solid fa-list-check me-2"></i>Manifest</h6>
+                                <span class="badge bg-dark px-3" id="manifestCount">0 Assets</span>
                             </div>
-                            <div class="table-responsive rounded-4 border shadow-sm bg-light">
-                                <table class="table table-hover align-middle mb-0" id="manifestTable">
-                                    <thead class="bg-white">
-                                        <tr style="font-size: 0.65rem;" class="text-uppercase text-muted">
-                                            <th class="ps-4 py-3">Asset Identification</th>
-                                            <th>Target Hub</th>
-                                            <th>Service Node</th>
+
+                            <!-- DESKTOP TABLE -->
+                            <div class="table-responsive manifest-table manifest-table-container mb-4 d-none d-md-block">
+                                <table class="table align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="ps-4">Asset Identification</th>
+                                            <th>Hub</th>
                                             <th>Mode</th>
+                                            <th>Service</th>
                                             <th>Schedule</th>
                                             <th class="text-end pe-4">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="manifestBody" style="font-size: 0.85rem; font-weight: 700; background: white;">
-                                        <!-- Rows injected by JS -->
-                                    </tbody>
+                                    <tbody id="manifestBody" class="fw-bold text-navy" style="font-size: 0.85rem;"></tbody>
                                 </table>
                             </div>
-                            <div class="mt-4">
-                                <form action="/book" method="POST" id="finalSubmitForm">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="manifest_data" id="manifestJsonInput">
-                                    <button type="submit" class="btn btn-confirm-final w-100 py-3 rounded-3 shadow hover-lift">
-                                        DEPLOY ALL ASSETS IN MANIFEST <i class="fa-solid fa-paper-plane ms-2"></i>
-                                    </button>
-                                </form>
-                            </div>
-                            <div class="text-center mt-3">
-                                <p class="extra-small fw-bold text-muted text-uppercase">-- Add more assets below or confirm deployment --</p>
-                            </div>
-                        </div>
 
-                        <div class="header-divider mt-3 mt-md-4"></div>
-                    </div>
+                            <!-- MOBILE CARDS (Injects here) -->
+                            <div id="manifestCards" class="manifest-cards d-none"></div>
 
-                    <div class="card-body bg-white p-3 p-md-5 pt-4">
-                        <div id="bookingForm">
-                            <div class="row g-4 g-md-5">
-
-                                <!-- COLUMN 01: ASSET ASSIGNMENT -->
-                                <div class="col-12 col-md-6 border-end-md">
-                                    <div class="d-flex align-items-center mb-4">
-                                        <div class="step-hex me-2 me-md-3">01</div>
-                                        <h6 class="biz-label mb-0">Asset Identification</h6>
-                                    </div>
-
-                                    <div class="mb-4">
-                                        <label class="biz-label">Fleet Registry Search</label>
-                                        <div class="biz-input-group border">
-                                            <span class="input-icon"><i class="fa-solid fa-truck-container text-primary ani-float"></i></span>
-                                            <select id="vSelect" class="form-select biz-select border-0" required>
-                                                <option value="" disabled selected>Select asset...</option>
-                                                {% for v in vehicles %}
-                                                    <option value="{{ v.id }}" data-plate="{{ v.plate_number }} ({{ v.model_description }})">
-                                                        {{ v.plate_number }} ({{ v.model_description }})
-                                                    </option>
-                                                {% endfor %}
-                                                <option value="new" class="text-primary fw-bold">+ Provision New Asset Node</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <!-- NEW ASSET BOX -->
-                                    <div id="newVehicleFields" class="d-none animate__animated animate__fadeIn p-4 rounded-4 bg-white border border-primary border-2 shadow-sm mb-3">
-                                        <div class="mb-3">
-                                            <label class="biz-label text-primary">Plate Identification</label>
-                                            <div class="biz-input-group border bg-light">
-                                                <span class="input-icon"><i class="fa-solid fa-id-card-clip text-primary"></i></span>
-                                                <input type="text" id="newPlate" class="form-control biz-input" placeholder="ABC-1234">
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="biz-label text-primary">Asset Model / Type</label>
-                                            <div class="biz-input-group border bg-light">
-                                                <span class="input-icon"><i class="fa-solid fa-tags text-primary"></i></span>
-                                                <input type="text" id="newModel" class="form-control biz-input" placeholder="e.g. Isuzu HI-ACE">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- COLUMN 02: HUB & SERVICES -->
-                                <div class="col-12 col-md-6">
-                                    <div class="d-flex align-items-center mb-4">
-                                        <div class="step-hex me-2 me-md-3">02</div>
-                                        <h6 class="biz-label mb-0">Hub & Service Logic</h6>
-                                    </div>
-
-                                    <div class="mb-4">
-                                        <label class="biz-label">Deployment Mode</label>
-                                        <div class="d-flex gap-2">
-                                            <input type="radio" class="btn-check" name="service_location" id="locIn" value="In-Plant" checked autocomplete="off">
-                                            <label class="btn btn-outline-navy flex-fill py-3 rounded-3 fw-bold" for="locIn">
-                                                <i class="fa-solid fa-warehouse me-2"></i> IN-PLANT
-                                            </label>
-
-                                            <input type="radio" class="btn-check" name="service_location" id="locOut" value="Out-Plant" autocomplete="off">
-                                            <label class="btn btn-outline-navy flex-fill py-3 rounded-3 fw-bold" for="locOut">
-                                                <i class="fa-solid fa-truck-fast me-2"></i> OUT-PLANT
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="biz-label">Target Service Hub</label>
-                                        <div class="biz-input-group border">
-                                            <span class="input-icon"><i class="fa-solid fa-location-crosshairs text-primary ani-pulse-icon"></i></span>
-                                            <select id="locSelect" class="form-select biz-select border-0" required>
-                                                <option value="" disabled selected>Select terminal...</option>
-                                                {% for loc in locations %}
-                                                    <option value="{{ loc.id }}">{{ loc.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="biz-label">Required Service</label>
-                                        <div class="biz-input-group border">
-                                            <span class="input-icon"><i class="fa-solid fa-screwdriver-wrench text-primary gear-spin"></i></span>
-                                            <select id="prodSelect" class="form-select biz-select border-0" required>
-                                                <option value="" disabled selected>Select service type...</option>
-                                                {% for category in categories %}
-                                                    <option value="{{ category.name }}">{{ category.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="row g-3">
-                                        <div class="col-6">
-                                            <label class="biz-label">Target Date</label>
-                                            <div class="biz-input-group border bg-light">
-                                                <input type="text" id="datePicker" class="form-control biz-input text-center" placeholder="SET DATE" readonly required>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <label class="biz-label">Time Window</label>
-                                            <div class="biz-input-group border bg-light">
-                                                <input type="text" id="timePicker" class="form-control biz-input text-center" placeholder="SET TIME" readonly required>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 mt-md-5">
-                                <button type="button" onclick="addToManifest()" class="btn btn-navy-submit w-100 py-3 py-md-4 rounded-3 shadow-lg fw-900">
-                                    ADD ASSET TO DEPLOYMENT LIST <i class="fa-solid fa-plus-circle ms-2"></i>
+                            <form action="/book" method="POST" id="finalSubmitForm">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="manifest_data" id="manifestJsonInput">
+                                <button type="submit" class="btn btn-success w-100 py-3 rounded-3 fw-900 text-uppercase shadow-sm">
+                                    CONFIRM GLOBAL DEPLOYMENT <i class="fa-solid fa-paper-plane ms-2"></i>
                                 </button>
+                            </form>
+                            <hr class="my-4 my-md-5 opacity-10">
+                        </div>
+
+                        <!-- 3. DEPLOYMENT FORM -->
+                        <div class="row g-4 g-md-5">
+                            <!-- IDENTIFICATION -->
+                            <div class="col-lg-6">
+                                <div class="d-flex align-items-center mb-4">
+                                    <div class="step-hex me-3">01</div>
+                                    <h6 class="fw-900 text-navy mb-0 text-uppercase">Asset ID</h6>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="biz-label">Registered Fleet</label>
+                                    <div class="biz-input-group">
+                                        <select id="vSelect" class="form-select biz-select">
+                                            <option value="" disabled selected>Select asset...</option>
+                                            {% for v in vehicles %}
+                                                <option value="{{ v.id }}" data-plate="{{ v.plate_number }}">
+                                                    {{ v.plate_number }} ({{ v.model_description }})
+                                                </option>
+                                            {% endfor %}
+                                            <option value="new" class="text-primary fw-bold">+ Provision New Asset</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div id="newVehicleFields" class="d-none animate__animated animate__fadeIn p-3 rounded-4 bg-light border border-primary border-dashed mb-4">
+                                    <div class="mb-3">
+                                        <label class="biz-label">New Plate Number</label>
+                                        <input type="text" id="newPlate" class="form-control biz-input bg-white border px-3" placeholder="ABC-1234">
+                                    </div>
+                                    <div>
+                                        <label class="biz-label">Asset Description</label>
+                                        <input type="text" id="newModel" class="form-control biz-input bg-white border px-3" placeholder="e.g. Isuzu HI-ACE">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- LOGIC -->
+                            <div class="col-lg-6">
+                                <div class="d-flex align-items-center mb-4">
+                                    <div class="step-hex me-3">02</div>
+                                    <h6 class="fw-900 text-navy mb-0 text-uppercase">Deployment Logic</h6>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="biz-label">Operational Mode</label>
+                                    <div class="d-flex gap-2">
+                                        <input type="radio" class="btn-check" name="service_location" id="locIn" value="In-Plant" checked>
+                                        <label class="btn btn-outline-primary flex-fill fw-bold py-3 rounded-3" for="locIn">In-Plant</label>
+
+                                        <input type="radio" class="btn-check" name="service_location" id="locOut" value="Out-Plant">
+                                        <label class="btn btn-outline-primary flex-fill fw-bold py-3 rounded-3" for="locOut">Out-Plant</label>
+                                    </div>
+                                </div>
+
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="biz-label">Target Hub</label>
+                                        <select id="locSelect" class="form-select biz-input border px-3" style="height: 52px;">
+                                            <option value="" disabled selected>Hub...</option>
+                                            {% for loc in locations %}
+                                                <option value="{{ loc.id }}">{{ loc.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="biz-label">Service Node</label>
+                                        <select id="prodSelect" class="form-select biz-input border px-3" style="height: 52px;">
+                                            <option value="" disabled selected>Service...</option>
+                                            {% for category in categories %}
+                                                <option value="{{ category.name }}">{{ category.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="biz-label">Date</label>
+                                        <input type="text" id="datePicker" class="form-control biz-input border px-3 text-center bg-white" style="height: 52px;" placeholder="Select Date">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="biz-label">Time</label>
+                                        <input type="text" id="timePicker" class="form-control biz-input border px-3 text-center bg-white" style="height: 52px;" placeholder="Select Time">
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
+                        <div class="mt-4 mt-md-5">
+                            <button type="button" onclick="addToManifest()" class="btn btn-add-manifest shadow-sm">
+                                <i class="fa-solid fa-circle-plus me-2"></i> ADD TO MANIFEST
+                            </button>
+                        </div>
+
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
 </div>
-
-<style>
-    :root {
-        --coolaire-navy: #002d72;
-        --coolaire-green: #22c55e;
-        --coolaire-yellow: #ffc107;
-    }
-
-    .btn-outline-navy { border: 2px solid var(--coolaire-navy); color: var(--coolaire-navy); }
-    .btn-check:checked + .btn-outline-navy { background-color: var(--coolaire-navy); color: white; }
-
-    .booking-terminal-wrapper { min-height: calc(100vh - 120px); }
-    .text-navy { color: var(--coolaire-navy); }
-    .bg-navy { background-color: var(--coolaire-navy); }
-    .fw-900 { font-weight: 900; }
-    .ls-tight { letter-spacing: -1.5px; }
-    .ls-1 { letter-spacing: 1px; }
-    .extra-small { font-size: 0.65rem; }
-    .biz-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 8px; display: block; }
-
-    .main-booking-card { border-radius: 1.5rem !important; box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.15); }
-    .header-divider { height: 1px; background: linear-gradient(to right, #e2e8f0, transparent); }
-
-    .step-hex { background: var(--coolaire-navy); color: white; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; border-radius: 8px; }
-
-    .biz-input-group { display: flex; align-items: center; background: #f8fafc; border-radius: 12px; padding: 4px 15px; transition: 0.3s; }
-    .biz-input-group:focus-within { background: white; border-color: var(--coolaire-navy) !important; box-shadow: 0 0 0 4px rgba(0,45,114,0.05); }
-    .input-icon { width: 25px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 1.1rem; }
-
-    .biz-select, .biz-input { background: transparent !important; border: none !important; box-shadow: none !important; padding: 12px 0; font-weight: 700; color: #1e293b; font-size: 0.9rem; width: 100%; }
-
-    .btn-navy-submit { background: var(--coolaire-navy); color: white !important; font-weight: 800; border: none; transition: 0.3s; }
-    .btn-navy-submit:hover { background: #001d4a; transform: translateY(-2px); }
-
-    .btn-confirm-final { background-color: var(--coolaire-yellow); color: #000 !important; font-weight: 900; border: none; transition: 0.3s; }
-    .btn-confirm-final:hover { background-color: #eab000; transform: scale(1.01); }
-
-    .icon-scan-wrapper { position: relative; }
-    .radar-ping { position: absolute; inset: 0; border: 2px solid var(--coolaire-navy); border-radius: 1rem; animation: radar-expand 2s infinite; }
-    @keyframes radar-expand { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.6); opacity: 0; } }
-
-    .ani-float { animation: float 3s ease-in-out infinite; }
-    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-    .gear-spin { animation: fa-spin 6s linear infinite; }
-    .ani-heartbeat { animation: heartbeat 1.5s ease-in-out infinite; }
-    .terminal-status-tag { background: #f0fdf4; padding: 6px 15px; border-radius: 50px; font-size: 0.6rem; font-weight: 900; color: #166534; border: 1px solid #dcfce7; }
-
-    @media (max-width: 768px) {
-        .border-end-md { border-right: none !important; border-bottom: 1px solid #f1f5f9; padding-bottom: 2rem; margin-bottom: 1rem; }
-    }
-</style>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
@@ -273,23 +316,15 @@
         const dStr = datePicker.input.value;
         const tStr = timePicker.input.value;
 
-        // Validation
         if (!vSelect.value || !locSelect.value || !prodSelect.value || !dStr || !tStr) {
-            alert("Protocol Error: All deployment parameters must be initialized.");
+            alert("Validation Error: All fields are required.");
             return;
         }
 
-        if (vSelect.value === 'new' && !document.getElementById('newPlate').value.trim()) {
-            alert("Identification Error: New asset requires a plate number.");
-            return;
-        }
-
-        // Logic for Display
         let plateDisplay = vSelect.value === 'new' ?
-            document.getElementById('newPlate').value.toUpperCase() :
-            vSelect.options[vSelect.selectedIndex].text;
+            document.getElementById('newPlate').value.toUpperCase().trim() :
+            vSelect.options[vSelect.selectedIndex].getAttribute('data-plate');
 
-        // Logic for ISO Time (for Database)
         const dObj = datePicker.selectedDates[0];
         const tObj = timePicker.selectedDates[0];
         const isoTime = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}T${String(tObj.getHours()).padStart(2,'0')}:${String(tObj.getMinutes()).padStart(2,'0')}`;
@@ -310,38 +345,54 @@
         manifest.push(entry);
         renderManifest();
 
-        // Reset only Asset part for user convenience
         vSelect.selectedIndex = 0;
         document.getElementById('newVehicleFields').classList.add('d-none');
         document.getElementById('newPlate').value = "";
         document.getElementById('newModel').value = "";
+        document.getElementById('manifestWrapper').scrollIntoView({ behavior: 'smooth' });
     }
 
     function renderManifest() {
         const wrapper = document.getElementById('manifestWrapper');
         const body = document.getElementById('manifestBody');
+        const cardContainer = document.getElementById('manifestCards');
         const countTag = document.getElementById('manifestCount');
         const jsonInput = document.getElementById('manifestJsonInput');
 
         body.innerHTML = "";
+        cardContainer.innerHTML = "";
+
         manifest.forEach((item, index) => {
+            // Table row for Desktop
             body.innerHTML += `
-                <tr>
-                    <td class="ps-4 text-navy fw-bold">${item.plate_display}</td>
+                <tr class="animate__animated animate__fadeIn">
+                    <td class="ps-4"># ${item.plate_display}</td>
                     <td>${item.location_name}</td>
+                    <td><span class="badge ${item.service_location === 'In-Plant' ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger'}">${item.service_location}</span></td>
                     <td><span class="badge bg-light text-dark border">${item.product}</span></td>
-                    <td><span class="badge ${item.service_location === 'In-Plant' ? 'bg-info' : 'bg-danger'}">${item.service_location}</span></td>
-                    <td class="small text-muted">${item.time_display}</td>
+                    <td class="text-muted extra-small">${item.time_display}</td>
                     <td class="text-end pe-4">
-                        <button type="button" onclick="removeFromManifest(${index})" class="btn btn-sm btn-outline-danger border-0">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
+                        <button type="button" onclick="removeFromManifest(${index})" class="btn btn-sm text-danger"><i class="fa-solid fa-trash-can"></i></button>
                     </td>
                 </tr>`;
+
+            // Card for Mobile
+            cardContainer.innerHTML += `
+                <div class="manifest-card-item animate__animated animate__fadeInUp">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="fw-900 text-navy"># ${item.plate_display}</div>
+                        <button type="button" onclick="removeFromManifest(${index})" class="btn btn-sm btn-outline-danger border-0 py-0"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                    <div class="extra-small fw-bold text-muted text-uppercase mb-1">${item.location_name} // ${item.product}</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge ${item.service_location === 'In-Plant' ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger'}">${item.service_location}</span>
+                        <div class="fw-bold text-navy" style="font-size: 0.7rem;">${item.time_display}</div>
+                    </div>
+                </div>`;
         });
 
         jsonInput.value = JSON.stringify(manifest);
-        countTag.innerText = `${manifest.length} Assets Identified`;
+        countTag.innerText = `${manifest.length} ASSETS READY`;
         wrapper.classList.toggle('d-none', manifest.length === 0);
     }
 
