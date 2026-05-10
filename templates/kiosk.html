@@ -1,16 +1,19 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- Premium SaaS Typography -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+
 <style>
-    /* KIOSK TERMINAL HARDENING */
     :root {
-        --kiosk-bg: #f8fafc;
-        --kiosk-card-shadow: 0 40px 100px -20px rgba(0, 45, 114, 0.15);
-        --coolaire-blue: #002d72;
-        --coolaire-blue-dark: #001a45;
-        --coolaire-yellow: #ffc107;
+        --kiosk-navy: #0f172a;
+        --kiosk-blue: #2563eb;
+        --kiosk-yellow: #f59e0b;
+        --kiosk-border: #e2e8f0;
+        --kiosk-bg: #ffffff;
     }
 
+    /* KIOSK TERMINAL HARDENING */
     body {
         overflow: hidden !important;
         background: var(--kiosk-bg);
@@ -22,271 +25,311 @@
     }
 
     /* Hide standard UI elements for Kiosk Mode */
-    .app-header, .app-dock-wrapper, footer { display: none !important; }
+    .app-header, .app-dock-wrapper, .toast-wrapper, footer { display: none !important; }
 
     .kiosk-wrapper {
         height: 100vh;
         display: flex;
         flex-direction: column;
-        padding: 2.5vh 3vw;
-        gap: 2vh;
+        padding: 2rem;
+        gap: 1.5rem;
     }
 
-    /* HEADER */
+    /* HEADER ARCHITECTURE */
     .kiosk-header {
         background: white;
-        border-radius: 2rem;
-        padding: 1.5vh 3vw;
+        border-radius: 20px;
+        padding: 1.5rem 2.5rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-        border: 1px solid rgba(0,0,0,0.05);
+        border: 1px solid var(--kiosk-border);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+    }
+
+    .node-brand h2 {
+        font-weight: 900;
+        color: var(--kiosk-navy);
+        letter-spacing: -1.5px;
+        font-size: 1.8rem;
+        margin: 0;
     }
 
     #kioskClock {
-        font-size: clamp(2rem, 5vh, 4rem);
-        font-weight: 900;
-        color: var(--coolaire-blue);
-        line-height: 1;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--kiosk-navy);
     }
 
-    /* CARDS */
+    /* MAIN INTERACTION CARDS */
+    .kiosk-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        flex-grow: 1;
+    }
+
     .kiosk-card {
         background: white;
-        border-radius: 3rem;
-        box-shadow: var(--kiosk-card-shadow);
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        padding: 5vh 3vw !important;
-        position: relative;
-        overflow: hidden;
-        border: 1px solid rgba(0,0,0,0.05);
-    }
-
-    .card-appointment { border-top: 15px solid var(--coolaire-blue); }
-    .card-walkin { border-top: 15px solid var(--coolaire-yellow); }
-
-    /* INPUT STYLING */
-    .kiosk-input-massive {
-        font-size: 5rem !important;
-        font-weight: 950;
-        letter-spacing: 15px;
-        color: var(--coolaire-blue);
-        text-align: center;
-        border: 4px solid #e2e8f0 !important;
-        background: #f1f5f9 !important;
-        border-radius: 2rem;
-        padding: 3vh !important;
-        width: 100%;
-    }
-
-    /* MODAL STYLING */
-    .modal-content { border-radius: 3rem; border: none; }
-    .modal-input-kiosk {
-        font-size: 2.5rem !important;
-        padding: 1.5rem !important;
-        border-radius: 1.5rem !important;
-        border: 3px solid #e2e8f0 !important;
-        font-weight: 700;
-    }
-    .modal-label-kiosk {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: var(--coolaire-blue);
-        margin-bottom: 10px;
-        display: block;
-    }
-
-    /* BUTTONS */
-    .btn-kiosk-primary {
-        background: var(--coolaire-blue);
-        color: white;
-        font-size: 2.2rem;
-        font-weight: 900;
-        padding: 3vh;
-        border-radius: 2rem;
-        border: none;
-    }
-
-    .btn-kiosk-outline {
-        border: 4px solid #e2e8f0;
-        background: white;
-        padding: 5vh;
-        border-radius: 2.5rem;
+        border: 1.5px solid var(--kiosk-border);
+        border-radius: 32px;
+        padding: 4rem 2rem;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 20px;
-        text-decoration: none;
-        cursor: pointer;
+        justify-content: center;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+
+    .card-appointment { border-bottom: 12px solid var(--kiosk-blue); }
+    .card-walkin { border-bottom: 12px solid var(--kiosk-yellow); }
+
+    .card-icon-box {
+        width: 120px; height: 120px;
+        background: #f8fafc;
+        border-radius: 30px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 3.5rem;
+        margin-bottom: 2rem;
+        color: var(--kiosk-navy);
+        border: 1px solid var(--kiosk-border);
+    }
+
+    .kiosk-card h1 { font-weight: 900; font-size: 3rem; letter-spacing: -1px; color: var(--kiosk-navy); }
+    .kiosk-card p { font-size: 1.2rem; color: var(--kiosk-slate); font-weight: 500; margin-bottom: 3rem; }
+
+    /* PIN INPUT STYLING */
+    .kiosk-input-massive {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 4rem !important;
+        font-weight: 800;
+        letter-spacing: 1rem;
+        color: var(--kiosk-blue);
+        text-align: center;
+        border: 2px solid var(--kiosk-border) !important;
+        background: #f8fafc !important;
+        border-radius: 20px;
+        padding: 1rem !important;
+        width: 100%;
+        max-width: 400px;
+        transition: all 0.3s;
+    }
+    .kiosk-input-massive:focus {
+        border-color: var(--kiosk-blue) !important;
+        background: white !important;
+        outline: none;
+        box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.05);
+    }
+
+    /* BUTTONS */
+    .btn-kiosk-main {
+        background: var(--kiosk-navy);
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 800;
+        padding: 1.5rem 3rem;
+        border-radius: 100px;
+        border: none;
+        width: 100%;
+        max-width: 400px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 1.5rem;
+    }
+
+    .btn-walkin-trigger {
+        background: white;
+        border: 2px solid var(--kiosk-border);
+        padding: 3rem;
+        border-radius: 24px;
+        width: 100%;
+        max-width: 450px;
+        font-weight: 800;
+        font-size: 2rem;
+        color: var(--kiosk-navy);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.2s;
+    }
+    .btn-walkin-trigger:active { transform: scale(0.98); background: #f8fafc; }
+
+    /* MODAL SAAS STYLING */
+    .modal-content { border-radius: 32px; border: none; padding: 2rem; }
+    .modal-input-kiosk {
+        font-size: 1.5rem !important;
+        padding: 1rem 1.5rem !important;
+        border-radius: 16px !important;
+        border: 1.5px solid var(--kiosk-border) !important;
+        font-weight: 700;
+        background: #f8fafc !important;
+    }
+    .modal-label-kiosk {
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--kiosk-slate);
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+        display: block;
     }
 
     /* OVERLAY */
     .kiosk-overlay {
         position: fixed; inset: 0;
-        background: var(--coolaire-blue-dark);
+        background: var(--kiosk-navy);
         z-index: 9999; display: none;
         flex-direction: column; align-items: center; justify-content: center;
         color: white; text-align: center;
     }
 
     #overlayPlate {
-        background: white;
-        color: var(--coolaire-blue-dark);
-        padding: 10px 40px;
-        border-radius: 15px;
+        background: var(--kiosk-blue);
+        color: white;
+        padding: 1rem 3rem;
+        border-radius: 12px;
         font-family: 'JetBrains Mono', monospace;
         font-weight: 900;
         font-size: 4rem;
-        margin-top: 20px;
+        margin-top: 2rem;
         display: none;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
     }
 
     .kiosk-footer {
-        background: #0f172a;
-        border-radius: 2.5rem;
-        padding: 2vh 3vw;
+        background: var(--kiosk-navy);
+        border-radius: 24px;
+        padding: 1.5rem 2.5rem;
         display: flex;
         align-items: center;
-        gap: 2vw;
+        gap: 2rem;
         color: white;
     }
 </style>
 
 <!-- DISPENSING OVERLAY -->
 <div class="kiosk-overlay animate__animated animate__fadeIn" id="printOverlay">
-    <div class="spinner-grow text-warning mb-5" style="width: 8rem; height: 8rem;"></div>
-    <h1 class="display-1 fw-950 mb-3" id="overlayTitle">PROCESSING...</h1>
-    <p class="fs-2 opacity-75" id="overlaySub">Syncing with Hub Controller...</p>
-
-    <!-- PLATE VISIBILITY ON SUCCESS -->
+    <div class="spinner-border text-primary mb-5" style="width: 5rem; height: 5rem; border-width: 6px;"></div>
+    <h1 class="display-3 fw-900 mb-2" id="overlayTitle">PROCESSING_REQUEST</h1>
+    <p class="fs-4 opacity-50" id="overlaySub">Synchronizing with Hub Node...</p>
     <div id="overlayPlate" class="animate__animated animate__bounceIn"></div>
 </div>
 
 <div class="kiosk-wrapper">
     <!-- 1. HEADER -->
     <header class="kiosk-header">
-        <div class="d-flex align-items-center gap-4">
-            <img src="{{ url_for('static', filename='logo.png') }}" height="60" alt="Coolaire" onerror="this.src='https://placehold.co/200x60?text=COOLAIRE'">
-            <div class="vr opacity-10 mx-2" style="height: 40px;"></div>
-            <div>
-                <h2 class="fw-900 mb-0" style="color: #002d72; letter-spacing: -1px;">
-                    {{ session.get('location_name', 'COOLAIRE') | upper }}
-                </h2>
-                <p class="text-muted small fw-bold mb-0 text-uppercase" id="kioskDate">Loading...</p>
+        <div class="node-brand">
+            <div class="d-flex align-items-center gap-3">
+                <img src="{{ url_for('static', filename='logo.png') }}" height="40" alt="Coolaire" onerror="this.style.display='none'">
+                <div style="width: 1px; height: 30px; background: var(--kiosk-border);"></div>
+                <div>
+                    <h2>{{ session.get('location_name', 'TERMINAL_NODE') | upper }}</h2>
+                    <p class="extra-small fw-800 text-muted mb-0" id="kioskDate">LOADING_SYSTEM_TIME...</p>
+                </div>
             </div>
         </div>
         <div id="kioskClock">00:00:00 AM</div>
     </header>
 
-    <!-- 2. MAIN MODES -->
-    <div class="row g-4 flex-grow-1">
+    <!-- 2. INTERACTION GRID -->
+    <div class="kiosk-grid">
         <!-- MODE A: APPOINTMENT -->
-        <div class="col-lg-6">
-            <div class="kiosk-card card-appointment animate__animated animate__fadeInLeft">
-                <div class="text-center h-100 d-flex flex-column justify-content-center">
-                    <div class="bg-primary bg-opacity-10 d-inline-flex p-4 rounded-circle mb-4 mx-auto">
-                        <i class="fa-solid fa-calendar-check fa-5x text-primary"></i>
-                    </div>
-                    <h1 class="display-3 fw-950 text-dark mb-2">Booked Units</h1>
-                    <p class="fs-3 text-muted mb-5">Enter your 4-digit Reference Code</p>
-
-                    <form action="/check-in" method="POST" class="kiosk-form-ajax">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="number" name="booking_id"
-                               class="kiosk-input-massive mb-4" placeholder="----"
-                               inputmode="numeric" required autocomplete="off">
-
-                        <button type="submit" class="btn btn-kiosk-primary w-100 shadow-lg">
-                            CHECK-IN <i class="fa-solid fa-arrow-right ms-3"></i>
-                        </button>
-                    </form>
-                </div>
+        <div class="kiosk-card card-appointment animate__animated animate__fadeInLeft">
+            <div class="card-icon-box shadow-sm">
+                <i class="fa-solid fa-calendar-check"></i>
             </div>
+            <h1>Scheduled Units</h1>
+            <p>Enter your 4-digit authorization code</p>
+
+            <form action="/check-in" method="POST" class="kiosk-form-ajax w-100 d-flex flex-column align-items-center">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="number" name="booking_id"
+                       class="kiosk-input-massive mb-4" placeholder="0000"
+                       inputmode="numeric" required maxlength="4">
+
+                <button type="submit" class="btn-kiosk-main shadow-lg">
+                    INITIALIZE CHECK-IN
+                </button>
+            </form>
         </div>
 
         <!-- MODE B: WALK-IN -->
-        <div class="col-lg-6">
-            <div class="kiosk-card card-walkin justify-content-center animate__animated animate__fadeInRight">
-                <div class="text-center h-100 d-flex flex-column justify-content-center">
-                    <div class="bg-warning bg-opacity-10 d-inline-flex p-4 rounded-circle mb-4 mx-auto">
-                        <i class="fa-solid fa-person-walking fa-5x text-warning"></i>
-                    </div>
-                    <h1 class="display-3 fw-950 text-dark mb-2">Walk-In</h1>
-                    <p class="fs-3 text-muted mb-5">No appointment? Register your unit here.</p>
-
-                    <button type="button" class="btn btn-kiosk-outline w-100" data-bs-toggle="modal" data-bs-target="#walkInModal">
-                        <i class="fa-solid fa-pen-to-square fa-5x text-muted opacity-50"></i>
-                        <span class="display-4 fw-900 text-dark">START REGISTRATION</span>
-                    </button>
-                </div>
+        <div class="kiosk-card card-walkin animate__animated animate__fadeInRight">
+            <div class="card-icon-box shadow-sm">
+                <i class="fa-solid fa-truck-fast"></i>
             </div>
+            <h1>Walk-In Arrivals</h1>
+            <p>No appointment? Provision a new ticket here.</p>
+
+            <button type="button" class="btn-walkin-trigger shadow-sm" data-bs-toggle="modal" data-bs-target="#walkInModal">
+                <i class="fa-solid fa-fingerprint mb-2 opacity-20" style="font-size: 4rem;"></i>
+                <span>START REGISTRATION</span>
+            </button>
         </div>
     </div>
 
     <!-- 3. FOOTER -->
     <footer class="kiosk-footer shadow-lg">
-        <div class="qr-box bg-white p-2 rounded-4">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}register" width="80">
+        <div class="bg-white p-2 rounded-3">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}register" width="60">
         </div>
-        <div class="flex-grow-1 ms-3">
-            <h2 class="fw-900 text-warning mb-1">Online Booking</h2>
-            <p class="fs-4 mb-0 opacity-75">Scan to skip the line for your next service.</p>
+        <div class="flex-grow-1">
+            <h5 class="fw-900 text-white mb-1">Fleet Portal Access</h5>
+            <p class="small mb-0 opacity-50 fw-bold">Scan to manage your fleet and book future deployments online.</p>
         </div>
         <div class="text-end">
-            <div class="opacity-50 small fw-bold text-uppercase">Broadcast Node: {{ session.get('location_code', 'CCI') }}</div>
-            <div class="text-success small fw-900"><i class="fa-solid fa-circle me-1 small"></i> SYSTEM LINK ACTIVE</div>
+            <div class="extra-small fw-900 text-uppercase opacity-30 mb-1">Broadcast Node: {{ session.get('location_code', 'CCI') }}</div>
+            <div class="text-success extra-small fw-950"><i class="fa-solid fa-circle-check me-1"></i> SYSTEM_LINK_ACTIVE</div>
         </div>
     </footer>
 </div>
 
-<!-- WALK-IN REGISTRATION MODAL -->
-<div class="modal fade" id="walkInModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
+<!-- WALK-IN MODAL -->
+<div class="modal fade" id="walkInModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content shadow-lg">
-            <div class="modal-header p-5 border-0 bg-light rounded-top-5">
-                <h1 class="display-4 fw-950 text-navy mb-0">Unit Registration</h1>
-                <button type="button" class="btn-close fs-2" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="text-center mb-5">
+                <h1 class="fw-900 text-navy mb-1">Unit Registration</h1>
+                <p class="text-muted fw-bold">Provisioning new hub service ticket</p>
             </div>
-            <div class="modal-body p-5">
-                <form action="/walk-in" method="POST" class="kiosk-form-ajax">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                    <div class="mb-4">
-                        <label class="modal-label-kiosk">Customer / Company Name</label>
-                        <input type="text" name="customer_name" class="form-control modal-input-kiosk" placeholder="Enter Full Name" required>
+            <form action="/walk-in" method="POST" class="kiosk-form-ajax">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="mb-4">
+                    <label class="modal-label-kiosk">Account / Company Name</label>
+                    <input type="text" name="customer_name" class="form-control modal-input-kiosk" placeholder="Enter Full Name" required>
+                </div>
+
+                <div class="row g-4 mb-5">
+                    <div class="col-md-6">
+                        <label class="modal-label-kiosk">Plate Number</label>
+                        <input type="text" name="plate_number" class="form-control modal-input-kiosk text-uppercase" placeholder="ABC-123" required>
                     </div>
-
-                    <div class="row g-4 mb-5">
-                        <div class="col-md-6">
-                            <label class="modal-label-kiosk">Plate Number</label>
-                            <input type="text" name="plate_number" id="modalPlateInput" class="form-control modal-input-kiosk text-uppercase" placeholder="ABC 123" required>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="modal-label-kiosk">Service Required</label>
-                            <select name="service_type" class="form-select modal-input-kiosk" required>
-                                <option value="" disabled selected>Select Category</option>
-                                {% for cat in categories %}
-                                <option value="{{ cat.name }}">{{ cat.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+                    <div class="col-md-6">
+                        <label class="modal-label-kiosk">Service Required</label>
+                        <select name="service_type" class="form-select modal-input-kiosk" required>
+                            <option value="" disabled selected>Select Category</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.name }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
+                </div>
 
-                    <button type="submit" class="btn btn-kiosk-primary w-100 py-4 fs-1 shadow-lg">
-                        DISPENSE TICKET <i class="fa-solid fa-ticket ms-3"></i>
-                    </button>
-                </form>
-            </div>
+                <button type="submit" class="btn btn-primary w-100 py-4 rounded-4 fw-900 fs-3 shadow-lg" style="background: var(--kiosk-navy); border: none;">
+                    DISPENSE HUB TICKET <i class="fa-solid fa-ticket-tone ms-2"></i>
+                </button>
+            </form>
         </div>
     </div>
 </div>
 
 <script>
-    // 1. DYNAMIC CLOCK
     function updateClock() {
         const now = new Date();
         document.getElementById('kioskClock').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
@@ -295,25 +338,17 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. ROBUST HEARTBEAT SYSTEM
-    // Fix: Fallback to URL param if session is lost to keep Admin detection alive
-    const urlParams = new URLSearchParams(window.location.search);
-    const LOC_ID = "{{ session.get('loc_id') or '' }}" || urlParams.get('loc_id');
-
+    const LOC_ID = "{{ session.get('loc_id') or '' }}";
     function sendHeartbeat() {
-        if (!LOC_ID || LOC_ID === "None" || LOC_ID === "") return;
-        fetch(`/api/device-heartbeat?type=kiosk&loc_id=${LOC_ID}`)
-            .catch(err => console.error("Pulse Lost"));
+        if (!LOC_ID) return;
+        fetch(`/api/device-heartbeat?type=kiosk&loc_id=${LOC_ID}`).catch(err => {});
     }
     setInterval(sendHeartbeat, 60000);
     sendHeartbeat();
 
-    // 3. AJAX SUBMISSION
     document.querySelectorAll('.kiosk-form-ajax').forEach(form => {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
-
-            // Store plate for display
             const plateInput = this.querySelector('[name="plate_number"]');
             const plateVal = plateInput ? plateInput.value.toUpperCase() : "";
 
@@ -325,13 +360,9 @@
             const sub = document.getElementById('overlaySub');
             const plateBox = document.getElementById('overlayPlate');
 
-            if (this.dataset.busy === "true") return;
-            this.dataset.busy = "true";
-
             overlay.style.display = 'flex';
             plateBox.style.display = 'none';
-            title.innerText = "PROCESSING...";
-            sub.innerText = "Assigning System Ticket...";
+            title.innerText = "VERIFYING...";
 
             try {
                 const response = await fetch(this.action, {
@@ -341,34 +372,22 @@
                 });
 
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'Check connection');
+                if (!response.ok) throw new Error(data.message);
 
-                // SUCCESS DISPLAY
                 title.innerText = "TICKET: " + data.ticket;
-                sub.innerText = "Assigned to Unit:";
-
-                // Show the Plate Number in a big white box
+                sub.innerText = "HUB ASSIGNMENT SUCCESSFUL";
                 if (plateVal) {
                     plateBox.innerText = plateVal;
                     plateBox.style.display = 'inline-block';
                 }
 
-                setTimeout(() => {
-                    window.location.href = "/print-ticket/" + data.q_id;
-                }, 3000);
-
+                setTimeout(() => { window.location.href = "/print-ticket/" + data.q_id; }, 2500);
             } catch (err) {
-                title.innerText = "SYSTEM ERROR";
+                title.innerText = "AUTH_ERROR";
                 sub.innerText = err.message;
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                    this.dataset.busy = "false";
-                }, 4000);
+                setTimeout(() => { overlay.style.display = 'none'; }, 3000);
             }
         });
     });
-
-    // Refresh every hour to prevent browser lag
-    setTimeout(() => { window.location.reload(); }, 3600000);
 </script>
 {% endblock %}
