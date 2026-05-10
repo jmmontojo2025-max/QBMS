@@ -548,12 +548,8 @@ def save_materials(q_id):
 @app.route('/staff/manual-checkin', methods=['POST'])
 @login_required
 def staff_manual_checkin():
-    # 1. Determine Location: Check if an Admin-specified loc_id was sent,
-    # otherwise fallback to the session loc_id (for regular staff).
     admin_loc_id = request.form.get('admin_loc_id')
     loc_id = admin_loc_id if admin_loc_id else session.get('loc_id')
-
-    # Fetch the specific location object to get its Code (for the ticket prefix)
     target_loc = db.session.get(Location, loc_id)
     loc_code = target_loc.code if target_loc else 'CCI'
 
@@ -564,8 +560,10 @@ def staff_manual_checkin():
     manifest = json.loads(manifest_data)
 
     try:
-        for item in manifest:
-            # 2. Create Booking with JO and SRH
+        # Get current all-time count once before the loop
+        current_total = Queue.query.filter_by(location_id=loc_id).count()
+
+        for i, item in enumerate(manifest):
             new_booking = Booking(
                 user_id=None,
                 location_id=loc_id,
@@ -580,12 +578,9 @@ def staff_manual_checkin():
             db.session.add(new_booking)
             db.session.flush()
 
-            # 3. Generate Ticket
-            today = datetime.now(timezone.utc).date()
-            count = Queue.query.filter_by(location_id=loc_id).filter(func.date(Queue.created_at) == today).count()
-            ticket_no = f"{loc_code}-M-{101 + count}"
+            # Increment count within the loop
+            ticket_no = f"{loc_code}-{101 + current_total + i}"
 
-            # 4. Add to Queue
             new_q = Queue(ticket_number=ticket_no, location_id=loc_id, booking_id=new_booking.id, status='waiting')
             db.session.add(new_q)
 
@@ -1152,17 +1147,17 @@ def kiosk():
 @csrf.exempt
 def check_in():
     loc_id = session.get('loc_id')
+    loc_code = session.get('location_code', 'CCI')  # Get hub code
     ref_code = request.form.get('booking_id')
 
-    # Look for the booking by the 4-digit code
     booking = Booking.query.filter_by(ref_id=ref_code, status='pending').first()
 
     if booking:
-        today = datetime.now(timezone.utc).date()
-        count = Queue.query.filter_by(location_id=loc_id).filter(func.date(Queue.created_at) == today).count()
+        # NEW LOGIC: Count all-time tickets for this location to prevent repeats
+        total_count = Queue.query.filter_by(location_id=loc_id).count()
 
-        # Format: MKT-A-101
-        ticket_no = f"{session.get('location_code', 'CCI')}-A-{101 + count}"
+        # Format: MKT-101, MKT-102, etc.
+        ticket_no = f"{loc_code}-{101 + total_count}"
 
         new_q = Queue(
             ticket_number=ticket_no,
@@ -1183,13 +1178,14 @@ def check_in():
 @csrf.exempt
 def walk_in():
     loc_id = session.get('loc_id')
+    loc_code = session.get('location_code', 'CCI')
     guest_name = request.form.get('customer_name')
     plate_number = request.form.get('plate_number', '').strip().upper()
     service_type = request.form.get('service_type')
 
     try:
         new_booking = Booking(
-            user_id=None,  # Explicitly None for Walk-ins
+            user_id=None,
             location_id=loc_id,
             plate_number=plate_number,
             guest_name=guest_name,
@@ -1201,9 +1197,9 @@ def walk_in():
         db.session.add(new_booking)
         db.session.flush()
 
-        today = datetime.now(timezone.utc).date()
-        count = Queue.query.filter_by(location_id=loc_id).filter(func.date(Queue.created_at) == today).count()
-        ticket_no = f"{session.get('location_code', 'CCI')}-W-{101 + count}"
+        # NEW LOGIC: Count all-time tickets for this location
+        total_count = Queue.query.filter_by(location_id=loc_id).count()
+        ticket_no = f"{loc_code}-{101 + total_count}"
 
         new_q = Queue(ticket_number=ticket_no, location_id=loc_id, booking_id=new_booking.id, status='waiting')
         db.session.add(new_q)
