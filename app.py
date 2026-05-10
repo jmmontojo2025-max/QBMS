@@ -1,6 +1,8 @@
 import os
 import random
 import string
+
+import kwargs
 import requests
 import smtplib
 import threading  # For background tasks
@@ -642,16 +644,11 @@ def recall_ticket(q_id):
 # --- CUSTOMER PORTAL LOGIN (Strictly Customers Only) ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # 1. HANDLE USERS ALREADY LOGGED IN
+    # 1. If already logged in, send them to their respective area
     if current_user.is_authenticated:
-        # If staff/admin/super_admin is already logged in and hits this page
-        if current_user.role in ['staff', 'admin', 'super_admin']:
-            if 'loc_id' in session:
-                return redirect(url_for('staff_panel'))
-            else:
-                return redirect(url_for('select_branch_for_staff'))
-        # If regular customer is already logged in
-        return redirect(url_for('dashboard'))
+        if current_user.role == 'customer':
+            return redirect(url_for('dashboard'))
+        return redirect(url_for('staff_panel'))
 
     if request.method == 'POST':
         username = request.form.get('username').strip()
@@ -659,28 +656,22 @@ def login():
 
         user = User.query.filter_by(username=username).first()
 
-        # 2. VALIDATE CREDENTIALS
+        # 2. Check Credentials
         if user and check_password_hash(user.password_hash, password):
 
-            # SECURITY GATE A: If the user is STAFF/ADMIN/SUPER_ADMIN, BLOCK THEM HERE
-            # Management must use /staff/login to prevent session mixing
-            if user.role in ['staff', 'admin', 'super_admin']:
-                flash("Node Access Restricted: Management and Staff must use the Internal Terminal to sign in.",
-                      "danger")
+            # SECURITY CHECK: Is this a Customer?
+            # If an Admin tries to login here, tell them to use the staff gate.
+            if user.role != 'customer':
+                flash("Access Restricted: This portal is for Fleet Partners only.", "danger")
                 return redirect(url_for('login'))
 
-            # SECURITY GATE B: Prevent Bogus/Unverified Customer Access
+            # VERIFICATION CHECK: Has the Admin approved this customer yet?
             if not user.is_approved:
-                app.logger.warning(f"Access Denied: Unverified node '{username}' attempted login.")
-                flash(
-                    "Identity Verification Pending: Your account is currently under review by our security team. Access is restricted until business credentials (TIN/Permit) are verified.",
-                    "warning")
+                flash("Account Pending: Your registration is currently being verified by our team.", "warning")
                 return redirect(url_for('login'))
 
             # 3. SUCCESSFUL CUSTOMER LOGIN
             login_user(user)
-
-            # Update telemetry
             user.last_seen = datetime.now(timezone.utc)
             db.session.commit()
 
@@ -688,7 +679,7 @@ def login():
             return redirect(url_for('dashboard'))
 
         # 4. FAILED LOGIN
-        flash("Authentication Failed: Invalid Node ID or Security Key.", "danger")
+        flash("Login Failed: Please check your username and password.", "danger")
 
     return render_template('login.html')
 
@@ -843,44 +834,69 @@ from datetime import datetime, timezone
 @login_required
 def book():
     if request.method == 'POST':
-        # Get the JSON manifest from the hidden field
         manifest_data = request.form.get('manifest_data')
         if not manifest_data:
             flash("No assets added to manifest.", "warning")
             return redirect(url_for('book'))
 
         manifest = json.loads(manifest_data)
+        new_bookings_for_email = []  # We will store summary info here
 
         try:
             for item in manifest:
-                # 1. Handle New Vehicle Provisioning
                 v_id = item.get('vehicle_id')
+                plate_clean = item['plate_display'].split(' ')[0].strip().upper()
+
                 if v_id == 'new':
                     new_v = Vehicle(
                         user_id=current_user.id,
-                        plate_number=item['new_plate'].strip().upper(),
+                        plate_number=plate_clean,
                         model_description=item['new_model']
                     )
                     db.session.add(new_v)
                     db.session.flush()
                     v_id = new_v.id
 
-                # 2. Create Booking
+                # Create Booking
+                target_time = datetime.fromisoformat(item['time'])
                 new_booking = Booking(
                     user_id=current_user.id,
                     location_id=item['location_id'],
                     vehicle_id=v_id,
-                    plate_number=item['plate_display'].split(' ')[0],
+                    plate_number=plate_clean,
                     service_type=item['product'],
                     service_location=item['service_location'],
-                    scheduled_time=datetime.fromisoformat(item['time']),
+                    scheduled_time=target_time,
                     status='pending'
                 )
                 db.session.add(new_booking)
 
+                # Store info for the email summary
+                new_bookings_for_email.append({
+                    'plate': plate_clean,
+                    'hub': item['location_name'],
+                    'service': item['product'],
+                    'time': item['time_display']
+                })
+
             db.session.commit()
-            flash(f"Successfully deployed {len(manifest)} assets.", "success")
+
+            # TRIGGER EMAIL NOTIFICATION
+            if new_bookings_for_email:
+                try:
+                    # We pass the list of bookings to the notification engine
+                    notify_customer(
+                        user=current_user,
+                        plate_number="Multiple Assets",
+                        status_type='booking_confirmation',
+                        booking_list=new_bookings_for_email  # Send the list
+                    )
+                except Exception as mail_err:
+                    app.logger.error(f"Booking Email Failed: {mail_err}")
+
+            flash(f"Successfully deployed {len(manifest)} assets. A confirmation email has been sent.", "success")
             return redirect(url_for('dashboard'))
+
         except Exception as e:
             db.session.rollback()
             app.logger.error(f"Booking error: {e}")
@@ -888,7 +904,6 @@ def book():
 
     categories = ServiceCategory.query.all()
     locations = Location.query.all()
-    # Pull user's vehicles for the dropdown
     user_vehicles = Vehicle.query.filter_by(user_id=current_user.id).all()
     return render_template('book.html', categories=categories, locations=locations, vehicles=user_vehicles)
 
@@ -1549,141 +1564,129 @@ import threading
 from flask import current_app
 
 
-def notify_customer(user, plate_number, status_type, queue_id=None, ticket_number=None):
+def notify_customer(user, plate_number, status_type, queue_id=None, ticket_number=None, booking_list=None,
+                    reset_url=None):
     """
-    Unified engine to send SMS and Email automatically in the background.
-    Safely ignores Walk-ins (user=None) and prevents the dashboard from freezing.
+    Unified notification engine.
+    Added reset_url parameter and passed it into the thread arguments.
     """
-    # 1. CRITICAL: If user is None (Walk-in Guest), exit immediately
     if user is None:
         return
 
-    # 2. CAPTURE CONTEXT: Threads cannot access 'session' or 'request' objects.
-    # We capture all required data into local variables before starting the thread.
+    # Capture context for the thread
     loc_name = session.get('location_name', 'Coolaire Service Center')
-    root_url = request.url_root
-    user_id = user.id  # Pass ID to fetch a fresh object inside the thread session
-
-    # Get the actual Flask app instance to pass into the thread
+    user_id = user.id
     app_instance = current_app._get_current_object()
 
-    def run_notifications(app_ctx, u_id, l_name, base_url):
+    def run_notifications(app_ctx, u_id, l_name, r_url):
         with app_ctx.app_context():
-            # Fetch fresh user record within this thread's database session
             db_user = db.session.get(User, u_id)
             if not db_user:
                 return
 
-            # Fetch System Settings for APIs and SMTP
             settings = {s.key: s.value for s in SystemSetting.query.all()}
 
-            # 3. DEFINE MESSAGE CONTENT BASED ON STATUS
             subject = "Coolaire System Update"
             msg_text = ""
-            is_account_msg = False
+            info_box_html = ""
 
-            if status_type == 'registration_pending':
-                subject = "Coolaire Registration: Pending Verification"
+            # --- DYNAMIC CONTENT LOGIC ---
+            if status_type == 'booking_confirmation' and booking_list:
+                subject = "Deployment Confirmed: Service Schedule"
+                msg_text = "Your fleet deployment manifest has been successfully processed. Below are your scheduled service slots:"
+
+                rows = ""
+                for b in booking_list:
+                    rows += f"""
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{b['plate']}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{b['hub']}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{b['service']}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{b['time']}</td>
+                    </tr>"""
+
+                info_box_html = f"""
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #f8fafc; text-align: left;">
+                            <th style="padding: 10px;">Asset</th>
+                            <th style="padding: 10px;">Hub</th>
+                            <th style="padding: 10px;">Service</th>
+                            <th style="padding: 10px;">Schedule</th>
+                        </tr>
+                    </thead>
+                    <tbody>{rows}</tbody>
+                </table>"""
+
+            elif status_type == 'registration_pending':
+                subject = "Coolaire Registration: Pending"
                 msg_text = f"Hello {db_user.full_name}, we have received your application for {db_user.company_name}. Access is currently under review."
-                is_account_msg = True
+
             elif status_type == 'account_approved':
-                subject = "Coolaire Account: Access Granted"
-                msg_text = f"Great news, {db_user.full_name}! Your account for {db_user.company_name} is now active. You may now use the Partner Portal."
-                is_account_msg = True
+                subject = "Coolaire Account: Active"
+                msg_text = f"Great news! Your account for {db_user.company_name} is now active. You may now log in to the Partner Portal."
+
             elif status_type == 'serving':
                 subject = f"Service Started: {plate_number}"
-                msg_text = f"Coolaire Update: Your unit {plate_number} (Ticket {ticket_number}) is now being serviced on the floor."
+                msg_text = f"Update: Your unit {plate_number} is now being serviced."
+                info_box_html = f"<p><b>Hub:</b> {l_name}<br><b>Ticket:</b> {ticket_number}</p>"
+
             elif status_type == 'done':
                 subject = f"Service Complete: {plate_number}"
-                msg_text = f"Coolaire Update: Great news! Service for unit {plate_number} is finished. Please proceed to the release bay."
-            elif status_type == 'expired':
-                subject = "Appointment Status: Expired"
-                msg_text = f"Coolaire Update: We noticed you weren't able to make it for unit {plate_number}. The ticket has been marked as no-show."
+                msg_text = f"Service for unit {plate_number} is finished. Please proceed to the release bay."
+
+            elif status_type == 'password_reset':
+                subject = "Secure Password Reset Request"
+                msg_text = f"We received a request to reset your Coolaire Partner Portal password."
+                # Use r_url (the value passed into the thread)
+                info_box_html = f"""
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="{r_url}" style="background: #002d72; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                        RESET MY PASSWORD
+                    </a>
+                    <p style="font-size: 11px; color: #999; margin-top: 15px;">This link will expire in 30 minutes.</p>
+                </div>"""
             else:
                 return
 
-            # --- PART A: SMS (SEMAPHORE) ---
-            sms_key = settings.get('SMS_API_KEY')
-            if sms_key and db_user.phone:
-                sms_log = NotificationLog(queue_id=queue_id, recipient=db_user.phone, channel='sms')
-                try:
-                    requests.post("https://semaphore.co/api/v4/messages", data={
-                        'apikey': sms_key, 'number': db_user.phone, 'message': msg_text, 'sendername': 'COOLAIRE'
-                    }, timeout=10)
-                    sms_log.status = 'success'
-                except Exception as e:
-                    sms_log.status = 'failed'
-                    sms_log.error_message = str(e)
-                db.session.add(sms_log)
-
-            # --- PART B: EMAIL (SMTP) ---
+            # --- SEND EMAIL (SMTP) ---
             mail_user = settings.get('MAIL_HOST_USER')
             mail_pass = settings.get('MAIL_HOST_PASSWORD')
             mail_server = settings.get('MAIL_SERVER', 'mail.coolaireconsolidated.com')
             mail_port = int(settings.get('MAIL_PORT', 465))
 
             if mail_user and mail_pass and db_user.email:
-                email_log = NotificationLog(queue_id=queue_id, recipient=db_user.email, channel='email')
                 try:
                     msg = MIMEMultipart('related')
-                    msg['From'] = f"Coolaire Service <{mail_user}>"
+                    msg['From'] = f"Coolaire Fleet <{mail_user}>"
                     msg['To'] = db_user.email
                     msg['Subject'] = subject
 
-                    # Style the info box based on message type
-                    info_box_html = f"""
-                    <div style="margin-top: 20px; padding: 15px; background: #f8fafc; border-left: 4px solid #002d72; border-radius: 4px;">
-                        <p style="margin: 0; font-size: 14px;"><strong>Target Asset:</strong> {plate_number}</p>
-                        <p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Location:</strong> {l_name}</p>
-                        {f'<p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Reference:</strong> {ticket_number}</p>' if ticket_number else ''}
-                    </div>"""
-
                     html = f"""
                     <html>
-                        <body style="font-family: sans-serif; color: #333; line-height: 1.6;">
-                            <div style="max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
-                                <div style="background: #002d72; padding: 25px; text-align: center;">
-                                    <img src="cid:logo" alt="Coolaire" style="height: 50px;">
-                                </div>
-                                <div style="padding: 30px;">
-                                    <h2 style="color: #002d72; margin-top: 0;">System Notification</h2>
-                                    <p>Dear <strong>{db_user.full_name}</strong>,</p>
-                                    <p>{msg_text}</p>
-                                    {info_box_html}
-                                    <p style="margin-top: 30px; font-size: 13px; color: #666;">If you have any questions, please contact our service team.</p>
-                                </div>
-                                <div style="background: #f1f1f1; padding: 15px; text-align: center; font-size: 11px; color: #888;">
+                        <body style="font-family: sans-serif; color: #333; line-height: 1.6; padding: 20px; background: #f4f4f4;">
+                            <div style="max-width: 600px; margin: auto; background: #fff; padding: 30px; border-radius: 10px; border: 1px solid #ddd;">
+                                <h2 style="color: #002d72; margin-top: 0;">System Update</h2>
+                                <p>Dear <strong>{db_user.full_name}</strong>,</p>
+                                <p>{msg_text}</p>
+                                {info_box_html}
+                                <p style="margin-top: 30px; font-size: 12px; color: #777;">
+                                    This is an automated message. Please do not reply.<br>
                                     &copy; {datetime.now().year} Coolaire Consolidated Inc.
-                                </div>
+                                </p>
                             </div>
                         </body>
                     </html>"""
                     msg.attach(MIMEText(html, 'html'))
 
-                    # Embed Logo
-                    logo_path = os.path.join(app_ctx.root_path, 'static', 'logo.png')
-                    if os.path.exists(logo_path):
-                        with open(logo_path, 'rb') as f:
-                            img = MIMEImage(f.read())
-                            img.add_header('Content-ID', '<logo>')
-                            msg.attach(img)
-
-                    # SMTP Execution
                     with smtplib.SMTP_SSL(mail_server, mail_port) as server:
                         server.login(mail_user, mail_pass)
                         server.sendmail(mail_user, db_user.email, msg.as_string())
-                    email_log.status = 'success'
-
                 except Exception as e:
-                    email_log.status = 'failed'
-                    email_log.error_message = str(e)
+                    print(f"!!! SMTP Error: {e}")
 
-                db.session.add(email_log)
-
-            db.session.commit()
-
-    # Start the background task
-    threading.Thread(target=run_notifications, args=(app_instance, user_id, loc_name, root_url)).start()
+    # CRITICAL FIX: Pass 'reset_url' as the 4th argument to the thread
+    threading.Thread(target=run_notifications, args=(app_instance, user_id, loc_name, reset_url)).start()
 
 
 @app.route('/staff/notifications')
@@ -2068,6 +2071,71 @@ def edit_user(user_id):
         flash("Update failed.", "danger")
 
     return redirect(url_for('staff_users'))
+
+from itsdangerous import URLSafeTimedSerializer
+
+
+# 1. Initialize the Serializer (Add this after app = Flask(__name__))
+def get_serializer():
+    return URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+
+# 2. Forgot Password Route (Request Link)
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            # Generate a secure token that expires in 30 minutes
+            s = get_serializer()
+            token = s.dumps(user.email, salt='password-reset-salt')
+            reset_url = url_for('reset_password', token=token, _external=True)
+
+            # Send Email (Reuse your existing notification engine logic)
+            try:
+                notify_customer(
+                    user=user,
+                    plate_number="N/A",
+                    status_type='password_reset',
+                    reset_url=reset_url
+                )
+                flash("A reset link has been sent to your email.", "success")
+            except Exception as e:
+                app.logger.error(f"Reset Email Error: {e}")
+                flash("Failed to send email. Please contact support.", "danger")
+        else:
+            # For security, don't confirm if email exists or not
+            flash("If that email is registered, a link has been sent.", "info")
+
+        return redirect(url_for('login'))
+
+    return render_template('forgot_password.html')
+
+
+# 3. Reset Password Route (Actual Change)
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    s = get_serializer()
+    try:
+        # Link expires in 1800 seconds (30 mins)
+        email = s.loads(token, salt='password-reset-salt', max_age=1800)
+    except:
+        flash("The reset link is invalid or has expired.", "danger")
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        user = User.query.filter_by(email=email).first()
+        new_password = request.form.get('password')
+
+        if user and new_password:
+            user.password_hash = generate_password_hash(new_password)
+            db.session.commit()
+            flash("Your password has been updated. You may now login.", "success")
+            return redirect(url_for('login'))
+
+    return render_template('reset_password.html', token=token)
 
 
 @app.route('/logout')
