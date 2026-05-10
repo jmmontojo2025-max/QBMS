@@ -696,12 +696,16 @@ def login():
 @app.route('/staff/users/approve/<int:user_id>')
 @login_required
 def approve_user(user_id):
-    if current_user.role != ['admin', 'super_admin']: abort(403)
+    # Fix: use 'not in' for list comparison
+    if current_user.role not in ['admin', 'super_admin']:
+        abort(403)
+
     u = db.session.get(User, user_id)
     if u:
         u.is_approved = True
         db.session.commit()
-        # OPTIONAL: notify_customer(u, "N/A", "approved")
+        # Trigger notification so the user knows they can login now
+        notify_customer(user=u, plate_number="N/A", status_type='account_approved')
         flash(f"Access granted for {u.full_name}.", "success")
     return redirect(url_for('staff_users'))
 
@@ -905,7 +909,7 @@ def staff_locations():
         return redirect(url_for('staff_locations'))
 
     all_locations = Location.query.order_by(Location.name).all()
-    return render_template('staff_locations.html', locations=all_locations)
+    return render_template('staff_locations.html', locations=all_locations, title="Hub Network")
 
 
 @app.route('/staff/locations/edit/<int:loc_id>', methods=['GET', 'POST'])
@@ -2041,6 +2045,29 @@ def staff_reports():
                            tech_performance=tech_performance,
                            company_audit=company_audit,
                            start_date=start_date, end_date=end_date, title="Operations Performance")
+
+
+@app.route('/staff/users/edit/<int:user_id>', methods=['POST'])
+@login_required
+@permission_required('users')
+def edit_user(user_id):
+    u = db.session.get(User, user_id)
+    if not u:
+        flash("User not found.", "danger")
+        return redirect(url_for('staff_users'))
+
+    u.full_name = request.form.get('full_name')
+    u.company_name = request.form.get('company_name')
+
+    try:
+        db.session.commit()
+        log_action("Identity Updated", f"Updated details for {u.username}")
+        flash(f"Credentials for {u.full_name} updated.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Update failed.", "danger")
+
+    return redirect(url_for('staff_users'))
 
 
 @app.route('/logout')
