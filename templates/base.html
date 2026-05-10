@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#002D72">
-    <title>Coolaire | Partner Portal</title>
+    <meta name="theme-color" content="#ffffff">
+    <title>Coolaire | Operations Terminal</title>
 
-    <!-- Professional Typography -->
+    <!-- Premium SaaS Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Source+Sans+3:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Core Assets -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.css">
@@ -18,191 +19,170 @@
 
     <style>
         :root {
-            /* COOLAIRE BRAND PALETTE */
-            --brand-royal: #002D72;
-            --brand-royal-light: #0040A1;
-            --brand-success: #76b82a;
-            --brand-danger: #ef4444;
-            --bg-main: #f8fafc;
-            --glass-bg: rgba(255, 255, 255, 0.98);
-            --border-color: #e2e8f0;
-            --text-dark: #0f172a;
-            --text-muted: #64748b;
+            --saas-navy: #0f172a;
+            --saas-blue: #2563eb;
+            --saas-border: #e2e8f0;
+            --saas-slate: #64748b;
+            --saas-bg: #ffffff;
+            --saas-success: #10b981;
         }
 
         body {
-            background-color: var(--bg-main);
-            font-family: 'Source Sans 3', sans-serif;
-            color: var(--text-dark);
+            background-color: var(--saas-bg);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--saas-navy);
             margin: 0;
-            padding-bottom: 120px; /* Space for Dock */
+            padding-bottom: 100px; /* Space for Dock */
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- HEADER --- */
+        /* --- SLIM SAAS HEADER --- */
         .app-header {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border-color);
-            height: 70px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--saas-border);
+            height: 64px;
             display: flex;
             align-items: center;
             position: sticky;
             top: 0;
             z-index: 1050;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
         }
 
-        .navbar-brand img {
-            height: 32px;
-            transition: 0.3s;
-        }
+        .navbar-brand img { height: 28px; }
 
-        /* Branch Identity Badge */
-        .branch-tag {
-            background: #fff;
-            color: var(--brand-royal);
-            font-weight: 800;
-            font-size: 0.7rem;
-            padding: 6px 14px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
+        /* Hub Identity Badge */
+        .hub-identity {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            padding: 6px 12px;
+            background: #f8fafc;
+            border: 1px solid var(--saas-border);
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            color: var(--saas-slate);
         }
 
         .status-pulse {
-            width: 8px; height: 8px;
-            background: var(--brand-success);
+            width: 7px; height: 7px;
+            background: var(--saas-success);
             border-radius: 50%;
-            position: relative;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 2s infinite;
         }
-        .status-pulse::after {
-            content: "";
-            position: absolute; inset: -4px;
-            border-radius: 50%;
-            border: 2px solid var(--brand-success);
-            animation: pulse-ring 2s infinite;
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
-        @keyframes pulse-ring { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
 
-        /* --- NOTIFICATIONS --- */
-        .toast-container-custom {
+        /* --- SAAS TOASTS --- */
+        .toast-wrapper {
             position: fixed;
-            top: 85px;
-            right: 20px;
+            top: 80px;
+            right: 24px;
             z-index: 2050;
         }
 
-        .modern-toast {
+        .saas-toast {
             background: white;
-            border-radius: 8px;
-            padding: 16px 20px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.08);
-            margin-bottom: 12px;
+            border: 1px solid var(--saas-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 15px;
-            min-width: 320px;
-            border-left: 5px solid var(--brand-royal);
-            border: 1px solid #eee;
+            gap: 12px;
+            min-width: 300px;
         }
 
-        /* --- FLOATING APP DOCK --- */
-        .app-dock-wrapper {
+        /* --- COMMAND DOCK --- */
+        .dock-container {
             position: fixed;
-            bottom: 30px; left: 0; right: 0;
+            bottom: 24px; left: 0; right: 0;
             display: flex; justify-content: center;
             z-index: 2000;
             pointer-events: none;
         }
 
-        .app-dock {
-            background: var(--brand-royal);
-            background: linear-gradient(135deg, var(--brand-royal) 0%, #001a45 100%);
-            padding: 8px;
-            border-radius: 18px;
+        .dock-bar {
+            background: var(--saas-navy);
+            padding: 6px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
-            gap: 6px;
-            box-shadow: 0 20px 50px rgba(0, 45, 114, 0.4);
+            gap: 4px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
             pointer-events: auto;
-            border: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .dock-link {
+        .dock-item {
             color: rgba(255, 255, 255, 0.5);
             text-decoration: none !important;
-            height: 56px;
-            min-width: 70px;
+            height: 48px;
+            min-width: 60px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border-radius: 12px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 0 12px;
+            border-radius: 10px;
+            transition: all 0.2s;
         }
 
-        .dock-link i { font-size: 1.25rem; }
-        .dock-link span { font-size: 0.62rem; font-weight: 800; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.8px; }
+        .dock-item i { font-size: 1.1rem; }
+        .dock-item span { font-size: 0.6rem; font-weight: 700; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        .dock-link:hover {
-            background: rgba(255, 255, 255, 0.1);
+        .dock-item:hover {
             color: white;
-            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.1);
         }
 
-        .dock-link.active {
+        .dock-item.active {
             background: white;
-            color: var(--brand-royal);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            color: var(--saas-navy);
         }
 
-        /* --- LOGOUT & UI BUTTONS --- */
-        .btn-logout {
-            background: #fff;
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 8px 16px;
+        /* --- BUTTONS & CONTROLS --- */
+        .btn-user-node {
+            border: 1px solid var(--saas-border);
+            background: white;
+            padding: 6px 14px;
+            border-radius: 8px;
             font-size: 0.75rem;
-            font-weight: 800;
-            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--saas-navy);
             transition: 0.2s;
         }
-        .btn-logout:hover { background: #fee2e2; color: var(--brand-danger); border-color: #fecaca; }
+        .btn-user-node:hover { background: #fee2e2; color: #ef4444; border-color: #fecaca; }
 
         @media (max-width: 768px) {
-            .app-dock { width: 92%; justify-content: space-around; gap: 2px; }
-            .dock-link span { display: none; }
-            .dock-link { min-width: 55px; height: 50px; }
-            .branch-tag span:not(.status-pulse) { display: none; }
+            .dock-bar { width: 90%; justify-content: space-around; }
+            .dock-item span { display: none; }
+            .dock-item { min-width: 50px; }
+            .hub-identity span:not(.status-pulse) { display: none; }
         }
     </style>
 </head>
 <body>
 
     <!-- Notification Engine -->
-    <div class="toast-container-custom">
+    <div class="toast-wrapper">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="modern-toast animate__animated animate__fadeInRight" id="toast-{{ loop.index }}">
-                    <div class="{{ 'text-success' if category == 'success' else ('text-danger' if category == 'danger' else 'text-primary') }}">
-                        <i class="fa-solid {{ 'fa-circle-check' if category == 'success' else 'fa-circle-info' }} fa-lg"></i>
-                    </div>
+                <div class="saas-toast animate__animated animate__fadeInRight" id="msg-{{ loop.index }}">
+                    <i class="fa-solid fa-circle-check {{ 'text-success' if category == 'success' else 'text-primary' }}"></i>
                     <div class="flex-grow-1">
-                        <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px;">
-                            System {{ category|upper if category else 'UPDATE' }}
-                        </div>
-                        <div style="font-size: 0.85rem; font-weight: 700;">{{ message }}</div>
+                        <div class="fw-800 extra-small text-muted text-uppercase mb-0" style="font-size: 0.55rem;">System Message</div>
+                        <div class="fw-700" style="font-size: 0.8rem;">{{ message }}</div>
                     </div>
                 </div>
                 {% endfor %}
@@ -212,83 +192,83 @@
 
     <!-- Header Navigation -->
     <header class="app-header">
-        <div class="container d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-3">
+        <div class="container-fluid px-md-5 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-4">
                 <a class="navbar-brand" href="/">
-                    <img src="{{ url_for('static', filename='logo.png') }}" onerror="this.src='https://placehold.co/200x60/002D72/ffffff?text=COOLAIRE'" alt="Coolaire">
+                    <img src="{{ url_for('static', filename='logo.png') }}" onerror="this.src='https://placehold.co/200x60/0f172a/ffffff?text=COOLAIRE'" alt="Coolaire">
                 </a>
 
                 {% if session.get('loc_id') and current_user.is_authenticated %}
-                <div class="branch-tag">
+                <div class="hub-identity d-none d-sm-flex">
                     <span class="status-pulse"></span>
-                    <span>{{ session.get('location_name') }}</span>
-                    <small class="opacity-50 ms-1 d-none d-md-inline">#{{ session.get('location_code') }}</small>
+                    <span>Hub: {{ session.get('location_code') }}</span>
                 </div>
                 {% endif %}
             </div>
 
             <div class="d-flex align-items-center gap-3">
                 {% if current_user.is_authenticated %}
-                    <div class="text-end d-none d-sm-block">
-                        <div style="font-size: 0.85rem; font-weight: 800; color: var(--brand-royal);">{{ current_user.full_name }}</div>
-                        <div style="font-size: 0.65rem; color: var(--brand-success); text-transform: uppercase; font-weight: 800;">{{ current_user.role }} Node</div>
+                    <div class="text-end d-none d-lg-block me-2">
+                        <div class="fw-800" style="font-size: 0.8rem; color: var(--saas-navy);">{{ current_user.full_name }}</div>
+                        <div class="fw-700 text-uppercase" style="font-size: 0.55rem; color: var(--saas-slate); letter-spacing: 1px;">Access: {{ current_user.role }}</div>
                     </div>
-                    <a href="/logout" class="btn-logout">Logout</a>
+                    <a href="/logout" class="btn-user-node">Logout</a>
                 {% else %}
-                    <a href="/login" class="btn btn-dark btn-sm px-4 rounded-2 fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">Partner Access</a>
+                    <a href="/login" class="btn-user-node border-dark">Partner Sign-in</a>
                 {% endif %}
             </div>
         </div>
     </header>
 
-    <!-- Page Content -->
-    <main class="container py-4">
+    <!-- Main Content Canvas -->
+    <main class="container-fluid px-md-5 py-4">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Floating Navigation Dock -->
-    <div class="app-dock-wrapper">
-        <nav class="app-dock">
+    <!-- Command Dock -->
+    <div class="dock-container">
+        <nav class="dock-bar">
             {% if current_user.is_authenticated and current_user.role != 'customer' %}
-            <a href="/select-branch-for-staff" class="dock-link" data-bs-toggle="tooltip" title="Switch Hubs">
-                <i class="fa-solid fa-network-wired"></i>
-                <span>Hubs</span>
+            <a href="/select-branch-for-staff" class="dock-item" title="Switch Nodes">
+                <i class="fa-solid fa-server"></i>
+                <span>Nodes</span>
             </a>
             {% endif %}
 
-            <a href="/kiosk" class="dock-link" data-bs-toggle="tooltip" title="Ticketing Terminal">
-                <i class="fa-solid fa-ticket"></i>
+            <a href="/kiosk" class="dock-item" title="Registration Terminal">
+                <i class="fa-solid fa-id-card"></i>
                 <span>Kiosk</span>
             </a>
 
             {% if current_user.is_authenticated %}
-                <a href="/dashboard" class="dock-link" data-bs-toggle="tooltip" title="Fleet Dashboard">
-                    <i class="fa-solid fa-chart-pie"></i>
+                <a href="/dashboard" class="dock-item" title="Fleet Dashboard">
+                    <i class="fa-solid fa-grid-2"></i>
+                    <i class="fa-solid fa-objects-column"></i>
                     <span>Portal</span>
                 </a>
 
-                {% if current_user.role in ['staff', 'admin'] %}
-                <a href="/staff" class="dock-link" data-bs-toggle="tooltip" title="Workfloor Console">
+                {% if current_user.role in ['staff', 'admin', 'super_admin', 'coordinator'] %}
+                <a href="/staff" class="dock-item" title="Command Console">
                     <i class="fa-solid fa-terminal"></i>
                     <span>Console</span>
                 </a>
                 {% endif %}
             {% else %}
-                <a href="/staff/login" class="dock-link" data-bs-toggle="tooltip" title="Staff Only">
-                    <i class="fa-solid fa-shield-halved"></i>
+                <a href="/staff/login" class="dock-item" title="Internal Access">
+                    <i class="fa-solid fa-user-lock"></i>
                     <span>Staff</span>
                 </a>
             {% endif %}
 
-            <a href="/tv" class="dock-link" target="_blank" data-bs-toggle="tooltip" title="Broadcast TV">
-                <i class="fa-solid fa-display"></i>
+            <a href="/tv" class="dock-item" target="_blank" title="Live Broadcast">
+                <i class="fa-solid fa-clapperboard"></i>
                 <span>TV</span>
             </a>
 
-            <div style="width: 1px; height: 32px; background: rgba(255,255,255,0.15); margin: 0 8px;"></div>
+            <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 8px;"></div>
 
-            <a href="mailto:support@coolaire.com" class="dock-link" data-bs-toggle="tooltip" title="Technical Support">
-                <i class="fa-solid fa-circle-question"></i>
+            <a href="mailto:support@coolaire.com" class="dock-item" title="Support">
+                <i class="fa-solid fa-headset"></i>
                 <span>Help</span>
             </a>
         </nav>
@@ -299,34 +279,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
 
     <script>
-        // Progress Bar
-        NProgress.configure({ showSpinner: false, speed: 500 });
+        // NProgress Initialization
+        NProgress.configure({ showSpinner: false, speed: 400 });
         NProgress.start();
         window.addEventListener('load', () => NProgress.done());
 
-        // Toast Auto-Dismiss
-        document.querySelectorAll('.modern-toast').forEach(toast => {
+        // Auto-Dismiss Notifications
+        document.querySelectorAll('.saas-toast').forEach(toast => {
             setTimeout(() => {
                 toast.classList.replace('animate__fadeInRight', 'animate__fadeOutRight');
-                setTimeout(() => toast.remove(), 1000);
-            }, 6000);
+                setTimeout(() => toast.remove(), 800);
+            }, 5000);
         });
 
-        // Active Link Highlighting (Supports Nested Routes)
-        const currentPath = window.location.pathname;
-        document.querySelectorAll('.dock-link').forEach(link => {
-            const linkHref = link.getAttribute('href');
-            if (linkHref === '/' && currentPath === '/') {
-                link.classList.add('active');
-            } else if (linkHref !== '/' && currentPath.startsWith(linkHref)) {
+        // Dock State Management
+        const path = window.location.pathname;
+        document.querySelectorAll('.dock-item').forEach(link => {
+            const href = link.getAttribute('href');
+            if (href === path || (href !== '/' && path.startsWith(href))) {
                 link.classList.add('active');
             }
-        });
-
-        // Bootstrap Tooltips
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
         });
     </script>
 </body>

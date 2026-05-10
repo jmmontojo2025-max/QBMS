@@ -1,249 +1,281 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- GOOGLE FONTS: Source Sans 3 -->
-<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-
-<div class="sn-portal-wrapper py-5">
-    <div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-
-        <!-- CENTERED ENROLLMENT CARD -->
-        <div class="sn-enroll-card col-12 col-md-10 col-lg-8 col-xl-6 bg-white shadow-sm overflow-hidden">
-
-            <!-- HEADER INDICATOR -->
-            <div class="sn-card-top-bar"></div>
-
-            <div class="p-4 p-md-5">
-                <div class="text-center mb-5">
-                    <img src="{{ url_for('static', filename='logo.png') }}" style="height: 35px;" class="mb-4">
-                    <h2 class="sn-page-title">Identity Enrollment</h2>
-                    <p class="sn-page-subtitle">Please provide official business credentials for verification.</p>
-                </div>
-
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
-                    {% for category, message in messages %}
-                      <div class="alert alert-{{ 'success' if category == 'success' else 'dark' }} sn-alert mb-4">
-                          <i class="fa-solid fa-circle-info me-2"></i> {{ message }}
-                      </div>
-                    {% endfor %}
-                  {% endif %}
-                {% endwith %}
-
-                <form action="/register" method="POST" id="registerForm" autocomplete="off">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                    <!-- SECTION 1: BUSINESS VALIDATION -->
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h3 class="sn-section-title">Business Validation</h3>
-                        <span class="sn-step-pill">Step 01</span>
-                    </div>
-
-                    <div class="row g-3 mb-5">
-                        <div class="col-12">
-                            <label class="sn-label">Organization Name</label>
-                            <input type="text" name="company_name" class="sn-input" placeholder="Registered Legal Entity Name" required>
-                        </div>
-
-                        <!-- NEW: TIN NUMBER -->
-                        <div class="col-md-6">
-                            <label class="sn-label">Business TIN</label>
-                            <input type="text" name="tin_number" class="sn-input" placeholder="000-000-000-000" required>
-                        </div>
-
-                        <!-- NEW: BUSINESS PERMIT / ACCREDITATION -->
-                        <div class="col-md-6">
-                            <label class="sn-label">Permit / Accreditation No.</label>
-                            <input type="text" name="business_permit" class="sn-input" placeholder="Legal ID Number" required>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="sn-label">Contact Full Name</label>
-                            <input type="text" name="full_name" class="sn-input" placeholder="Authorized Personnel" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="sn-label">Mobile Number</label>
-                            <input type="tel" name="phone" class="sn-input" placeholder="09XX XXX XXXX" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="sn-label">Official Work Email</label>
-                            <input type="email" name="email" class="sn-input" placeholder="name@company.com" required>
-                        </div>
-                    </div>
-
-                    <!-- SECTION 2: AUTHENTICATION -->
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h3 class="sn-section-title">Portal Credentials</h3>
-                        <span class="sn-step-pill">Step 02</span>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="sn-label">Username</label>
-                            <input type="text" name="username" class="sn-input" placeholder="Choose a username" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="sn-label">Security Password</label>
-                            <div class="position-relative">
-                                <input type="password" name="password" id="regPassword" class="sn-input" placeholder="••••••••" required>
-                                <button type="button" class="sn-eye-btn" onclick="toggleRegPass()">
-                                    <i class="fa-solid fa-eye-slash" id="regIcon"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-5">
-                        <button type="submit" class="btn-sn-primary w-100 py-3 mb-4" id="regSubmitBtn">
-                            REQUEST PORTAL ACCESS
-                        </button>
-                        <div class="text-center">
-                            <span class="sn-text-muted small fw-600">Already have an account?</span>
-                            <a href="/login" class="sn-link-sm ms-2">Sign In</a>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Premium SaaS Font -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
 <style>
     :root {
-        --sn-primary: #002d72;      /* Coolaire Navy */
-        --sn-primary-hover: #001a45;
-        --sn-accent: #76b82a;       /* Coolaire Green */
-        --sn-bg: #f1f5f9;
-        --sn-text-main: #1e293b;
-        --sn-text-muted: #64748b;
-        --sn-border: #cbd5e1;
+        --saas-navy: #0f172a;
+        --saas-blue: #2563eb;
+        --saas-slate: #64748b;
+        --saas-border: #e2e8f0;
+        --saas-radius: 16px;
     }
 
     body {
-        background-color: var(--sn-bg) !important;
-        font-family: 'Source Sans 3', sans-serif !important;
+        background-color: #ffffff !important;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--saas-navy);
+        -webkit-font-smoothing: antialiased;
     }
 
-    /* CARD DESIGN */
-    .sn-enroll-card {
-        border: 1px solid var(--sn-border);
-        border-radius: 4px;
+    .enroll-viewport {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
     }
 
-    .sn-card-top-bar {
-        height: 6px;
-        background: var(--sn-primary);
+    /* THE OUTSIDE LINE (BOX CONTAINER) */
+    .enroll-container-box {
+        width: 100%;
+        max-width: 800px; /* Wider for dual-column desktop layout */
+        background: #ffffff;
+        border: 1px solid var(--saas-border);
+        border-radius: var(--saas-radius);
+        padding: 3rem;
+        transition: all 0.3s ease;
     }
 
-    .sn-page-title {
-        font-size: 1.75rem;
+    .brand-mark {
+        width: 48px; height: 48px;
+        background: var(--saas-navy);
+        color: #ffffff;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .page-title {
         font-weight: 800;
-        color: var(--sn-primary);
-        letter-spacing: -0.5px;
-        margin-bottom: 5px;
+        font-size: 1.8rem;
+        letter-spacing: -1px;
+        margin-bottom: 0.5rem;
     }
 
-    .sn-page-subtitle {
+    .page-subtitle {
+        color: var(--saas-slate);
         font-size: 0.95rem;
-        color: var(--sn-text-muted);
         font-weight: 500;
+        margin-bottom: 3rem;
     }
 
-    /* FORM STYLING */
-    .sn-section-title {
-        font-size: 1.15rem;
-        font-weight: 800;
-        color: var(--sn-primary);
-        margin: 0;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+    /* SECTION DIVIDERS */
+    .form-section-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 2rem;
+        margin-top: 1rem;
     }
 
-    .sn-step-pill {
-        font-size: 0.65rem;
-        font-weight: 800;
-        background: #f1f5f9;
-        color: var(--sn-primary);
-        padding: 4px 10px;
-        border-radius: 4px;
-        border: 1px solid var(--sn-border);
-        text-transform: uppercase;
-    }
-
-    .sn-label {
-        display: block;
+    .section-title {
         font-size: 0.75rem;
         font-weight: 800;
         text-transform: uppercase;
-        margin-bottom: 6px;
-        color: var(--sn-text-main);
-        letter-spacing: 0.05em;
+        letter-spacing: 1.5px;
+        color: var(--saas-blue);
+        white-space: nowrap;
     }
 
-    .sn-input {
+    .section-line {
+        height: 1px;
         width: 100%;
-        padding: 12px 15px;
-        border: 1px solid var(--sn-border);
-        border-radius: 4px;
-        font-size: 0.95rem;
-        font-weight: 600;
-        transition: all 0.2s;
-        background: #fafafa;
+        background: var(--saas-border);
     }
 
-    .sn-input:focus {
-        outline: none;
-        border-color: var(--sn-primary);
-        box-shadow: 0 0 0 1px var(--sn-primary);
-        background: #fff;
-    }
-
-    /* BUTTONS */
-    .btn-sn-primary {
-        background: var(--sn-primary);
-        color: white;
-        border: none;
-        border-radius: 4px;
+    /* MODERN TEXTBOX UI */
+    .biz-label {
+        font-size: 0.65rem;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 1px;
+        color: var(--saas-slate);
+        margin-bottom: 0.6rem;
+        display: block;
+    }
+
+    .modern-textbox {
+        display: flex;
+        align-items: center;
+        background: #f8fafc;
+        border: 1.5px solid var(--saas-border);
+        border-radius: 10px;
+        padding: 0.7rem 1rem;
+        transition: all 0.2s ease;
+        margin-bottom: 1.25rem;
+    }
+
+    .modern-textbox:focus-within {
+        background: #ffffff;
+        border-color: var(--saas-navy);
+        box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.05);
+    }
+
+    .modern-textbox i {
+        color: #94a3b8;
+        margin-right: 12px;
         font-size: 0.9rem;
     }
 
-    .btn-sn-primary:hover {
-        background: var(--sn-primary-hover);
-        transform: translateY(-1px);
-    }
-
-    .sn-link-sm {
-        color: var(--sn-primary);
-        font-weight: 800;
-        text-decoration: none;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-    }
-
-    .sn-link-sm:hover { text-decoration: underline; }
-
-    .sn-eye-btn {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
+    .modern-textbox input {
         border: none;
-        background: none;
-        color: var(--sn-text-muted);
-        cursor: pointer;
-    }
-
-    .sn-alert {
-        border-radius: 4px;
+        background: transparent !important;
+        width: 100%;
         font-weight: 700;
+        color: var(--saas-navy);
+        font-size: 0.9rem;
+    }
+
+    .modern-textbox input:focus { outline: none; }
+
+    /* ACTION BUTTON */
+    .btn-enroll-cta {
+        background: var(--saas-navy);
+        color: #ffffff;
+        width: 100%;
+        padding: 1.1rem;
+        border-radius: 50px;
+        font-weight: 800;
         border: none;
-        border-left: 4px solid var(--sn-primary);
+        margin-top: 2rem;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
         font-size: 0.85rem;
+    }
+
+    .btn-enroll-cta:hover {
+        background: var(--saas-blue);
+        transform: translateY(-2px);
+    }
+
+    .login-link {
+        color: var(--saas-navy);
+        text-decoration: none;
+        font-weight: 800;
+        transition: color 0.2s;
+    }
+    .login-link:hover { color: var(--saas-blue); }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+        .enroll-container-box { padding: 2.5rem 1.5rem; border: none; }
+        .page-title { font-size: 1.5rem; }
     }
 </style>
+
+<div class="enroll-viewport">
+
+    <div class="enroll-container-box animate__animated animate__fadeIn">
+
+        <div class="brand-mark shadow-sm">
+            <i class="fa-solid fa-id-card"></i>
+        </div>
+
+        <h1 class="page-title">Identity Enrollment</h1>
+        <p class="page-subtitle">Provide your business credentials to request portal access.</p>
+
+        <form action="/register" method="POST" id="registerForm" autocomplete="off">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- SECTION 1: BUSINESS -->
+            <div class="form-section-header">
+                <span class="section-title">Business Validation</span>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <label class="biz-label">Legal Organization Name</label>
+                    <div class="modern-textbox">
+                        <i class="fa-solid fa-building"></i>
+                        <input type="text" name="company_name" placeholder="Full Registered Name" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="biz-label">Business TIN</label>
+                    <div class="modern-textbox">
+                        <i class="fa-solid fa-hashtag"></i>
+                        <input type="text" name="tin_number" placeholder="000-000-000" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="biz-label">Permit / Accreditation</label>
+                    <div class="modern-textbox">
+                        <i class="fa-solid fa-file-contract"></i>
+                        <input type="text" name="business_permit" placeholder="ID Number" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <label class="biz-label">Authorized Personnel</label>
+                    <div class="modern-textbox">
+                        <i class="fa-solid fa-user-tie"></i>
+                        <input type="text" name="full_name" placeholder="Full Legal Name" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="biz-label">Corporate Email</label>
+                    <div class="modern-textbox">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" name="email" placeholder="name@company.com" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="biz-label">Mobile Number</label>
+                    <div class="modern-textbox">
+                        <i class="fa-solid fa-phone"></i>
+                        <input type="tel" name="phone" placeholder="0917-000-0000" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: ACCESS -->
+            <div class="form-section-header mt-4">
+                <span class="section-title">Portal Credentials</span>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="biz-label">Desired Username</label>
+                    <div class="modern-textbox">
+                        <i class="fa-solid fa-at"></i>
+                        <input type="text" name="username" placeholder="Choose identifier" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="biz-label">Access Password</label>
+                    <div class="modern-textbox">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" name="password" id="regPassword" placeholder="••••••••" required>
+                        <button type="button" class="btn btn-link p-0 text-muted" onclick="toggleRegPass()">
+                            <i class="fa-solid fa-eye-slash small" id="regIcon"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-enroll-cta shadow-sm" id="regSubmitBtn">
+                Request Access Credentials
+            </button>
+
+            <div class="text-center mt-4">
+                <p class="small text-muted fw-bold">
+                    Already a registered partner?
+                    <a href="/login" class="login-link ms-1">Sign In here</a>
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script>
     function toggleRegPass() {
@@ -260,8 +292,8 @@
 
     document.getElementById('registerForm').addEventListener('submit', function() {
         const btn = document.getElementById('regSubmitBtn');
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> SUBMITTING REQUEST...';
-        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> PROCESSING ENROLLMENT...';
+        btn.classList.add('disabled');
     });
 </script>
 {% endblock %}

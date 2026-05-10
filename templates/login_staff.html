@@ -1,251 +1,277 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<!-- Premium SaaS Font -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
 <style>
-    /* MODERN INTERNAL VARIABLES */
     :root {
-        --saas-navy: #002d72;
-        --saas-accent: #3b82f6;
-        --saas-text: #1e293b;
-        --saas-light-text: #64748b;
-        --saas-bg: #f1f5f9;
+        --saas-navy: #0f172a;
+        --saas-blue: #2563eb;
+        --saas-slate: #64748b;
         --saas-border: #e2e8f0;
-        --saas-radius: 1rem;
+        --saas-radius: 16px;
     }
 
-    /* 1. INTERNAL CANVAS (DARKER MESH) */
-    body, html { height: 100%; margin: 0; font-family: 'Inter', sans-serif; }
+    body {
+        background-color: #ffffff !important;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--saas-navy);
+        -webkit-font-smoothing: antialiased;
+    }
 
-    .login-canvas {
+    .auth-viewport {
         min-height: 100vh;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        background-color: #e2e8f0;
-        background-image:
-            radial-gradient(at 0% 100%, rgba(0, 45, 114, 0.08) 0px, transparent 50%),
-            radial-gradient(at 100% 0%, rgba(15, 23, 42, 0.08) 0px, transparent 50%);
-        padding: 2rem;
+        padding: 1.5rem;
     }
 
-    /* 2. THE TERMINAL CARD */
-    .terminal-card {
-        background: #ffffff;
+    /* THE OUTSIDE LINE (BOX CONTAINER) */
+    .login-container-box {
         width: 100%;
         max-width: 420px;
+        background: #ffffff;
+        border: 1px solid var(--saas-border);
         border-radius: var(--saas-radius);
-        border: 1px solid #fff;
-        box-shadow:
-            0 25px 50px -12px rgba(0, 0, 0, 0.1),
-            0 0 0 1px rgba(0, 0, 0, 0.05);
-        overflow: hidden;
-        position: relative;
+        padding: 3.5rem 2.5rem;
+        transition: all 0.3s ease;
     }
 
-    /* Internal Branding Bar */
-    .protocol-bar {
+    /* STAFF BRAND ICON */
+    .brand-mark {
+        width: 50px;
+        height: 50px;
         background: var(--saas-navy);
-        padding: 1.5rem 2.5rem;
-        color: white;
+        color: #ffffff;
+        border-radius: 12px;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center;
+        font-size: 1.3rem;
+        margin-bottom: 2rem;
     }
-    .terminal-id { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 700; opacity: 0.7; letter-spacing: 1px; }
 
-    .login-body { padding: 2.5rem; }
-    .login-title { font-weight: 900; color: var(--saas-text); font-size: 1.5rem; letter-spacing: -1px; margin-bottom: 0.25rem; }
-    .login-subtitle { color: var(--saas-light-text); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2rem; }
+    .login-title {
+        font-weight: 800;
+        font-size: 1.8rem;
+        letter-spacing: -1px;
+        margin-bottom: 0.5rem;
+    }
 
-    /* 3. FORM ELEMENTS */
-    .form-label-custom { font-size: 0.7rem; font-weight: 800; color: var(--saas-text); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 0.5rem; }
-
-    .modern-input {
-        width: 100%;
-        background: #f8fafc;
-        border: 2px solid transparent;
-        padding: 0.85rem 1rem;
-        border-radius: 10px;
+    .login-subtitle {
+        color: var(--saas-slate);
+        font-size: 0.9rem;
         font-weight: 600;
-        font-size: 0.95rem;
-        transition: all 0.2s;
-        color: var(--saas-text);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 3rem;
     }
-    /* Technical ID Input use monospace */
-    .id-input { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px; }
 
-    .modern-input:focus {
-        background: #fff;
+    /* MODERN TEXTBOX UI */
+    .field-wrapper {
+        margin-bottom: 1.5rem;
+    }
+
+    .field-label {
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--saas-slate);
+        margin-bottom: 0.6rem;
+        display: block;
+    }
+
+    .modern-textbox {
+        display: flex;
+        align-items: center;
+        background: #f8fafc;
+        border: 1.5px solid var(--saas-border);
+        border-radius: 12px;
+        padding: 0.75rem 1.1rem;
+        transition: all 0.2s ease;
+    }
+
+    .modern-textbox:focus-within {
+        background: #ffffff;
         border-color: var(--saas-navy);
-        box-shadow: 0 0 0 4px rgba(0, 45, 114, 0.05);
+        box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.05);
+    }
+
+    .modern-textbox i {
+        color: #94a3b8;
+        margin-right: 12px;
+        font-size: 0.9rem;
+    }
+
+    .modern-textbox input {
+        border: none;
+        background: transparent !important;
+        width: 100%;
+        font-weight: 700;
+        color: var(--saas-navy);
+        font-size: 1rem;
+        font-family: 'JetBrains Mono', monospace; /* Monospace for technical IDs */
+    }
+
+    .modern-textbox input:focus {
         outline: none;
     }
 
-    .pass-container { position: relative; }
-    .eye-btn {
-        position: absolute; right: 0; top: 0; height: 100%;
-        background: none; border: none; color: #94a3b8;
-        padding: 0 1.25rem; font-size: 1.1rem;
-        display: flex; align-items: center;
-        cursor: pointer; transition: color 0.2s;
-    }
-    .eye-btn:hover { color: var(--saas-navy); }
-
-    /* 4. ACTIONS */
-    .btn-terminal-primary {
-        width: 100%;
+    /* ACTION BUTTON (PILL) */
+    .btn-login-cta {
         background: var(--saas-navy);
-        color: white;
-        border: none;
+        color: #ffffff;
+        width: 100%;
         padding: 1.1rem;
-        border-radius: 10px;
-        font-weight: 900;
-        font-size: 0.9rem;
+        border-radius: 50px;
+        font-weight: 800;
+        border: none;
+        margin-top: 1rem;
+        transition: all 0.3s ease;
         text-transform: uppercase;
         letter-spacing: 1px;
-        margin-top: 1.5rem;
-        transition: all 0.3s;
-        box-shadow: 0 10px 15px -3px rgba(0, 45, 114, 0.2);
-    }
-    .btn-terminal-primary:hover { transform: translateY(-2px); background: #001a45; box-shadow: 0 20px 25px -5px rgba(0, 45, 114, 0.3); }
-
-    .btn-terminal-secondary {
-        display: block;
-        width: 100%;
-        background: #fff;
-        color: var(--saas-light-text);
-        border: 2px solid var(--saas-border);
-        padding: 0.85rem;
-        border-radius: 10px;
-        font-weight: 800;
         font-size: 0.85rem;
+    }
+
+    .btn-login-cta:hover {
+        background: var(--saas-blue);
+        transform: translateY(-2px);
+    }
+
+    /* SECONDARY LINKS */
+    .login-extra-info {
+        margin-top: 2.5rem;
+        text-align: center;
+    }
+
+    .exit-link {
+        color: var(--saas-slate);
         text-decoration: none;
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        transition: all 0.2s;
-    }
-    .btn-terminal-secondary:hover { background: #f8fafc; border-color: var(--saas-navy); color: var(--saas-navy); }
-
-    .modern-divider {
-        display: flex; align-items: center; text-align: center;
-        margin: 2rem 0; color: #cbd5e1; font-size: 0.65rem; font-weight: 800;
-    }
-    .modern-divider::before, .modern-divider::after { content: ""; flex: 1; border-bottom: 1px solid var(--saas-border); }
-    .modern-divider span { padding: 0 1rem; letter-spacing: 2px; }
-
-    /* FOOTER */
-    .login-footer {
-        flex: 0 0 auto;
-        padding: 2rem;
-        text-align: center;
-        width: 100%;
-        color: var(--saas-light-text);
+        font-weight: 700;
         font-size: 0.8rem;
+        transition: color 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
+
+    .exit-link:hover { color: var(--saas-navy); }
 
     .security-badge {
+        margin-top: 4rem;
+        font-size: 0.65rem;
         font-weight: 800;
-        color: var(--saas-navy);
-        background: #fff;
-        padding: 0.5rem 1.25rem;
-        border-radius: 999px;
-        border: 1px solid var(--saas-border);
-        display: inline-flex;
+        color: var(--saas-slate);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        opacity: 0.6;
+        display: flex;
         align-items: center;
         gap: 0.5rem;
-        box-shadow: var(--saas-shadow);
+    }
+
+    @media (max-width: 576px) {
+        .login-container-box {
+            padding: 2.5rem 1.5rem;
+            border: none;
+        }
     }
 </style>
 
-<div class="login-canvas">
+<div class="auth-viewport">
 
-    <div class="terminal-card animate__animated animate__zoomIn">
+    <div class="login-container-box animate__animated animate__fadeIn">
 
-        <!-- PROTOCOL BAR -->
-        <div class="protocol-bar">
-            <i class="fa-solid fa-tower-broadcast"></i>
-            <span class="terminal-id">STAFF_AUTH // NODE_V4</span>
+        <!-- STAFF ICON -->
+        <div class="brand-mark shadow-sm">
+            <i class="fa-solid fa-shield-halved"></i>
         </div>
 
-        <div class="login-body">
-            <h1 class="login-title">Staff Terminal</h1>
-            <p class="login-subtitle">Internal Operator Access</p>
+        <h1 class="login-title">Staff Terminal</h1>
+        <p class="login-subtitle">Internal Operational Node</p>
 
-            <form action="/staff/login" method="POST" id="staffLoginForm" autocomplete="off">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert animate__animated animate__headShake border-0 rounded-3 small fw-bold mb-4 py-3 px-3 bg-light text-navy">
+                 <i class="fa-solid fa-lock me-2 text-primary"></i> {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
-                <!-- OPERATOR ID -->
-                <div class="mb-4">
-                    <label class="form-label-custom">Operator ID</label>
-                    <input type="text" name="username" class="modern-input id-input" placeholder="SYS_XXXXX" required autofocus>
+        <!-- STAFF LOGIN FORM -->
+        <form action="/staff/login" method="POST" id="staffLoginForm" autocomplete="off">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="field-wrapper">
+                <label class="biz-label">Operator ID</label>
+                <div class="modern-textbox">
+                    <i class="fa-solid fa-id-badge"></i>
+                    <input type="text" name="username" placeholder="SYS_000" required autofocus>
                 </div>
+            </div>
 
-                <!-- PASSWORD -->
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between">
-                        <label class="form-label-custom">Security Key</label>
-                        <a href="#" class="text-decoration-none fw-bold" style="font-size: 0.65rem; color: var(--saas-navy);">Reset Key</a>
-                    </div>
-                    <div class="pass-container">
-                        <input type="password" name="password" id="staffPassword" class="modern-input" placeholder="••••••••" required>
-                        <button type="button" class="eye-btn" onclick="toggleStaffPass()">
-                            <i class="fa-solid fa-eye-low-beam" id="staffEyeIcon"></i>
-                        </button>
-                    </div>
+            <div class="field-wrapper">
+                <div class="d-flex justify-content-between align-items-center">
+                    <label class="biz-label">System Access Key</label>
+                    <a href="#" class="extra-small fw-bold text-decoration-none" style="font-size: 0.6rem; color: var(--saas-blue); margin-bottom: 0.4rem;">Reset Key</a>
                 </div>
-
-                <button type="submit" class="btn-terminal-primary" id="staffSubmitBtn">
-                    Initialize Terminal
-                </button>
-
-                <div class="modern-divider">
-                    <span>REDIRECT</span>
+                <div class="modern-textbox">
+                    <i class="fa-solid fa-key"></i>
+                    <input type="password" name="password" id="staffPassword" placeholder="••••••••" required>
+                    <button type="button" class="btn btn-link p-0 border-0 text-muted" onclick="toggleStaffPass()">
+                        <i class="fa-solid fa-eye-slash small" id="staffEyeIcon"></i>
+                    </button>
                 </div>
+            </div>
 
-                <a href="/login" class="btn-terminal-secondary">
-                    Exit to Client Portal
+            <button type="submit" class="btn-login-cta shadow-sm" id="staffSubmitBtn">
+                Initialize Session
+            </button>
+
+            <div class="login-extra-info">
+                <a href="/login" class="exit-link">
+                    <i class="fa-solid fa-arrow-left-long me-1"></i> Exit to Client Portal
                 </a>
-            </form>
-        </div>
-    </div>
+            </div>
+        </form>
 
-    <!-- SECURITY CONTEXT -->
-    <div class="mt-5 animate__animated animate__fadeInUp animate__delay-1s">
         <div class="security-badge">
-            <i class="fa-solid fa-user-shield text-accent"></i>
-            <span class="small">SECURE OPERATIONAL ENVIRONMENT</span>
+            <i class="fa-solid fa-circle-check text-success"></i>
+            <span>Secure Management Environment Enabled</span>
         </div>
     </div>
 
 </div>
 
-<footer class="login-footer">
-    <div class="fw-700">&copy; 2024 Coolaire Fleet Management</div>
-    <div class="extra-small font-monospace opacity-50 mt-1">ENCRYPTION_LAYER: RSA_4096 // SOCKET_ID: STAFF-01-NAVY</div>
+<footer class="text-center py-4 opacity-40 extra-small fw-bold" style="font-size: 0.6rem; letter-spacing: 2px; color: var(--saas-slate);">
+    COOLAIRE CONSOLIDATED // INTERNAL_TERMINAL_V4
 </footer>
 
 <script>
+    // PREVENT DOUBLE SUBMISSION
     document.getElementById('staffLoginForm').addEventListener('submit', function() {
         const btn = document.getElementById('staffSubmitBtn');
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> INITIALIZING...';
-        btn.style.opacity = "0.8";
-        btn.disabled = true;
+        btn.innerHTML = 'SYNCING PROTOCOLS...';
+        btn.classList.add('disabled');
     });
 
+    // PASSWORD TOGGLE
     function toggleStaffPass() {
         const passInput = document.getElementById('staffPassword');
         const eyeIcon = document.getElementById('staffEyeIcon');
         if (passInput.type === "password") {
             passInput.type = "text";
-            eyeIcon.classList.replace('fa-eye-low-beam', 'fa-eye');
+            eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
         } else {
             passInput.type = "password";
-            eyeIcon.classList.replace('fa-eye', 'fa-eye-low-beam');
+            eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
         }
     }
 </script>
