@@ -8,13 +8,19 @@
 
     <!-- 1. HORIZONTAL ASSET NAVIGATOR (SCANNING THEME) -->
     <div class="asset-selector-wrapper mb-5 animate__animated animate__fadeInDown">
-        <div class="d-flex align-items-center justify-content-between mb-3 px-2">
-            <label class="terminal-label">
+        <div class="d-flex align-items-center justify-content-between mb-3 px-2 flex-wrap gap-2">
+            <label class="terminal-label mb-0">
                 <i class="fa-solid fa-radar me-2 text-primary ani-scan"></i> Operational Asset Navigator
             </label>
-            <a href="/book" class="btn-initialize">
-                <i class="fa-solid fa-plus-circle me-1"></i> New Deployment
-            </a>
+            <div class="d-flex gap-2">
+                <!-- Manual Refresh Button (Global Navigator) -->
+                <button onclick="triggerManualRefresh(this)" class="btn-refresh" title="Sync Latest Tickets">
+                    <i class="fa-solid fa-rotate me-1"></i> Sync Telemetry
+                </button>
+                <a href="/book" class="btn-initialize">
+                    <i class="fa-solid fa-plus-circle me-1"></i> New Deployment
+                </a>
+            </div>
         </div>
 
         <div class="asset-scroll-container">
@@ -46,13 +52,19 @@
         <div class="col-12">
             {% if booking %}
             <div class="card focus-card border-0 shadow-lg overflow-hidden animate__animated animate__fadeInUp">
-                <div class="card-header bg-navy text-white p-4 border-0 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-navy text-white p-4 border-0 d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <div>
                         <h4 class="fw-900 mb-0 ls-tight">{{ booking.plate_number }}</h4>
                         <p class="extra-small opacity-75 mb-0 font-monospace">REF_ID: #{{ booking.ref_id }} // SYSTEM_STATE: ACTIVE</p>
                     </div>
-                    <div class="live-tag">
-                        <span class="pulse-dot-green"></span> TELEMETRY LIVE
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- Manual Refresh Button (Active Card Focus) -->
+                        <button onclick="triggerManualRefresh(this)" class="btn btn-outline-light btn-sm px-3 py-2 rounded-3" style="font-size: 0.75rem; font-weight: 800; border-color: rgba(255, 255, 255, 0.25);">
+                            <i class="fa-solid fa-arrows-rotate me-1"></i> REFRESH NODE
+                        </button>
+                        <div class="live-tag">
+                            <span class="pulse-dot-green"></span> TELEMETRY LIVE
+                        </div>
                     </div>
                 </div>
                 <div class="card-body p-4 p-lg-5 bg-white">
@@ -214,6 +226,18 @@
     <div style="height: 120px;"></div>
 </div>
 
+<!-- Simple inline script to trigger visual feedback before reloading -->
+<script>
+    function triggerManualRefresh(button) {
+        const icon = button.querySelector('i');
+        if (icon) {
+            icon.classList.add('fa-spin');
+        }
+        // Force standard page reload to grab latest database state
+        window.location.reload();
+    }
+</script>
+
 <style>
     :root {
         --coolaire-navy: #002d72;
@@ -227,6 +251,48 @@
     .fw-800 { font-weight: 800; }
     .ls-tight { letter-spacing: -1.5px; }
     .terminal-label { font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 2px; display: block; }
+
+    /* Custom Style for the Navigator Refresh Button */
+    .btn-refresh {
+        background: white;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--coolaire-navy);
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .btn-refresh:hover {
+        background: #f1f5f9;
+        border-color: var(--coolaire-navy);
+        box-shadow: 0 4px 12px rgba(0, 45, 114, 0.05);
+    }
+    .btn-refresh i {
+        font-size: 0.85rem;
+    }
+
+    .btn-initialize {
+        text-decoration: none !important;
+        background: var(--coolaire-navy);
+        color: white;
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+    .btn-initialize:hover {
+        background: #001e4c;
+        color: white;
+    }
 
     /* 1. Asset Navigator */
     .asset-scroll-container { display: flex; gap: 15px; overflow-x: auto; padding: 10px 5px; scrollbar-width: none; }
@@ -251,11 +317,9 @@
         cursor: pointer;
         transition: background-color 0.2s ease, box-shadow 0.2s ease;
         border-bottom: 1px solid #f1f5f9;
-        /* Remove transform: scale here to stop the 'movement' */
     }
     .ledger-row:hover {
         background-color: #f1f5f9 !important;
-        /* Use a shadow and border instead of scaling to avoid jitter */
         box-shadow: inset 4px 0 0 var(--coolaire-navy);
     }
     .ref-tag { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--coolaire-navy); background: #eef2ff; padding: 4px 10px; border-radius: 6px; }

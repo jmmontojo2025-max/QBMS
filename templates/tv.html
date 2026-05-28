@@ -138,7 +138,7 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         .mini-ticket { font-family: 'JetBrains Mono'; font-size: 1.8rem; font-weight: 900; color: var(--tv-navy); }
-        .mini-plate { font-size: 0.8rem; font-weight: 700; color: var(--tv-blue); text-transform: uppercase; }
+        .mini-plate { font-size: 0.85rem; font-weight: 800; color: var(--tv-blue); text-transform: uppercase; letter-spacing: 0.5px; }
 
         /* --- MARQUEE --- */
         .marquee-footer {
@@ -202,8 +202,8 @@
         <!-- SERVING HERO -->
         <section class="serving-hero" id="heroCard">
             <h2 class="hero-label">Ready for Release</h2>
-            <div id="ticketDisplay">---</div>
-            <div id="plateDisplay">-------</div>
+            <div id="ticketDisplay" class="animate__animated">---</div>
+            <div id="plateDisplay" class="animate__animated">-------</div>
             <div class="status-instruction" id="instruct">
                 <i class="fa-solid fa-circle-check"></i>
                 PLEASE PROCEED TO THE RELEASE BAY
@@ -284,14 +284,27 @@
                     let sidebarHtml = "";
                     if (data.waiting && data.waiting.length > 0) {
                         data.waiting.forEach(item => {
+                            // Define state transitions: served -> RELEASING, serving -> ON FLOOR, waiting -> WAITING
+                            let statusLabel = "WAITING";
+                            let statusClass = "bg-light text-muted";
+
+                            if (item.status === 'served') {
+                                statusLabel = "RELEASING";
+                                // Add subtle pulse animation to grab the attention of releasing customers
+                                statusClass = "bg-success text-white animate__animated animate__pulse animate__infinite";
+                            } else if (item.status === 'serving') {
+                                statusLabel = "ON FLOOR";
+                                statusClass = "bg-warning text-dark";
+                            }
+
                             sidebarHtml += `
                                 <div class="mini-card animate__animated animate__fadeInRight">
                                     <div>
-                                        <div class="mini-plate">${item.plate}</div>
-                                        <div class="mini-ticket">${item.ticket}</div>
+                                        <div class="mini-ticket" style="line-height: 1.1;">${item.ticket}</div>
+                                        <div class="mini-plate" style="margin-top: 4px;">${item.plate}</div>
                                     </div>
-                                    <span class="badge ${item.is_on_floor ? 'bg-warning text-dark' : 'bg-light text-muted'} py-2 px-3 fw-800" style="font-size:0.6rem; border-radius:6px;">
-                                        ${item.is_on_floor ? 'ON FLOOR' : 'WAITING'}
+                                    <span class="badge ${statusClass} py-2 px-3 fw-800" style="font-size:0.65rem; border-radius:6px; letter-spacing: 0.5px;">
+                                        ${statusLabel}
                                     </span>
                                 </div>`;
                         });

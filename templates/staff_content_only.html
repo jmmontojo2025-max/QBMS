@@ -1,0 +1,19 @@
+{% extends "base_staff.html" %}
+{% block content %}
+<!-- Include HTMX for lightning fast partial swaps -->
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+<div id="staff-viewport" hx-get="/staff" hx-trigger="every 30s" hx-swap="innerHTML">
+    {% include "staff_content_only.html" %}
+</div>
+
+<script>
+    // Only show preloader on hard refresh, not on updates
+    window.addEventListener('load', () => {
+        document.getElementById('preloader').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('preloader').style.display = 'none';
+        }, 500);
+    });
+</script>
+{% endblock %}

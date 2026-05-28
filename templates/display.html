@@ -192,9 +192,9 @@
         }
 
         @keyframes marquee {
-    0%   { transform: translateX(0); }
-    100% { transform: translateX(-100%); }
-}
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
 
         /* RECALL ANIMATION */
         .recall-flash { animation: flash-alert 0.8s ease-in-out 5; }
@@ -280,13 +280,45 @@
 
         function startDisplay() {
             document.getElementById('tvInit').style.display = 'none';
-            // Browser policy requires a user gesture to play audio
             chime.play().then(() => { chime.pause(); chime.currentTime = 0; });
 
             setInterval(syncData, 3000);
             setInterval(updateClock, 1000);
             syncData();
             updateClock();
+        }
+
+        // Helper function to check if a ticket is "out-plant".
+        // Adjust these conditions to match how your API defines an out-plant ticket.
+        function isOutPlant(ticket) {
+            if (!ticket) return false;
+
+            // Scenario A: If the API sends ticket objects (e.g., { number: "A-101", type: "out-plant" })
+            if (typeof ticket === 'object') {
+                return (
+                    ticket.type === 'out-plant' ||
+                    ticket.is_out_plant === true ||
+                    ticket.location === 'out-plant'
+                );
+            }
+
+            // Scenario B: If the API sends strings, and the ticket number itself indicates out-plant status
+            // e.g., if out-plant tickets always contain "OP" or "out-plant"
+            if (typeof ticket === 'string') {
+                const ticketLower = ticket.toLowerCase();
+                return ticketLower.includes('out-plant') || ticketLower.startsWith('op');
+            }
+
+            return false;
+        }
+
+        // Helper to extract a displayable ticket number string from either a string or object format
+        function getTicketNumber(ticket) {
+            if (!ticket) return "---";
+            if (typeof ticket === 'object') {
+                return ticket.number || ticket.ticket_no || ticket.ticket || "---";
+            }
+            return ticket;
         }
 
         async function syncData() {
@@ -301,9 +333,15 @@
                 const numDisplay = document.getElementById('nowServingNumber');
                 const feed = document.getElementById('waitingFeed');
 
+                // 1. Process "Now Serving"
+                let currentServingTicket = "---";
+                if (data.now_serving && !isOutPlant(data.now_serving)) {
+                    currentServingTicket = getTicketNumber(data.now_serving);
+                }
+
                 // Trigger Alert on Change or Recall
-                const ticketChanged = data.now_serving !== "---" && data.now_serving !== lastTicket;
-                const manualRecall = data.now_serving !== "---" && data.call_count > lastCallCount;
+                const ticketChanged = currentServingTicket !== "---" && currentServingTicket !== lastTicket;
+                const manualRecall = currentServingTicket !== "---" && data.call_count > lastCallCount;
 
                 if (ticketChanged || manualRecall) {
                     chime.currentTime = 0;
@@ -316,15 +354,22 @@
                     numDisplay.classList.add('animate__bounceIn');
                 }
 
-                numDisplay.innerText = data.now_serving;
+                numDisplay.innerText = currentServingTicket;
 
-                // Build Waiting List
+                // 2. Process "Up Next" Waiting List (Filter out out-plant items)
+                let filteredWaiting = [];
+                if (data.waiting && Array.isArray(data.waiting)) {
+                    filteredWaiting = data.waiting.filter(ticket => !isOutPlant(ticket));
+                }
+
+                // Build Waiting List UI
                 let html = "";
-                if(data.waiting && data.waiting.length > 0) {
-                    data.waiting.slice(0, 6).forEach((ticket, index) => {
+                if (filteredWaiting.length > 0) {
+                    filteredWaiting.slice(0, 6).forEach((ticket, index) => {
+                        const ticketDisplay = getTicketNumber(ticket);
                         html += `
                             <div class="waiting-card" style="animation-delay: ${index * 100}ms">
-                                <span class="waiting-ticket">${ticket}</span>
+                                <span class="waiting-ticket">${ticketDisplay}</span>
                                 <span class="waiting-status">Wait POS ${index + 1}</span>
                             </div>
                         `;
@@ -335,10 +380,11 @@
 
                 if (feed.innerHTML !== html) feed.innerHTML = html;
 
-                lastTicket = data.now_serving;
+                lastTicket = currentServingTicket;
                 lastCallCount = data.call_count;
 
             } catch (err) {
+                console.error(err);
                 document.body.classList.add('offline');
             }
         }
