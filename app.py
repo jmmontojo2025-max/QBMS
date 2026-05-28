@@ -489,17 +489,16 @@ def admin_workflow():
     if current_user.role not in ['admin', 'super_admin']:
         return "Unauthorized Access", 403
 
-    # FIX 1: Alphabetical sorting for locations
     locations = Location.query.order_by(Location.name.asc()).all()
     hub_data = []
     today = date.today()
 
     for loc in locations:
-        # Fetch Waiting, Serving, and those finished Today
+        # Fetch Waiting, Serving, Served (staff done, awaiting SOW), and finished Today
         tickets = Queue.query.filter(
             Queue.location_id == loc.id
         ).filter(
-            (Queue.status.in_(['waiting', 'serving'])) |
+            (Queue.status.in_(['waiting', 'serving', 'served'])) |
             ((Queue.status == 'done') & (func.date(Queue.created_at) == today))
         ).order_by(Queue.created_at.asc()).all()
 
@@ -520,12 +519,10 @@ def admin_workflow():
             'tickets': tickets,
             'techs': techs,
             'busy_map': busy_map,
-            'ticket_count': len([t for t in tickets if t.status in ['waiting', 'serving']])
+            'ticket_count': len([t for t in tickets if t.status in ['waiting', 'serving', 'served']])
         })
 
-    # FIX 2: Alphabetical sorting for categories
     categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
-
     return render_template('admin_workflow.html', hub_data=hub_data, categories=categories, title="Global Workflow Audit")
 
 
@@ -573,6 +570,7 @@ def staff_manual_checkin():
                 service_location=item['site'],
                 job_order=item.get('jo'),
                 std_repair_hours=float(item.get('srh', 0)) if item.get('srh') else 0.0,
+                scheduled_time=get_pht_now(), # FORCE PHT ARRIVAL TIME
                 status='arrived'
             )
             db.session.add(new_booking)
@@ -581,13 +579,21 @@ def staff_manual_checkin():
             # Increment count within the loop
             ticket_no = f"{loc_code}-{101 + current_total + i}"
 
-            new_q = Queue(ticket_number=ticket_no, location_id=loc_id, booking_id=new_booking.id, status='waiting')
+            # FORCE PHT CREATION TIME
+            new_q = Queue(
+                ticket_number=ticket_no,
+                location_id=loc_id,
+                booking_id=new_booking.id,
+                status='waiting',
+                created_at=get_pht_now()
+            )
             db.session.add(new_q)
 
         db.session.commit()
         flash(f"Successfully deployed to {target_loc.name}.", "success")
     except Exception as e:
         db.session.rollback()
+        app.logger.error(f"Manual Check-In Error: {e}")
         flash("System error in bulk check-in.", "danger")
 
     return redirect(request.referrer or url_for('staff_panel'))
@@ -990,41 +996,93 @@ def staff_panel():
 @app.route('/staff/complete-work/<int:q_id>', methods=['POST'])  # MUST BE POST
 @login_required
 def complete_work(q_id):
-    # Capture values from the HTML form
+    q = db.session.get(Queue, q_id)
+    if not q:
+        flash("Error: Ticket not found.", "danger")
+        return redirect(request.referrer or url_for('staff_panel'))
+
+    # Capture form inputs
     start_str = request.form.get('manual_start')
     end_str = request.form.get('manual_end')
-
-    # NEW: Capture JO and SRH at the point of completion
     jo_number = request.form.get('job_order')
     srh_value = request.form.get('std_repair_hours')
+    scope_of_work = request.form.get('scope_of_work')
 
-    if not start_str or not end_str:
-        flash("Error: Start and End times are required.", "danger")
-        return redirect(url_for('staff_panel'))
+    try:
+        # FIXED: Use local PHT date instead of UTC date to prevent yesterday-rollback errors
+        pht_now = datetime.now(PHT)
+        today_pht = pht_now.date()
 
-    q = db.session.get(Queue, q_id)
-    if q:
-        today = datetime.now(timezone.utc).date()
-        # Convert the HH:MM strings into actual database time objects
-        q.start_time = datetime.combine(today, datetime.strptime(start_str, '%H:%M').time())
-        q.end_time = datetime.combine(today, datetime.strptime(end_str, '%H:%M').time())
-
-        # Save the JO and SRH to the booking record
+        # Update JO and SRH if they are submitted
         if q.booking:
-            if jo_number: q.booking.job_order = jo_number
-            if srh_value: q.booking.std_repair_hours = float(srh_value)
-            q.booking.status = 'done'
+            if jo_number:
+                q.booking.job_order = jo_number
+            if srh_value:
+                try:
+                    q.booking.std_repair_hours = float(srh_value)
+                except ValueError:
+                    pass
 
-        q.status = 'done'
+        # === STEP 1: STAFF COMPLETION (Advisor/Coordinator logs Start & End times) ===
+        if not scope_of_work:
+            if not start_str or not end_str:
+                flash("Error: Start and End times are required from Coordinators/Advisors.", "danger")
+                return redirect(request.referrer or url_for('staff_panel'))
+
+            # Combine using PHT date
+            q.start_time = datetime.combine(today_pht, datetime.strptime(start_str, '%H:%M').time())
+            q.end_time = datetime.combine(today_pht, datetime.strptime(end_str, '%H:%M').time())
+
+            # Transition to 'served' status to queue it in the Admin Workflow console
+            q.status = 'served'
+            if q.booking:
+                q.booking.status = 'served'
+
+            # Automatically trigger call on TV monitor
+            q.call_count += 1
+
+            log_action(
+                action="Staff Times Logged & Called",
+                details=f"Staff logged times for Ticket {q.ticket_number}. Start: {start_str}, End: {end_str}. Called on TV for releasing.",
+                location_id=q.location_id
+            )
+            flash(f"Times saved for {q.ticket_number}. Called on TV monitor for release.", "success")
+
+        # === STEP 2: ADMIN COMPLETION (Admin inputs Scope of Work and Releases) ===
+        else:
+            q.internal_notes = scope_of_work
+            if hasattr(q, 'scope_of_work'):
+                q.scope_of_work = scope_of_work
+            if q.booking:
+                if hasattr(q.booking, 'scope_of_work'):
+                    q.booking.scope_of_work = scope_of_work
+                elif hasattr(q.booking, 'internal_notes'):
+                    q.booking.internal_notes = scope_of_work
+                q.booking.status = 'done'
+
+            # Finalize the ticket status
+            q.status = 'done'
+
+            log_action(
+                action="Ticket Completed",
+                details=f"Ticket {q.ticket_number} ({q.booking.plate_number if q.booking else 'WALK-IN'}) completed & released. SOW: {scope_of_work}",
+                location_id=q.location_id
+            )
+
+            # Notify customer
+            if q.booking and q.booking.customer:
+                notify_customer(q.booking.customer, q.booking.plate_number, 'done', q.id, q.ticket_number)
+
+            flash(f"Ticket {q.ticket_number} successfully completed and released.", "success")
+
         db.session.commit()
 
-        # Notify customer
-        if q.booking and q.booking.customer:
-            notify_customer(q.booking.customer, q.booking.plate_number, 'done', q.id, q.ticket_number)
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Complete Work Error: {e}")
+        flash("System Error: Could not process ticket completion.", "danger")
 
-        flash(f"Ticket {q.ticket_number} marked complete.", "success")
-
-    return redirect(url_for('staff_panel'))
+    return redirect(request.referrer or url_for('staff_panel'))
 
 
 @app.route('/staff/records')
@@ -1153,17 +1211,19 @@ def check_in():
     booking = Booking.query.filter_by(ref_id=ref_code, status='pending').first()
 
     if booking:
-        # NEW LOGIC: Count all-time tickets for this location to prevent repeats
+        # Count all-time tickets for this location to prevent repeats
         total_count = Queue.query.filter_by(location_id=loc_id).count()
 
         # Format: MKT-101, MKT-102, etc.
         ticket_no = f"{loc_code}-{101 + total_count}"
 
+        # FORCE PHT ARRIVAL TIMESTAMP
         new_q = Queue(
             ticket_number=ticket_no,
             location_id=loc_id,
             booking_id=booking.id,
-            status='waiting'
+            status='waiting',
+            created_at=get_pht_now()
         )
         booking.status = 'arrived'
         db.session.add(new_q)
@@ -1192,16 +1252,24 @@ def walk_in():
             service_type=service_type,
             service_location='In-Plant',
             status='arrived',
+            scheduled_time=get_pht_now(), # FORCE PHT ARRIVAL TIME
             ref_id='W-' + ''.join(random.choices(string.digits, k=4))
         )
         db.session.add(new_booking)
         db.session.flush()
 
-        # NEW LOGIC: Count all-time tickets for this location
+        # Count all-time tickets for this location
         total_count = Queue.query.filter_by(location_id=loc_id).count()
         ticket_no = f"{loc_code}-{101 + total_count}"
 
-        new_q = Queue(ticket_number=ticket_no, location_id=loc_id, booking_id=new_booking.id, status='waiting')
+        # FORCE PHT CREATION TIMESTAMP
+        new_q = Queue(
+            ticket_number=ticket_no,
+            location_id=loc_id,
+            booking_id=new_booking.id,
+            status='waiting',
+            created_at=get_pht_now()
+        )
         db.session.add(new_q)
         db.session.commit()
 
@@ -1343,21 +1411,30 @@ def get_latest_queue():
     if not loc_id:
         return jsonify({"now_serving": "---", "waiting": []})
 
-    # 1. Get the most recently COMPLETED unit (status='done')
-    # within the last 15 minutes
-    threshold = datetime.now(timezone.utc) - timedelta(minutes=15)
+    # Use naive PHT time to prevent TypeError comparisons with naive DB columns
+    pht_now = datetime.now(PHT).replace(tzinfo=None)
+    threshold = pht_now - timedelta(minutes=15)
 
+    # 1. PRIORITIZE ACTIVE 'SERVED' TICKETS:
+    # If a ticket is in 'served' status, it is actively waiting for release.
     latest_release = Queue.query.filter(
         Queue.location_id == loc_id,
-        Queue.status == 'done',
-        Queue.end_time >= threshold
+        Queue.status == 'served'
     ).order_by(Queue.end_time.desc()).first()
 
-    # 2. Get the units still in the facility (either 'waiting' or currently 'serving')
-    # This keeps the "Up Next" list populated with units still on the floor
+    # 2. FALLBACK TO 'DONE' TICKETS:
+    # If no 'served' tickets are active, show recently completed 'done' tickets within 15 mins.
+    if not latest_release:
+        latest_release = Queue.query.filter(
+            Queue.location_id == loc_id,
+            Queue.status == 'done',
+            Queue.end_time >= threshold
+        ).order_by(Queue.end_time.desc()).first()
+
+    # Fetch the active wait list (waiting, serving, and served releasing queues)
     active_queue = Queue.query.filter(
         Queue.location_id == loc_id,
-        Queue.status.in_(['waiting', 'serving'])
+        Queue.status.in_(['waiting', 'serving', 'served'])
     ).order_by(Queue.created_at.asc()).limit(5).all()
 
     return jsonify({
@@ -1368,7 +1445,7 @@ def get_latest_queue():
             {
                 "ticket": t.ticket_number,
                 "plate": t.booking.plate_number if t.booking else "WALK-IN",
-                "is_on_floor": t.status == 'serving'
+                "status": t.status  # Passes 'waiting', 'serving', or 'served'
             } for t in active_queue
         ]
     })
@@ -2132,6 +2209,29 @@ def reset_password(token):
             return redirect(url_for('login'))
 
     return render_template('reset_password.html', token=token)
+
+
+def log_action(action, details, location_id=None):
+    """ Records an entry into the audit trail for the target hub """
+    try:
+        new_log = AuditLog(
+            location_id=location_id or session.get('loc_id'),
+            user_id=current_user.id if current_user.is_authenticated else None,
+            action=action,
+            details=details
+        )
+        db.session.add(new_log)
+        db.session.commit()
+    except Exception as e:
+        app.logger.error(f"Audit Log Failed: {e}")
+        db.session.rollback()
+
+# Define Philippine Time (UTC+8)
+PHT = timezone(timedelta(hours=8))
+
+def get_pht_now():
+    # Returns the current local PHT time as a database-safe naive object
+    return datetime.now(PHT).replace(tzinfo=None)
 
 
 @app.route('/logout')
