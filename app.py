@@ -155,16 +155,13 @@ class Location(db.Model):
         return active_user is not None
 
 
-# A branch is online if any staff/admin was seen in the last 2 minutes at this ID
-
-
 class Technician(db.Model):
     __tablename__ = 'technicians'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))
+    branch = db.relationship('Location', backref='technicians')  # Relationship name is "branch"
     is_active = db.Column(db.Boolean, default=True)
-    branch = db.relationship('Location', backref='technicians')
     is_present = db.Column(db.Boolean, default=True)
 
 
@@ -214,9 +211,7 @@ class Booking(db.Model):
     std_repair_hours = db.Column(db.Float, default=0.0)
 
     # NO EXPLICIT 'customer' relationship here, it's created by the backref in User model
-    # location = db.relationship('Location', backref='bookings_at_location') # This can stay or be removed if 'location' is sufficient from backref in Location model
-    location = db.relationship('Location',
-                               backref='bookings')  # Use existing backref from Location if available, or define here if not.
+    location = db.relationship('Location', backref='bookings')  # Use existing backref from Location if available, or define here if not.
 
     def __init__(self, **kwargs):
         super(Booking, self).__init__(**kwargs)
@@ -264,11 +259,19 @@ class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    action = db.Column(db.String(100))  # e.g., "Work Started", "Ticket Expired"
-    details = db.Column(db.Text)  # e.g., "Assigned Tech A to Ticket BAS-101"
+    action = db.Column(db.String(100))
+    details = db.Column(db.Text)
+
+    # NEW: ASSET METADATA
+    ticket_number = db.Column(db.String(20))
+    plate_number = db.Column(db.String(50))
+
+    # NETWORK FORENSICS
+    ip_address = db.Column(db.String(50))
+    user_agent = db.Column(db.Text)
+    device_type = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    # Relationships
     performer = db.relationship('User', backref='logs')
     location = db.relationship('Location')
 
@@ -557,29 +560,27 @@ def staff_manual_checkin():
     manifest = json.loads(manifest_data)
 
     try:
-        # Get current all-time count once before the loop
         current_total = Queue.query.filter_by(location_id=loc_id).count()
 
         for i, item in enumerate(manifest):
+            plate_clean = item['plate'].strip().upper()
             new_booking = Booking(
                 user_id=None,
                 location_id=loc_id,
-                plate_number=item['plate'].strip().upper(),
+                plate_number=plate_clean,
                 guest_name=f"[PHONE] {item['client']}",
                 service_type=item['service'],
                 service_location=item['site'],
                 job_order=item.get('jo'),
                 std_repair_hours=float(item.get('srh', 0)) if item.get('srh') else 0.0,
-                scheduled_time=get_pht_now(), # FORCE PHT ARRIVAL TIME
+                scheduled_time=get_pht_now(),
                 status='arrived'
             )
             db.session.add(new_booking)
             db.session.flush()
 
-            # Increment count within the loop
             ticket_no = f"{loc_code}-{101 + current_total + i}"
 
-            # FORCE PHT CREATION TIME
             new_q = Queue(
                 ticket_number=ticket_no,
                 location_id=loc_id,
@@ -588,6 +589,14 @@ def staff_manual_checkin():
                 created_at=get_pht_now()
             )
             db.session.add(new_q)
+
+            # LOG TO SECURITY AUDIT TRAIL FOR INDIVIDUAL VEHICLE PROVISIONING
+            log_action(
+                action="Manual Booking",
+                details=f"Staff manually scheduled and checked in unit {plate_clean} under Ticket {ticket_no} for Client: {item['client']}.",
+                ticket_number=ticket_no,
+                plate_number=plate_clean
+            )
 
         db.session.commit()
         flash(f"Successfully deployed to {target_loc.name}.", "success")
@@ -622,7 +631,12 @@ def start_work(q_id):
         q.status = 'serving'
         db.session.commit()
 
-        log_action("Dispatch", f"Ticket {q.ticket_number} sent to floor.")
+        log_action(
+            action="Dispatch",
+            details=f"Ticket {q.ticket_number} sent to floor.",
+            ticket_number=q.ticket_number,
+            plate_number=q.booking.plate_number if q.booking else 'WALK-IN'
+        )
 
         if q.booking and q.booking.customer:
             notify_customer(q.booking.customer, q.booking.plate_number, 'serving', q.id, q.ticket_number)
@@ -638,7 +652,12 @@ def recall_ticket(q_id):
     if q:
         q.call_count += 1
         db.session.commit()
-        log_action("TV Recall", f"Ticket {q.ticket_number} called again on monitor.")
+        log_action(
+            action="TV Recall",
+            details=f"Ticket {q.ticket_number} called again on monitor.",
+            ticket_number=q.ticket_number,
+            plate_number=q.booking.plate_number if q.booking else 'WALK-IN'
+        )
     return redirect(url_for('staff_panel'))
 
 
@@ -1044,7 +1063,9 @@ def complete_work(q_id):
             log_action(
                 action="Staff Times Logged & Called",
                 details=f"Staff logged times for Ticket {q.ticket_number}. Start: {start_str}, End: {end_str}. Called on TV for releasing.",
-                location_id=q.location_id
+                location_id=q.location_id,
+                ticket_number=q.ticket_number,
+                plate_number=q.booking.plate_number if q.booking else 'WALK-IN'
             )
             flash(f"Times saved for {q.ticket_number}. Called on TV monitor for release.", "success")
 
@@ -1066,7 +1087,9 @@ def complete_work(q_id):
             log_action(
                 action="Ticket Completed",
                 details=f"Ticket {q.ticket_number} ({q.booking.plate_number if q.booking else 'WALK-IN'}) completed & released. SOW: {scope_of_work}",
-                location_id=q.location_id
+                location_id=q.location_id,
+                ticket_number=q.ticket_number,
+                plate_number=q.booking.plate_number if q.booking else 'WALK-IN'
             )
 
             # Notify customer
@@ -1228,6 +1251,19 @@ def check_in():
         booking.status = 'arrived'
         db.session.add(new_q)
         db.session.commit()
+
+        # TRIGGER ARRIVAL NOTIFICATION
+        if booking.customer:
+            try:
+                notify_customer(
+                    user=booking.customer,
+                    plate_number=booking.plate_number,
+                    status_type='arrived_kiosk',
+                    queue_id=new_q.id,
+                    ticket_number=ticket_no
+                )
+            except Exception as e:
+                app.logger.error(f"Kiosk Arrival Notification Failed: {e}")
 
         return jsonify({"status": "success", "ticket": ticket_no, "q_id": new_q.id})
 
@@ -1566,6 +1602,8 @@ def shutdown_session(exception=None):
     db.session.remove()
 
 
+# --- STAFF TECHNICIAN MANAGEMENT & TRANSFERS ---
+
 @app.route('/staff/technicians', methods=['GET', 'POST'])
 @login_required
 @permission_required('technicians')
@@ -1586,7 +1624,51 @@ def staff_technicians():
 
     # Only show technicians assigned to the CURRENT branch in session
     techs = Technician.query.filter_by(location_id=loc_id).all()
-    return render_template('staff_technicians.html', technicians=techs, title="Manage Technicians")
+
+    # FETCH ALL ACTIVE HUBS FROM THE 'locations' SUPABASE TABLE FOR TRANSFER MATCHING
+    all_locations = Location.query.order_by(Location.name.asc()).all()
+
+    return render_template(
+        'staff_technicians.html',
+        technicians=techs,
+        locations=all_locations,
+        title="Manage Technicians"
+    )
+
+
+@app.route('/staff/technicians/edit/<int:id>', methods=['POST'])
+@login_required
+@permission_required('technicians')
+@csrf.exempt
+def edit_technician(id):
+    tech = db.session.get(Technician, id)
+    if not tech:
+        flash("Technician not found.", "danger")
+        return redirect(url_for('staff_technicians'))
+
+    # Retrieve parameters submitted by our unified edit & transfer modal
+    new_name = request.form.get('tech_name')
+    new_location_id = request.form.get('location_id')
+
+    if new_name:
+        tech.name = new_name.strip()
+
+    if new_location_id:
+        try:
+            # Update the foreign key relation pointing to the locations table
+            tech.location_id = int(new_location_id)
+        except ValueError:
+            pass
+
+    try:
+        db.session.commit()
+        flash(f"Technician updates deployed successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error executing technician re-assignment: {e}")
+        flash("System Error: Could not save re-assignment changes.", "danger")
+
+    return redirect(url_for('staff_technicians'))
 
 
 @app.route('/staff/technicians/delete/<int:id>')
@@ -1610,11 +1692,19 @@ def expire_ticket(q_id):
 
     if q and q.location_id == loc_id:
         q.status = 'expired'
-        # If it was linked to a booking, reset the booking status too
         if q.booking:
             q.booking.status = 'missed'
 
         db.session.commit()
+
+        # LOG TO SECURITY AUDIT TRAIL
+        log_action(
+            action="Ticket Expired",
+            details=f"Marked Ticket {q.ticket_number} ({q.booking.plate_number if q.booking else 'WALK-IN'}) as Expired/No-Show.",
+            ticket_number=q.ticket_number,
+            plate_number=q.booking.plate_number if q.booking else 'WALK-IN'
+        )
+
         flash(f"Ticket {q.ticket_number} marked as Expired/No-Show.", "warning")
 
     return redirect(url_for('staff_panel'))
@@ -1629,6 +1719,14 @@ def revert_ticket(q_id):
         q.status = 'waiting'
         if q.booking: q.booking.status = 'pending'
         db.session.commit()
+
+        log_action(
+            action="Ticket Reverted",
+            details=f"Ticket {q.ticket_number} returned to queue.",
+            ticket_number=q.ticket_number,
+            plate_number=q.booking.plate_number if q.booking else 'WALK-IN'
+        )
+
         flash(f"Ticket {q.ticket_number} returned to queue.", "success")
     return redirect(url_for('staff_records'))
 
@@ -1651,7 +1749,7 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
     user_id = user.id
     app_instance = current_app._get_current_object()
 
-    def run_notifications(app_ctx, u_id, l_name, r_url):
+    def run_notifications(app_ctx, u_id, l_name, r_url, q_id):
         with app_ctx.app_context():
             db_user = db.session.get(User, u_id)
             if not db_user:
@@ -1699,6 +1797,11 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
                 subject = "Coolaire Account: Active"
                 msg_text = f"Great news! Your account for {db_user.company_name} is now active. You may now log in to the Partner Portal."
 
+            elif status_type == 'arrived_kiosk':
+                subject = f"Arrival Registered: {plate_number}"
+                msg_text = f"Your driver has checked in unit {plate_number} at the main kiosk. Your asset is now queued for workshop dispatch."
+                info_box_html = f"<p><b>Hub:</b> {l_name}<br><b>Ticket:</b> {ticket_number}</p>"
+
             elif status_type == 'serving':
                 subject = f"Service Started: {plate_number}"
                 msg_text = f"Update: Your unit {plate_number} is now being serviced."
@@ -1728,6 +1831,9 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
             mail_server = settings.get('MAIL_SERVER', 'mail.coolaireconsolidated.com')
             mail_port = int(settings.get('MAIL_PORT', 465))
 
+            log_status = 'failed'
+            error_msg = None
+
             if mail_user and mail_pass and db_user.email:
                 try:
                     msg = MIMEMultipart('related')
@@ -1755,11 +1861,32 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
                     with smtplib.SMTP_SSL(mail_server, mail_port) as server:
                         server.login(mail_user, mail_pass)
                         server.sendmail(mail_user, db_user.email, msg.as_string())
+                    log_status = 'success'
                 except Exception as e:
+                    log_status = 'failed'
+                    error_msg = str(e)
                     print(f"!!! SMTP Error: {e}")
+            else:
+                log_status = 'failed'
+                error_msg = "SMTP Configuration missing or recipient email empty."
 
-    # CRITICAL FIX: Pass 'reset_url' as the 4th argument to the thread
-    threading.Thread(target=run_notifications, args=(app_instance, user_id, loc_name, reset_url)).start()
+            # WRITE TO NOTIFICATION LOG TABLE FOR IMMUTABLE MESSAGING AUDIT
+            try:
+                new_log = NotificationLog(
+                    queue_id=q_id,
+                    recipient=db_user.email if db_user.email else "N/A",
+                    channel="email",
+                    status=log_status,
+                    error_message=error_msg
+                )
+                db.session.add(new_log)
+                db.session.commit()
+            except Exception as log_err:
+                db.session.rollback()
+                print(f"!!! Failed to save Notification Log: {log_err}")
+
+    # CRITICAL FIX: Pass 'reset_url' and 'queue_id' as the last arguments to the thread
+    threading.Thread(target=run_notifications, args=(app_instance, user_id, loc_name, reset_url, queue_id)).start()
 
 
 @app.route('/staff/notifications')
@@ -1859,14 +1986,44 @@ def purge_user(user_id):
     return redirect(url_for('staff_archive'))
 
 
-def log_action(action, details):
-    """ Records an entry into the audit trail for the current hub """
+def log_action(action, details, location_id=None, ticket_number=None, plate_number=None):
+    """ Records an entry into the immutable security audit trail """
+    ip = '127.0.0.1'
+    ua = 'System Automation'
+    device = 'BAS Server'
+
+    # Extract client network forensics if called during a web request
+    if request:
+        try:
+            # Handle reverse proxies (like Supabase or Heroku) safely
+            ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+            if ip and ',' in ip:
+                ip = ip.split(',')[0].strip()
+
+            ua = request.headers.get('User-Agent', 'Unknown')
+
+            # Simple device-type categorization
+            ua_lower = ua.lower()
+            if 'mobile' in ua_lower or 'android' in ua_lower or 'iphone' in ua_lower:
+                device = 'Mobile Device'
+            elif 'tablet' in ua_lower or 'ipad' in ua_lower:
+                device = 'Tablet Terminal'
+            else:
+                device = 'Workshop Terminal'
+        except Exception:
+            pass
+
     try:
         new_log = AuditLog(
-            location_id=session.get('loc_id'),
+            location_id=location_id or session.get('loc_id'),
             user_id=current_user.id if current_user.is_authenticated else None,
             action=action,
-            details=details
+            details=details,
+            ticket_number=ticket_number,
+            plate_number=plate_number,
+            ip_address=ip,
+            user_agent=ua,
+            device_type=device
         )
         db.session.add(new_log)
         db.session.commit()
@@ -1879,11 +2036,13 @@ def log_action(action, details):
 @login_required
 @permission_required('audit')
 def staff_audit_trail():
-    loc_id = session.get('loc_id')
-    # Fetch logs for THIS location only
-    logs = AuditLog.query.filter_by(location_id=loc_id).order_by(AuditLog.created_at.desc()).limit(500).all()
+    # Retrieve all security audit logs globally, preloading location and performer relationships
+    logs = AuditLog.query.options(
+        db.joinedload(AuditLog.location),
+        db.joinedload(AuditLog.performer)
+    ).order_by(AuditLog.created_at.desc()).limit(500).all()
 
-    return render_template('staff_audit_trail.html', logs=logs, title="Hub Audit Trail")
+    return render_template('staff_audit_trail.html', logs=logs, title="Security Audit Trail")
 
 
 @app.route('/staff/global-bookings')
@@ -1923,6 +2082,14 @@ def toggle_tech_presence(tech_id):
     if tech and tech.location_id == loc_id:
         tech.is_present = not tech.is_present
         db.session.commit()
+
+        # LOG TO SECURITY AUDIT TRAIL
+        state_str = "ACTIVE" if tech.is_present else "OFF-DUTY"
+        log_action(
+            action="Roster State Toggled",
+            details=f"Staff changed roster state of Technician {tech.name} to {state_str}."
+        )
+
     return redirect(url_for('staff_panel'))
 
 
@@ -1931,8 +2098,18 @@ def toggle_tech_presence(tech_id):
 def save_job_notes(q_id):
     q = db.session.get(Queue, q_id)
     if q and q.location_id == session.get('loc_id'):
-        q.internal_notes = request.form.get('notes')
+        notes_content = request.form.get('notes')
+        q.internal_notes = notes_content
         db.session.commit()
+
+        # LOG TO SECURITY AUDIT TRAIL
+        log_action(
+            action="Office Notes Updated",
+            details=f"Staff updated internal diagnostic/billing notes on Ticket {q.ticket_number}.",
+            ticket_number=q.ticket_number,
+            plate_number=q.booking.plate_number if q.booking else 'WALK-IN'
+        )
+
         flash("Notes updated.", "success")
     return redirect(url_for('staff_panel'))
 
@@ -2211,21 +2388,6 @@ def reset_password(token):
     return render_template('reset_password.html', token=token)
 
 
-def log_action(action, details, location_id=None):
-    """ Records an entry into the audit trail for the target hub """
-    try:
-        new_log = AuditLog(
-            location_id=location_id or session.get('loc_id'),
-            user_id=current_user.id if current_user.is_authenticated else None,
-            action=action,
-            details=details
-        )
-        db.session.add(new_log)
-        db.session.commit()
-    except Exception as e:
-        app.logger.error(f"Audit Log Failed: {e}")
-        db.session.rollback()
-
 # Define Philippine Time (UTC+8)
 PHT = timezone(timedelta(hours=8))
 
@@ -2292,6 +2454,34 @@ if __name__ == '__main__':
                 print("--- Database Updated: Added std_repair_hours ---")
 
             # --- NEW MIGRATIONS END HERE ---
+                # --- NEW AUDIT LOG COLUMNS MIGRATION ---
+                audit_cols = [c['name'] for c in inspector.get_columns('audit_logs')]
+                if 'ip_address' not in audit_cols:
+                    db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN ip_address VARCHAR(50)'))
+                    db.session.commit()
+                    print("--- Database Updated: Added ip_address to audit_logs ---")
+
+                if 'user_agent' not in audit_cols:
+                    db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN user_agent TEXT'))
+                    db.session.commit()
+                    print("--- Database Updated: Added user_agent to audit_logs ---")
+
+                if 'device_type' not in audit_cols:
+                    db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN device_type VARCHAR(50)'))
+                    db.session.commit()
+                    print("--- Database Updated: Added device_type to audit_logs ---")
+
+                # New Migration: ticket_number
+                if 'ticket_number' not in audit_cols:
+                    db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN ticket_number VARCHAR(20)'))
+                    db.session.commit()
+                    print("--- Database Updated: Added ticket_number to audit_logs ---")
+
+                # New Migration: plate_number
+                if 'plate_number' not in audit_cols:
+                    db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN plate_number VARCHAR(50)'))
+                    db.session.commit()
+                    print("--- Database Updated: Added plate_number to audit_logs ---")
 
         except Exception as e:
             print(f"--- Database Migration Note: {e} ---")
