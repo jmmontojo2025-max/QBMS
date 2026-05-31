@@ -1,9 +1,10 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<!-- Fonts & Icons -->
+<!-- Fonts & Icons Preconnect & Loading -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
     :root {
@@ -13,28 +14,36 @@
         --saas-border: #e2e8f0;
         --saas-bg: #f8fafc;
         --saas-success: #10b981;
-        --saas-danger: #ef4444;
         --saas-radius: 14px;
         --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
     }
 
-    /* 1. LAYOUT ENGINE - Scoped to block content only */
+    /* LIGHTWEIGHT FADE-IN */
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     .dashboard-container {
         display: flex;
         flex-direction: column;
+        background-color: var(--saas-bg);
         font-family: 'Plus Jakarta Sans', sans-serif;
         color: var(--saas-navy);
-        position: relative; /* Crucial for Scoped Loader */
+        position: relative;
         gap: 1.5rem;
         min-height: 100%;
     }
 
-    /* 2. SCOPED INNER LOADER (Does not affect side menu) */
+    /* SCOPED INNER LOADER (Does not affect side menu) */
     #inner-loader {
         position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px;
         background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(4px);
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        z-index: 2000; transition: 0.6s;
+        z-index: 2000; transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
     .svg-draw { width: 60px; height: 60px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
     @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
@@ -91,7 +100,7 @@
     .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 </style>
 
-<div class="dashboard-container animate__animated animate__fadeIn">
+<div class="dashboard-container animate-fade-in">
 
     <!-- SCOPED LOADER (Side menu remains clickable) -->
     <div id="inner-loader">
@@ -165,7 +174,14 @@
                 </thead>
                 <tbody>
                     {% for loc in locations %}
-                    <tr class="row-interactive animate__animated animate__fadeIn" data-bs-toggle="offcanvas" data-bs-target="#panel{{ loc.id }}">
+                    <tr class="row-interactive"
+                        data-id="{{ loc.id }}"
+                        data-name="{{ loc.name | escape }}"
+                        data-code="{{ loc.code | escape }}"
+                        data-capacity="{{ loc.capacity }}"
+                        data-is-online="{% if loc.is_online %}true{% else %}false{% endif %}"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#detailPanelOffcanvas">
                         <td>
                             <div class="d-flex align-items-center gap-3">
                                 <div class="p-2 rounded-3 bg-light text-primary border"><i class="fa-solid fa-server"></i></div>
@@ -179,14 +195,20 @@
                             {% if loc.is_online %}
                             <div class="status-glow status-online"><span class="status-dot"></span> LIVE_ACTIVE</div>
                             {% else %}
-                            <div class="status-glow">OFFLINE_STBY</div>
+                            <div class="status-glow"><span class="status-dot"></span> OFFLINE_STBY</div>
                             {% endif %}
                         </td>
                         <td><span class="badge bg-dark font-monospace" style="font-size: 0.7rem;">{{ loc.code }}</span></td>
                         <td><span class="fw-800 text-navy">{{ loc.capacity }} Units</span></td>
                         <td class="text-end" onclick="event.stopPropagation()">
                             <div class="d-flex justify-content-end gap-2">
-                                <button class="btn btn-sm border fw-900 extra-small px-3" data-bs-toggle="modal" data-bs-target="#editModal{{ loc.id }}">EDIT</button>
+                                <button class="btn btn-sm border fw-900 extra-small px-3"
+                                        data-id="{{ loc.id }}"
+                                        data-name="{{ loc.name | escape }}"
+                                        data-code="{{ loc.code | escape }}"
+                                        data-capacity="{{ loc.capacity }}"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editLocationModal">EDIT</button>
                                 <a href="{{ url_for('delete_location', loc_id=loc.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Instruction: Permanent Decommission? This cannot be undone.')">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </a>
@@ -200,35 +222,39 @@
     </main>
 </div>
 
-<!-- MODALS & SIDE PANELS -->
-{% for loc in locations %}
-<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="panel{{ loc.id }}" style="width: 450px !important; border: none; box-shadow: -10px 0 30px rgba(0,0,0,0.1);">
+<!-- SINGLE REUSABLE INFRASTRUCTURE AUDIT OFF-CANVAS -->
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="detailPanelOffcanvas" style="width: 450px !important; border: none; box-shadow: -10px 0 30px rgba(0,0,0,0.1);">
     <div class="detail-header" style="background: var(--saas-navy); color: white; padding: 2.5rem 2rem;">
         <div class="d-flex justify-content-between align-items-start mb-3">
             <span class="badge bg-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Infrastructure Audit</span>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
-        <h2 class="fw-900 mb-1 text-white">{{ loc.name }}</h2>
-        <p class="instruction-text text-white opacity-75">Instruction: Reviewing health and allocation limits for node {{ loc.code }}.</p>
+        <h2 class="fw-900 mb-1 text-white" id="offcanvas-loc-name">---</h2>
+        <p class="instruction-text text-white opacity-75">Instruction: Reviewing health and allocation limits for node <span id="offcanvas-loc-code">---</span>.</p>
     </div>
     <div class="offcanvas-body p-4" style="background: var(--saas-bg);">
         <div class="bg-white p-3 rounded-4 border mb-3 shadow-sm">
             <label class="custom-label">Status Report</label>
-            <div class="h5 fw-900 {{ 'text-success' if loc.is_online else 'text-muted' }}">
-                {{ 'NODE_OPERATIONAL' if loc.is_online else 'NODE_DISCONNECTED' }}
+            <div class="h5 fw-900 text-muted" id="offcanvas-loc-status">
+                NODE_DISCONNECTED
             </div>
         </div>
         <div class="bg-white p-3 rounded-4 border shadow-sm mb-4">
             <label class="custom-label">Operational Note</label>
             <p class="small fw-bold text-muted mb-0">Instruction: Reconfiguring this node will broadcast changes across the hub dispatcher network immediately.</p>
         </div>
-        <button class="btn btn-navy w-100 py-3 rounded-4 fw-900" style="background: var(--saas-navy); color: white;" data-bs-toggle="modal" data-bs-target="#editModal{{ loc.id }}">
+        <button class="btn btn-navy w-100 py-3 rounded-4 fw-900"
+                style="background: var(--saas-navy); color: white;"
+                data-bs-toggle="modal"
+                data-bs-target="#editLocationModal"
+                id="offcanvas-edit-btn">
             RECONFIGURE HUB
         </button>
     </div>
 </div>
 
-<div class="modal fade" id="editModal{{ loc.id }}" tabindex="-1">
+<!-- SINGLE REUSABLE EDIT LOCATION CONFIGURATION MODAL -->
+<div class="modal fade" id="editLocationModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
             <div class="modal-header bg-navy text-white p-4" style="background: var(--saas-navy) !important;">
@@ -238,21 +264,21 @@
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ url_for('edit_location', loc_id=loc.id) }}" method="POST">
+            <form id="editLocationForm" action="/staff/locations/edit/0" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="custom-label">Updated Hub Name</label>
-                        <input type="text" name="name" class="modern-input" value="{{ loc.name }}" required>
+                        <input type="text" name="name" id="modal-loc-name" class="modern-input" value="" required>
                     </div>
                     <div class="row g-2">
                         <div class="col-6">
                             <label class="custom-label">New Code</label>
-                            <input type="text" name="code" class="modern-input" value="{{ loc.code }}" required>
+                            <input type="text" name="code" id="modal-loc-code" class="modern-input" value="" required>
                         </div>
                         <div class="col-6">
                             <label class="custom-label">Total Slots</label>
-                            <input type="number" name="capacity" class="modern-input" value="{{ loc.capacity }}" required>
+                            <input type="number" name="capacity" id="modal-loc-capacity" class="modern-input" value="" required>
                         </div>
                     </div>
                 </div>
@@ -263,15 +289,12 @@
         </div>
     </div>
 </div>
-{% endfor %}
 
 <script>
     // 1. Live Clock (12-Hour Format)
     function updateClock() {
         const now = new Date();
         const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-
-        // Instruction: Use hour12: true for a 1-12 hour range with AM/PM indicator
         const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
 
         const dateEl = document.getElementById('live-date');
@@ -283,23 +306,71 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. Scoped Loader Function
-    // Instruction: This dismisses the loader only within the content area, keeping the side menu accessible.
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const loader = document.getElementById('inner-loader');
-            if(loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => { loader.style.display = 'none'; }, 600);
-            }
-        }, 800);
+    /**
+     * Dynamic Offcanvas, Modal Binding & Preloader
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+        const detailOffcanvas = document.getElementById('detailPanelOffcanvas');
+        if (detailOffcanvas) {
+            detailOffcanvas.addEventListener('show.bs.offcanvas', function (event) {
+                const row = event.relatedTarget;
+                const id = row.getAttribute('data-id');
+                const name = row.getAttribute('data-name');
+                const code = row.getAttribute('data-code');
+                const capacity = row.getAttribute('data-capacity');
+                const isOnline = row.getAttribute('data-is-online') === 'true';
+
+                // Bind offcanvas fields
+                document.getElementById('offcanvas-loc-name').innerText = name;
+                document.getElementById('offcanvas-loc-code').innerText = code;
+
+                const statusEl = document.getElementById('offcanvas-loc-status');
+                statusEl.innerText = isOnline ? 'NODE_OPERATIONAL' : 'NODE_DISCONNECTED';
+                statusEl.className = 'h5 fw-900 ' + (isOnline ? 'text-success' : 'text-muted');
+
+                // Sync custom offcanvas modify button triggers
+                const editBtn = document.getElementById('offcanvas-edit-btn');
+                editBtn.setAttribute('data-id', id);
+                editBtn.setAttribute('data-name', name);
+                editBtn.setAttribute('data-code', code);
+                editBtn.setAttribute('data-capacity', capacity);
+            });
+        }
+
+        const editModal = document.getElementById('editLocationModal');
+        if (editModal) {
+            editModal.addEventListener('show.bs.modal', function (event) {
+                const trigger = event.relatedTarget;
+                const id = trigger.getAttribute('data-id');
+                const name = trigger.getAttribute('data-name');
+                const code = trigger.getAttribute('data-code');
+                const capacity = trigger.getAttribute('data-capacity');
+
+                // Update form edit endpoint
+                document.getElementById('editLocationForm').setAttribute('action', '/staff/locations/edit/' + id);
+
+                // Set modal inputs
+                document.getElementById('modal-loc-name').value = name;
+                document.getElementById('modal-loc-code').value = code;
+                document.getElementById('modal-loc-capacity').value = capacity;
+            });
+        }
+
+        // SCOPED LOADER DISMISSAL
+        const loader = document.getElementById('inner-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 400);
+        }
     });
 
-    // Instruction: Trigger loader on form submissions for visual feedback.
+    // Scoped Loader on Form Submissions
     document.getElementById('provisionForm').addEventListener('submit', () => {
         const loader = document.getElementById('inner-loader');
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
+        if (loader) {
+            loader.style.display = 'flex';
+            loader.style.opacity = '1';
+        }
     });
 </script>
 {% endblock %}

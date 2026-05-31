@@ -1,16 +1,17 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<!-- Fonts & Icons -->
+<!-- Fonts & Icons Preconnect & Loading -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
     /* VARIABLES - UNIFIED DESIGN SYSTEM */
     :root {
         --saas-primary: #2563eb;
         --saas-navy: #0f172a;
-        --saas-slate: #64748b;
+        --saas-slate: #475569; /* Darkened from #64748b to #475569 for WCAG AA readability compliance */
         --saas-border: #e2e8f0;
         --saas-bg: #f8fafc;
         --saas-bg-white: #ffffff;
@@ -21,12 +22,21 @@
         --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
     }
 
+    /* LIGHTWEIGHT FADE-IN ANIMATION */
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     /* PRELOADER OVERLAY - CONFINED TO CONTENT AREA */
     #preloader {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         background: #ffffff; display: flex; flex-direction: column;
         align-items: center; justify-content: center; z-index: 10000;
-        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+        transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
     .svg-logo { width: 70px; height: 70px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
     @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
@@ -62,7 +72,7 @@
     .filter-tabs {
         display: flex;
         gap: 0.5rem;
-        background: #f1f5f9;
+        background: #e2e8f0;
         padding: 4px;
         border-radius: 10px;
         margin-top: 1.25rem;
@@ -75,7 +85,7 @@
         border-radius: 8px;
         font-size: 0.7rem;
         font-weight: 800;
-        color: var(--saas-slate);
+        color: var(--saas-navy);
         text-transform: uppercase;
         transition: 0.2s;
     }
@@ -108,7 +118,7 @@
         text-transform: uppercase;
         font-size: 0.65rem;
         font-weight: 900;
-        color: var(--saas-slate);
+        color: var(--saas-navy);
         padding: 1rem;
         border-bottom: 2px solid var(--saas-border);
     }
@@ -134,19 +144,19 @@
         align-items: center;
         gap: 6px;
     }
-    .pill-email { background: #eff6ff; color: #1d4ed8; }
-    .pill-sms { background: #ecfdf5; color: #047857; }
+    .pill-email { background: #eff6ff; color: #1d4ed8 !important; }
+    .pill-sms { background: #ecfdf5; color: #047857 !important; }
 
     .status-pill { padding: 5px 12px; border-radius: 20px; font-weight: 900; font-size: 0.65rem; display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; }
-    .status-success { background: #dcfce7; color: #15803d; }
-    .status-failed { background: #fee2e2; color: #b91c1c; }
+    .status-success { background: #dcfce7; color: #15803d !important; }
+    .status-failed { background: #fee2e2; color: #b91c1c !important; }
 
     /* --- OFF-CANVAS DETAIL PANEL (The Transmission Form) --- */
     .detail-panel { width: 500px !important; border-left: none; box-shadow: -10px 0 30px rgba(0,0,0,0.08); }
     .detail-header { background: var(--saas-navy); color: white; padding: 2.5rem 2rem; }
     .detail-body { padding: 2rem; background: var(--saas-bg); }
     .info-card { background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 1.25rem; border: 1px solid var(--saas-border); }
-    .detail-label { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block; }
+    .detail-label { font-size: 0.65rem; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block; }
     .detail-val { font-weight: 800; color: var(--saas-navy); font-size: 0.95rem; }
 
     .msg-preview {
@@ -181,7 +191,7 @@
     .check-inactive { background: #e2e8f0; }
 </style>
 
-<div class="audit-container animate__animated animate__fadeIn">
+<div class="audit-container animate-fade-in">
 
     <!-- LOADING PRELOADER -->
     <div id="preloader">
@@ -193,7 +203,7 @@
     <header class="audit-header">
         <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <div class="bg-navy text-white p-3 rounded-4 me-3">
+                <div class="bg-navy text-white p-3 rounded-4 me-3" style="background: var(--saas-navy) !important;">
                     <i class="fa-solid fa-tower-broadcast fs-4"></i>
                 </div>
                 <div>
@@ -211,7 +221,7 @@
                     <i class="fa-solid fa-rotate text-primary"></i>
                 </button>
 
-                <!-- UPDATED DATETIME WITH ICON -->
+                <!-- DATETIME WITH ICON -->
                 <div class="d-flex align-items-center gap-3 datetime-display border-start ps-4">
                     <i class="fa-solid fa-clock-rotate-left text-primary fs-5"></i>
                     <div>
@@ -235,9 +245,9 @@
         <table class="master-table" id="masterTable">
             <thead>
                 <tr>
-                    <th style="width: 15%">Timestamp</th>
+                    <th style="width: 12%">Timestamp</th>
                     <th style="width: 10%">Channel</th>
-                    <th style="width: 25%">Recipient</th>
+                    <th style="width: 28%">Recipient</th>
                     <th style="width: 20%">Message Preview</th>
                     <th style="width: 15%">Provider Status</th>
                     <th style="width: 15%" class="text-center">Receipt</th>
@@ -245,7 +255,18 @@
             </thead>
             <tbody id="recordsBody">
                 {% for log in logs %}
-                    <tr class="record-row" data-channel="{{ log.channel }}" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-{{ log.id }}">
+                    <tr class="record-row"
+                        data-channel="{{ log.channel }}"
+                        data-id="{{ log.id }}"
+                        data-recipient="{{ log.recipient }}"
+                        data-status="{{ log.status }}"
+                        data-is-read="{% if log.is_read %}true{% else %}false{% endif %}"
+                        data-content="{{ log.content }}"
+                        data-error-message="{{ log.error_message or 'Provider rejected the request: Unknown technical error.' }}"
+                        data-client="{% if log.queue and log.queue.booking %}{% if log.queue.booking.customer %}{{ log.queue.booking.customer.company_name | escape }}{% else %}{{ log.queue.booking.guest_name | escape if log.queue.booking.guest_name else 'Walk-in Guest' }}{% endif %}{% else %}N/A{% endif %}"
+                        data-plate="{% if log.queue and log.queue.booking %}{{ log.queue.booking.plate_number if log.queue.booking.plate_number else 'NO PLATE' }}{% else %}N/A{% endif %}"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#detailOffcanvas">
                         <td>
                             <div class="fw-900 text-navy">{{ log.created_at.strftime('%b %d, %Y') }}</div>
                             <div class="extra-small text-muted fw-bold" style="font-family: 'JetBrains Mono';">{{ log.created_at.strftime('%I:%M:%S %p') }}</div>
@@ -258,7 +279,26 @@
                         </td>
                         <td>
                             <div class="fw-800 text-dark">{{ log.recipient }}</div>
-                            <div class="extra-small text-muted fw-bold">ID: #{{ log.id }}</div>
+
+                            <!-- DYNAMIC CLIENT & PLATE BADGES UNDER THE RECIPIENT ADDRESS -->
+                            {% if log.queue and log.queue.booking %}
+                                <div class="mt-1 d-flex gap-2 align-items-center">
+                                    <span class="badge fw-700 border" style="font-size: 0.65rem; padding: 4px 8px; background-color: #f1f5f9 !important; color: #0f172a !important; border-color: #cbd5e1 !important;">
+                                        <i class="fa-solid fa-user me-1 text-primary"></i>
+                                        {% if log.queue.booking.customer %}
+                                            {{ log.queue.booking.customer.company_name }}
+                                        {% else %}
+                                            {{ log.queue.booking.guest_name or "Walk-in Guest" }}
+                                        {% endif %}
+                                    </span>
+                                    <span class="badge fw-900" style="font-size: 0.65rem; padding: 4px 8px; background-color: #0f172a !important; color: #ffffff !important;">
+                                        <i class="fa-solid fa-car-side me-1"></i>
+                                        {{ log.queue.booking.plate_number if log.queue.booking.plate_number else "NO PLATE" }}
+                                    </span>
+                                </div>
+                            {% endif %}
+
+                            <div class="extra-small text-muted fw-bold mt-1">ID: #{{ log.id }}</div>
                         </td>
                         <td>
                             <div class="extra-small text-muted fw-bold text-truncate" style="max-width: 200px;">
@@ -271,7 +311,6 @@
                             </span>
                         </td>
                         <td class="text-center">
-                            {# SHOW IF EMAIL WAS OPENED / RECEIVED #}
                             {% if log.channel == 'email' %}
                                 {% if log.is_read %}
                                     <span class="text-success" title="Client Opened Email"><i class="fa-solid fa-envelope-open-text fs-5"></i></span>
@@ -300,16 +339,15 @@
     </main>
 </div>
 
-<!-- AUDIT SIDE PANELS (The Detailed Transmission Form) -->
-{% for log in logs %}
-<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="offcanvas-{{ log.id }}">
+<!-- SINGLE DYNAMIC AUDIT SIDE PANEL -->
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="detailOffcanvas">
     <div class="detail-header shadow-sm">
         <div class="d-flex justify-content-between align-items-start mb-3">
             <span class="badge bg-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Transmission Audit</span>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
         <h2 class="fw-900 mb-1">Transmission Log</h2>
-        <p class="mb-0 opacity-75 small fw-bold">Reference: #{{ log.id }}</p>
+        <p class="mb-0 opacity-75 small fw-bold">Reference: #<span id="offcanvas-id">---</span></p>
     </div>
     <div class="offcanvas-body detail-body">
 
@@ -318,30 +356,36 @@
             <div class="row g-3">
                 <div class="col-12">
                     <span class="detail-label">Recipient Address</span>
-                    <span class="detail-val text-primary">{{ log.recipient }}</span>
+                    <span class="detail-val text-primary" id="offcanvas-recipient">---</span>
                 </div>
                 <div class="col-6 border-top pt-2">
                     <span class="detail-label">Channel</span>
-                    <span class="detail-val">{{ log.channel | upper }}</span>
+                    <span class="detail-val" id="offcanvas-channel">---</span>
                 </div>
                 <div class="col-6 border-top pt-2">
                     <span class="detail-label">Status</span>
-                    <span class="detail-val {% if log.status == 'success' %}text-success{% else %}text-danger{% endif %}">
-                        {{ log.status | upper }}
-                    </span>
+                    <span class="detail-val" id="offcanvas-status">---</span>
+                </div>
+                <div class="col-6 border-top pt-2">
+                    <span class="detail-label">Client Name</span>
+                    <span class="detail-val text-primary" id="offcanvas-client">---</span>
+                </div>
+                <div class="col-6 border-top pt-2">
+                    <span class="detail-label">Asset Plate</span>
+                    <span class="detail-val text-navy font-monospace" id="offcanvas-plate">---</span>
                 </div>
             </div>
         </div>
 
-        <!-- Receipt Engagement (The "How to check" logic) -->
+        <!-- Receipt Engagement -->
         <div class="info-card shadow-sm">
             <span class="detail-label mb-2">Recipient Engagement Tracker</span>
             <div class="receipt-indicator">
-                <div class="check-circle {% if log.status == 'success' %}check-active{% else %}check-inactive{% endif %}"><i class="fa-solid fa-check"></i></div>
+                <div class="check-circle" id="check-server"><i class="fa-solid fa-check"></i></div>
                 <span class="extra-small fw-900">Server Handshake OK</span>
             </div>
             <div class="receipt-indicator">
-                <div class="check-circle {% if log.is_read %}check-active{% else %}check-inactive{% endif %}"><i class="fa-solid fa-check"></i></div>
+                <div class="check-circle" id="check-read"><i class="fa-solid fa-check"></i></div>
                 <span class="extra-small fw-900">Recipient Opened Message</span>
             </div>
             <div class="mt-3">
@@ -355,34 +399,29 @@
         <!-- Content Preview -->
         <div class="info-card shadow-sm">
             <span class="detail-label mb-2">Full Message Body</span>
-            <div class="msg-preview">{{ log.content }}</div>
+            <div class="msg-preview" id="offcanvas-content">---</div>
         </div>
 
-        <!-- Technical Diagnostics -->
-        {% if log.status == 'failed' %}
-        <div class="info-card border-danger bg-danger bg-opacity-10 shadow-sm">
-            <span class="detail-label text-danger">Diagnostic Error Log</span>
-            <code class="small fw-bold text-danger">{{ log.error_message or 'Provider rejected the request: Unknown technical error.' }}</code>
-        </div>
-        {% else %}
-        <div class="info-card shadow-sm">
+        <!-- Success Diagnostics -->
+        <div class="info-card shadow-sm" id="diagnostics-success-card">
             <span class="detail-label">Technical Metadata</span>
             <p class="extra-small fw-600 text-muted mb-0">
                 Transmission Route: <strong>API Gateway (Node-BAS)</strong><br>
                 Encoding: UTF-8 | Provider: Coolaire MailServer
             </p>
         </div>
-        {% endif %}
+
+        <!-- Failed Diagnostics -->
+        <div class="info-card border-danger bg-danger bg-opacity-10 shadow-sm" id="diagnostics-failed-card" style="display: none;">
+            <span class="detail-label text-danger">Diagnostic Error Log</span>
+            <code class="small fw-bold text-danger" id="offcanvas-error">---</code>
+        </div>
     </div>
 </div>
-{% endfor %}
 
 <script>
     /**
-     * INSTRUCTION: updateClock
-     * This function generates a live system timestamp.
-     * It formats the current date and sets the time to a 12-hour AM/PM string.
-     * The elements #live-date and #live-time are updated every 1000ms.
+     * updateClock
      */
     function updateClock() {
         const now = new Date();
@@ -402,10 +441,7 @@
     let currentFilter = 'all';
 
     /**
-     * INSTRUCTION: filterChannel
-     * Triggered by click events on filter tab buttons.
-     * It updates the current channel context (all, email, or sms)
-     * and refreshes the UI state before applying the table filtering.
+     * filterChannel
      */
     function filterChannel(channel) {
         currentFilter = channel;
@@ -416,10 +452,7 @@
     }
 
     /**
-     * INSTRUCTION: applySearchAndFilter
-     * This function parses through every .record-row in the table.
-     * It displays a row only if it matches the active channel filter
-     * and contains the search string provided in the recipient/content bar.
+     * applySearchAndFilter
      */
     function applySearchAndFilter() {
         const val = document.getElementById('recordSearch').value.toLowerCase();
@@ -438,19 +471,67 @@
     document.getElementById('recordSearch').addEventListener('input', applySearchAndFilter);
 
     /**
-     * INSTRUCTION: Preloader dismissal
-     * Attaches to the window load event. After a set timeout (800ms),
-     * it initiates a CSS fade-out for the loading screen and removes
-     * it from the DOM after the transition completes.
+     * Dynamic Offcanvas Data Binding
      */
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const preloader = document.getElementById('preloader');
-            if(preloader) {
-                preloader.style.opacity = '0';
-                setTimeout(() => { preloader.style.display = 'none'; }, 600);
-            }
-        }, 800);
+    document.addEventListener('DOMContentLoaded', () => {
+        const detailOffcanvas = document.getElementById('detailOffcanvas');
+        if (detailOffcanvas) {
+            detailOffcanvas.addEventListener('show.bs.offcanvas', function (event) {
+                const row = event.relatedTarget;
+
+                // Get Attributes
+                const logId = row.getAttribute('data-id');
+                const recipient = row.getAttribute('data-recipient');
+                const channel = row.getAttribute('data-channel');
+                const status = row.getAttribute('data-status');
+                const isRead = row.getAttribute('data-is-read') === 'true';
+                const content = row.getAttribute('data-content');
+                const errMsg = row.getAttribute('data-error-message');
+                const client = row.getAttribute('data-client');
+                const plate = row.getAttribute('data-plate');
+
+                // Bind Static Text
+                document.getElementById('offcanvas-id').innerText = logId;
+                document.getElementById('offcanvas-recipient').innerText = recipient;
+                document.getElementById('offcanvas-channel').innerText = channel.toUpperCase();
+                document.getElementById('offcanvas-client').innerText = client;
+                document.getElementById('offcanvas-plate').innerText = plate;
+
+                // Bind Status
+                const statusEl = document.getElementById('offcanvas-status');
+                statusEl.innerText = status.toUpperCase();
+                statusEl.className = 'detail-val ' + (status === 'success' ? 'text-success' : 'text-danger');
+
+                // Bind Checkmarks
+                const checkServer = document.getElementById('check-server');
+                checkServer.className = 'check-circle ' + (status === 'success' ? 'check-active' : 'check-inactive');
+
+                const checkRead = document.getElementById('check-read');
+                checkRead.className = 'check-circle ' + (isRead ? 'check-active' : 'check-inactive');
+
+                // Bind Content Preview
+                document.getElementById('offcanvas-content').innerText = content;
+
+                // Diagnostics Visibility
+                const successCard = document.getElementById('diagnostics-success-card');
+                const failedCard = document.getElementById('diagnostics-failed-card');
+                if (status === 'failed') {
+                    successCard.style.display = 'none';
+                    failedCard.style.display = 'block';
+                    document.getElementById('offcanvas-error').innerText = errMsg;
+                } else {
+                    successCard.style.display = 'block';
+                    failedCard.style.display = 'none';
+                }
+            });
+        }
+
+        // PRELOADER DISMISSAL
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+            preloader.style.opacity = '0';
+            setTimeout(() => { preloader.style.display = 'none'; }, 400);
+        }
     });
 </script>
 {% endblock %}

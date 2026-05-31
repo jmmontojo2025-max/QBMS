@@ -1,9 +1,10 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<!-- Fonts & Icons -->
+<!-- Fonts & Icons Preconnect & Loading -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
     /* VARIABLES - UNIFIED SYSTEM */
@@ -19,6 +20,15 @@
         --saas-danger: #ef4444;
         --saas-radius: 14px;
         --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+    }
+
+    /* LIGHTWEIGHT FADE-IN */
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     /* 1. APP LAYOUT */
@@ -38,7 +48,7 @@
         position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px;
         background: #ffffff; display: flex; flex-direction: column;
         align-items: center; justify-content: center; z-index: 10000;
-        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+        transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
     .svg-logo { width: 70px; height: 70px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
     @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
@@ -121,7 +131,7 @@
     .detail-label { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block; }
 </style>
 
-<div class="dashboard-container animate__animated animate__fadeIn">
+<div class="dashboard-container animate-fade-in">
 
     <!-- PRELOADER -->
     <div id="preloader">
@@ -217,7 +227,14 @@
                     {% if pending_users %}
                     <tr><td colspan="4" class="section-divider">Pending Verification</td></tr>
                     {% for u in pending_users %}
-                    <tr class="registry-row" style="background: #fffbeb;" data-bs-toggle="offcanvas" data-bs-target="#detailNode{{ u.id }}">
+                    <tr class="registry-row" style="background: #fffbeb;"
+                        data-id="{{ u.id }}"
+                        data-full-name="{{ u.full_name | escape }}"
+                        data-username="{{ u.username | escape }}"
+                        data-company-name="{{ u.company_name | escape }}"
+                        data-email="{{ u.email | escape }}"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#detailNodeOffcanvas">
                         <td>
                             <div class="d-flex align-items-center gap-3">
                                 <div class="user-avatar bg-white border-warning text-warning">{{ u.full_name[0] | upper }}</div>
@@ -244,7 +261,14 @@
                     <!-- 2. AUTHORIZED SECTION -->
                     <tr><td colspan="4" class="section-divider">Authorized Registry</td></tr>
                     {% for u in users if u.is_approved and not u.is_rejected %}
-                    <tr class="registry-row" data-bs-toggle="offcanvas" data-bs-target="#detailNode{{ u.id }}">
+                    <tr class="registry-row"
+                        data-id="{{ u.id }}"
+                        data-full-name="{{ u.full_name | escape }}"
+                        data-username="{{ u.username | escape }}"
+                        data-company-name="{{ u.company_name | escape }}"
+                        data-email="{{ u.email | escape }}"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#detailNodeOffcanvas">
                         <td>
                             <div class="d-flex align-items-center gap-3">
                                 <div class="user-avatar {{ 'avatar-staff' if u.role in ['staff', 'admin', 'super_admin'] else 'avatar-client' }}">
@@ -273,7 +297,14 @@
                         </td>
                         <td class="text-end" onclick="event.stopPropagation()">
                             <div class="d-flex justify-content-end gap-2">
-                                <button class="btn-action-sm" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ u.id }}"><i class="fa-solid fa-user-pen"></i></button>
+                                <button class="btn-action-sm" title="Edit"
+                                        data-id="{{ u.id }}"
+                                        data-full-name="{{ u.full_name | escape }}"
+                                        data-company-name="{{ u.company_name | escape }}"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editNodeModal">
+                                    <i class="fa-solid fa-user-pen"></i>
+                                </button>
                                 <a href="/staff/verify-action/{{ u.id }}/reject?next=registry" class="btn-action-sm text-danger" onclick="return confirm('Instruction: Revoke access?')"><i class="fa-solid fa-ban"></i></a>
                             </div>
                         </td>
@@ -285,47 +316,51 @@
     </main>
 </div>
 
-<!-- SIDE PANELS & MODALS -->
-{% for u in users %}
-<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="detailNode{{ u.id }}">
+<!-- SINGLE REUSABLE AUDIT PROFILE OFF-CANVAS -->
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="detailNodeOffcanvas">
     <div class="detail-header shadow-sm">
         <div class="d-flex justify-content-between align-items-start mb-3">
             <span class="badge bg-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Audit Profile</span>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
-        <h2 class="fw-900 mb-1">{{ u.full_name }}</h2>
-        <p class="mb-0 opacity-75 small fw-bold font-monospace">UUID: #USR-{{ u.id }}</p>
+        <h2 class="fw-900 mb-1" id="offcanvas-full-name">---</h2>
+        <p class="mb-0 opacity-75 small fw-bold font-monospace">UUID: #USR-<span id="offcanvas-id">000</span></p>
     </div>
     <div class="offcanvas-body detail-body">
         <div class="info-card shadow-sm">
             <span class="detail-label">Access Identity</span>
-            <div class="fw-900 text-navy h5 mb-0">{{ u.username }}</div>
-            <div class="extra-small text-muted fw-bold">Company: {{ u.company_name }}</div>
+            <div class="fw-900 text-navy h5 mb-0" id="offcanvas-username">---</div>
+            <div class="extra-small text-muted fw-bold">Company: <span id="offcanvas-company-name">---</span></div>
         </div>
         <div class="info-card shadow-sm">
             <label class="detail-label">Instruction</label>
             <p class="extra-small fw-bold text-muted mb-0">Use the Management section in the main table to revoke access or update organization credentials for this node.</p>
         </div>
-        <button class="btn btn-navy w-100 py-3 rounded-4 fw-900 text-uppercase" style="background: var(--saas-navy); color: white;" data-bs-toggle="modal" data-bs-target="#editModal{{ u.id }}">
+        <button class="btn btn-navy w-100 py-3 rounded-4 fw-900 text-uppercase"
+                style="background: var(--saas-navy); color: white;"
+                data-bs-toggle="modal"
+                data-bs-target="#editNodeModal"
+                id="offcanvas-edit-btn">
             Modify Node Settings
         </button>
     </div>
 </div>
 
-<div class="modal fade" id="editModal{{ u.id }}" tabindex="-1">
+<!-- SINGLE REUSABLE EDIT NODE CREDENTIALS MODAL -->
+<div class="modal fade" id="editNodeModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
             <div class="modal-header bg-navy text-white p-4" style="background: var(--saas-navy) !important;">
                 <h5 class="modal-title fw-900">Update Node Credentials</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="/staff/users/edit/{{ u.id }}" method="POST">
+            <form id="editNodeForm" action="/staff/users/edit/0" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body p-4">
                     <label class="custom-label">Update Full Name</label>
-                    <input type="text" name="full_name" class="modern-input" value="{{ u.full_name }}" required>
+                    <input type="text" name="full_name" id="modal-full-name" class="modern-input" value="" required>
                     <label class="custom-label">Update Organization</label>
-                    <input type="text" name="company_name" class="modern-input" value="{{ u.company_name }}" required>
+                    <input type="text" name="company_name" id="modal-company-name" class="modern-input" value="" required>
                 </div>
                 <div class="modal-footer border-0 p-4 pt-0">
                     <button type="submit" class="btn btn-navy fw-900 w-100 py-3 rounded-4 shadow-lg" style="background: var(--saas-navy); color: white;">PUSH UPDATES</button>
@@ -334,14 +369,10 @@
         </div>
     </div>
 </div>
-{% endfor %}
 
 <script>
     /**
-     * INSTRUCTION: updateClock
-     * Calculates current system time and date.
-     * Formats time to 12-hour (AM/PM) format using 'en-US' locale.
-     * Updates header UI every second.
+     * updateClock
      */
     function updateClock() {
         const now = new Date();
@@ -358,9 +389,7 @@
     updateClock();
 
     /**
-     * INSTRUCTION: registrySearch
-     * Listens for keyup events in the header search bar.
-     * Hides registry rows that do not match the input text (Name, Company, or Role).
+     * registrySearch
      */
     document.getElementById('registrySearch').addEventListener('input', function() {
         const val = this.value.toLowerCase();
@@ -371,17 +400,55 @@
     });
 
     /**
-     * INSTRUCTION: preloader dismissal
-     * Fades out and removes the preloader overlay once window assets are fully loaded.
+     * Dynamic Offcanvas and Modal Binding & Preloader
      */
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const preloader = document.getElementById('preloader');
-            if(preloader) {
-                preloader.style.opacity = '0';
-                setTimeout(() => { preloader.style.display = 'none'; }, 600);
-            }
-        }, 800);
+    document.addEventListener('DOMContentLoaded', () => {
+        const detailOffcanvas = document.getElementById('detailNodeOffcanvas');
+        if (detailOffcanvas) {
+            detailOffcanvas.addEventListener('show.bs.offcanvas', function (event) {
+                const row = event.relatedTarget;
+                const id = row.getAttribute('data-id');
+                const fullName = row.getAttribute('data-full-name');
+                const username = row.getAttribute('data-username');
+                const companyName = row.getAttribute('data-company-name');
+
+                // Bind offcanvas details
+                document.getElementById('offcanvas-id').innerText = id;
+                document.getElementById('offcanvas-full-name').innerText = fullName;
+                document.getElementById('offcanvas-username').innerText = username;
+                document.getElementById('offcanvas-company-name').innerText = companyName;
+
+                // Sync dynamic offcanvas edit button triggers
+                const editBtn = document.getElementById('offcanvas-edit-btn');
+                editBtn.setAttribute('data-id', id);
+                editBtn.setAttribute('data-full-name', fullName);
+                editBtn.setAttribute('data-company-name', companyName);
+            });
+        }
+
+        const editModal = document.getElementById('editNodeModal');
+        if (editModal) {
+            editModal.addEventListener('show.bs.modal', function (event) {
+                const trigger = event.relatedTarget;
+                const id = trigger.getAttribute('data-id');
+                const fullName = trigger.getAttribute('data-full-name');
+                const companyName = trigger.getAttribute('data-company-name');
+
+                // Map action update URL
+                document.getElementById('editNodeForm').setAttribute('action', '/staff/users/edit/' + id);
+
+                // Map input inputs
+                document.getElementById('modal-full-name').value = fullName;
+                document.getElementById('modal-company-name').value = companyName;
+            });
+        }
+
+        // PRELOADER DISMISSAL
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+            preloader.style.opacity = '0';
+            setTimeout(() => { preloader.style.display = 'none'; }, 400);
+        }
     });
 </script>
 {% endblock %}

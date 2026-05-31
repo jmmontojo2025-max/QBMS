@@ -1,9 +1,10 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<!-- Fonts & Icons -->
+<!-- Fonts & Icons Preconnect & Loading -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
     :root {
@@ -17,6 +18,15 @@
         --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
     }
 
+    /* LIGHTWEIGHT FADE-IN */
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     .dashboard-container {
         display: flex;
         flex-direction: column;
@@ -28,15 +38,16 @@
         min-height: 100%;
     }
 
-    /* SCOPED PRELOADER (Does not lock side menu) */
+    /* SCOPED PRELOADER */
     #preloader {
         position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px;
         background: #ffffff; display: flex; flex-direction: column;
         align-items: center; justify-content: center; z-index: 10000;
-        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+        transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
     .svg-logo { width: 70px; height: 70px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
     @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+    .loader-text { color: var(--saas-primary); font-size: 0.8rem; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 1.5rem; }
 
     /* HEADER */
     .header-section {
@@ -52,7 +63,7 @@
     }
     .page-title { font-weight: 900; color: var(--saas-navy); margin: 0; letter-spacing: -1px; font-size: 1.5rem; }
 
-    /* CLEAN DATETIME (No box, no line) */
+    /* DATETIME DISPLAY */
     .datetime-display { text-align: right; }
     #live-time { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--saas-primary); font-size: 1.3rem; line-height: 1; }
     #live-date { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; }
@@ -86,13 +97,13 @@
     .btn-delete:hover { border-color: var(--saas-danger); color: var(--saas-danger); }
 
     .custom-label { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; display: block; }
-    .modern-input { background: #f8fafc; border: 2px solid transparent; padding: 0.75rem 1rem; border-radius: 10px; font-weight: 700; transition: 0.2s; width: 100%; font-size: 0.8rem; }
-    .modern-input:focus { border-color: var(--saas-primary); background: white; outline: none; }
+    .modern-input, .modern-select { background: #f8fafc; border: 2px solid transparent; padding: 0.75rem 1rem; border-radius: 10px; font-weight: 700; transition: 0.2s; width: 100%; font-size: 0.8rem; }
+    .modern-input:focus, .modern-select:focus { border-color: var(--saas-primary); background: white; outline: none; }
 </style>
 
-<div class="dashboard-container animate__animated animate__fadeIn">
+<div class="dashboard-container animate-fade-in">
 
-    <!-- SCOPED LOADER -->
+    <!-- SCOPED PRELOADER -->
     <div id="preloader">
         <svg class="svg-logo" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg>
         <div class="loader-text">SYNCING PERSONNEL DATA...</div>
@@ -110,7 +121,7 @@
             </div>
         </div>
 
-        <!-- 12-HOUR DATETIME (CLEAN) -->
+        <!-- 12-HOUR DATETIME -->
         <div class="datetime-display">
             <div id="live-date">...</div>
             <div id="live-time">00:00:00 AM</div>
@@ -157,13 +168,23 @@
                 </thead>
                 <tbody>
                     {% for t in technicians %}
-                    <tr class="tech-row animate__animated animate__fadeIn" data-bs-toggle="offcanvas" data-bs-target="#detailPanel{{ t.id }}">
+                    <tr class="tech-row"
+                        data-id="{{ t.id }}"
+                        data-name="{{ t.name | escape }}"
+                        data-location-id="{{ t.location_id if t.location_id else '' }}"
+                        data-location-name="{{ t.branch.name if t.branch else 'Unassigned' }}"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#detailPanelOffcanvas">
                         <td>
                             <div class="d-flex align-items-center gap-3">
                                 <div class="tech-avatar">{{ t.name[0] | upper }}</div>
                                 <div>
                                     <div class="fw-900 text-navy">{{ t.name }}</div>
-                                    <div class="extra-small text-muted fw-bold font-monospace">HASH: #TECH-{{ 5000 + t.id }}</div>
+                                    <div class="extra-small text-muted fw-bold font-monospace">
+                                        HASH: #TECH-{{ 5000 + t.id }} |
+                                        <i class="fa-solid fa-location-dot text-primary"></i>
+                                        <span class="text-primary">{{ t.branch.name if t.branch else 'Floating / Unassigned' }}</span>
+                                    </div>
                                 </div>
                             </div>
                         </td>
@@ -174,8 +195,12 @@
                         </td>
                         <td class="text-end" onclick="event.stopPropagation()">
                             <div class="d-flex justify-content-end gap-2">
-                                <!-- Instruction: event.stopPropagation prevents the side panel from opening when clicking edit -->
-                                <button class="btn-action-sm" title="Modify Record" data-bs-toggle="modal" data-bs-target="#editModal{{ t.id }}">
+                                <button class="btn-action-sm" title="Modify Record"
+                                        data-id="{{ t.id }}"
+                                        data-name="{{ t.name | escape }}"
+                                        data-location-id="{{ t.location_id if t.location_id else '' }}"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editTechModal">
                                     <i class="fa-solid fa-user-pen"></i>
                                 </button>
                                 <a href="/staff/technicians/delete/{{ t.id }}" class="btn-action-sm btn-delete text-danger" title="Offboard" onclick="return confirm('Instruction: Confirm Offboarding?')">
@@ -191,57 +216,79 @@
     </main>
 </div>
 
-<!-- MODALS & SIDE PANELS -->
-{% for t in technicians %}
-<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="detailPanel{{ t.id }}" style="width: 450px !important; border: none; box-shadow: -10px 0 30px rgba(0,0,0,0.1);">
+<!-- SINGLE REUSABLE PERSONNEL AUDIT OFF-CANVAS -->
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="detailPanelOffcanvas" style="width: 450px !important; border: none; box-shadow: -10px 0 30px rgba(0,0,0,0.1);">
     <div class="detail-header" style="background: var(--saas-navy); color: white; padding: 2.5rem 2rem;">
         <div class="d-flex justify-content-between align-items-start mb-3">
             <span class="badge bg-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Personnel Audit</span>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
-        <h2 class="fw-900 mb-1 text-white">{{ t.name }}</h2>
+        <h2 class="fw-900 mb-1 text-white" id="offcanvas-tech-name">---</h2>
         <p class="mb-0 opacity-75 small fw-bold">Instruction: Reviewing Operational Profile</p>
     </div>
     <div class="offcanvas-body" style="background: var(--saas-bg); padding: 2rem;">
         <div class="bg-white p-3 rounded-4 border mb-3 shadow-sm">
             <span class="custom-label">Legal Name</span>
-            <div class="fw-900 text-navy h5 mb-0">{{ t.name }}</div>
+            <div class="fw-900 text-navy h5 mb-0" id="offcanvas-tech-title">---</div>
+        </div>
+        <div class="bg-white p-3 rounded-4 border mb-3 shadow-sm">
+            <span class="custom-label">Current Deployment Hub</span>
+            <div class="fw-900 text-primary h5 mb-0" id="offcanvas-tech-location">---</div>
         </div>
         <div class="bg-white p-3 rounded-4 border shadow-sm">
             <label class="custom-label">Operational Profile</label>
-            <p class="extra-small fw-bold text-muted mb-0">Instruction: This personnel is authorized for task assignment in {{ session.get('location_name') }}.</p>
+            <p class="extra-small fw-bold text-muted mb-0">Instruction: This personnel is authorized for task assignment across active workshop networks.</p>
         </div>
-        <button class="btn btn-navy w-100 py-3 rounded-4 fw-900 text-uppercase mt-4" style="background: var(--saas-navy); color: white;" data-bs-toggle="modal" data-bs-target="#editModal{{ t.id }}">
-            Modify Personnel Data
+        <button class="btn btn-navy w-100 py-3 rounded-4 fw-900 text-uppercase mt-4"
+                style="background: var(--saas-navy); color: white;"
+                data-bs-toggle="modal"
+                data-bs-target="#editTechModal"
+                id="offcanvas-edit-btn">
+            Transfer or Edit Node Settings
         </button>
     </div>
 </div>
 
-<div class="modal fade" id="editModal{{ t.id }}" tabindex="-1">
+<!-- SINGLE REUSABLE EDIT & TRANSFER TECHNICIAN MODAL -->
+<div class="modal fade" id="editTechModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
             <div class="modal-header bg-navy text-white p-4" style="background: var(--saas-navy) !important;">
-                <h5 class="modal-title fw-900">Edit Technician Identity</h5>
+                <h5 class="modal-title fw-900">Reassign or Edit Technician</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="/staff/technicians/edit/{{ t.id }}" method="POST">
+            <form id="editTechForm" action="/staff/technicians/edit/0" method="POST">
+                <!-- CSRF Token integration for strict Flask-WTF validation -->
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-body p-4">
-                    <label class="custom-label">Update Name</label>
-                    <input type="text" name="tech_name" class="modern-input" value="{{ t.name }}" required>
+
+                <div class="modal-body p-4 d-flex flex-column gap-3">
+                    <div>
+                        <label class="custom-label">Update Name</label>
+                        <input type="text" name="tech_name" id="modal-tech-name" class="modern-input" value="" required>
+                    </div>
+                    <div>
+                        <label class="custom-label">Reassign Location Hub</label>
+                        <select name="location_id" id="modal-tech-location" class="modern-select" required>
+                            {% if locations %}
+                                {% for loc in locations %}
+                                <option value="{{ loc.id }}">{{ loc.name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="">No active locations registered</option>
+                            {% endif %}
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer border-0 p-4 pt-0">
-                    <button type="submit" class="btn btn-navy fw-900 w-100 py-3 rounded-4" style="background: var(--saas-navy); color: white;">SAVE CHANGES</button>
+                    <button type="submit" class="btn btn-navy fw-900 w-100 py-3 rounded-4" style="background: var(--saas-navy); color: white;">SAVE AND DEPLOY CHANGES</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-{% endfor %}
 
 <script>
-    // 1. Live Clock (12-Hour Format)
-    // Instruction: Updates the top-right text with formatted time and date.
+    // Live Clock (12-Hour Format)
     function updateClock() {
         const now = new Date();
         const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
@@ -252,16 +299,59 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. Preloader Logic
-    // Instruction: Fades out the preloader overlay after page load.
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const preloader = document.getElementById('preloader');
-            if(preloader) {
-                preloader.style.opacity = '0';
-                setTimeout(() => { preloader.style.display = 'none'; }, 600);
-            }
-        }, 800);
+    /**
+     * Dynamic Offcanvas, Modal Binding & Preloader dismissal
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+        const detailOffcanvas = document.getElementById('detailPanelOffcanvas');
+        if (detailOffcanvas) {
+            detailOffcanvas.addEventListener('show.bs.offcanvas', function (event) {
+                const row = event.relatedTarget;
+                const id = row.getAttribute('data-id');
+                const name = row.getAttribute('data-name');
+                const locId = row.getAttribute('data-location-id');
+                const locName = row.getAttribute('data-location-name');
+
+                // Bind offcanvas details
+                document.getElementById('offcanvas-tech-name').innerText = name;
+                document.getElementById('offcanvas-tech-title').innerText = name;
+                document.getElementById('offcanvas-tech-location').innerText = locName ? locName : 'Unassigned / Floating';
+
+                // Sync offcanvas edit button data attributes
+                const editBtn = document.getElementById('offcanvas-edit-btn');
+                editBtn.setAttribute('data-id', id);
+                editBtn.setAttribute('data-name', name);
+                editBtn.setAttribute('data-location-id', locId);
+            });
+        }
+
+        const editModal = document.getElementById('editTechModal');
+        if (editModal) {
+            editModal.addEventListener('show.bs.modal', function (event) {
+                const trigger = event.relatedTarget;
+                const id = trigger.getAttribute('data-id');
+                const name = trigger.getAttribute('data-name');
+                const locId = trigger.getAttribute('data-location-id');
+
+                // Dynamic Action Link
+                document.getElementById('editTechForm').setAttribute('action', '/staff/technicians/edit/' + id);
+
+                // Form inputs
+                document.getElementById('modal-tech-name').value = name;
+
+                const selectLocation = document.getElementById('modal-tech-location');
+                if (selectLocation) {
+                    selectLocation.value = locId ? locId : '';
+                }
+            });
+        }
+
+        // PRELOADER DISMISSAL
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+            preloader.style.opacity = '0';
+            setTimeout(() => { preloader.style.display = 'none'; }, 400);
+        }
     });
 </script>
 {% endblock %}

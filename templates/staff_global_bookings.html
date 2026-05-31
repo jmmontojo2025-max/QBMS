@@ -1,11 +1,10 @@
-
-
 {% extends "base_staff.html" %}
 
 {% block content %}
 <!-- Typography, Icons, and Excel Export Library -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
@@ -20,6 +19,15 @@
         --saas-success: #10b981;
         --saas-radius: 16px;
         --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+    }
+
+    /* LIGHTWEIGHT FADE-IN */
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     /* 1. APP LAYOUT */
@@ -38,7 +46,7 @@
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         background: #ffffff; display: flex; flex-direction: column;
         align-items: center; justify-content: center; z-index: 10000;
-        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+        transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
     .svg-logo { width: 70px; height: 70px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
     @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
@@ -76,7 +84,7 @@
     .detail-val { font-weight: 800; color: var(--saas-navy); font-size: 0.95rem; }
 </style>
 
-<div class="ledger-container animate__animated animate__fadeIn">
+<div class="ledger-container animate-fade-in">
 
     <!-- STANDARD LOADING PRELOADER -->
     <div id="preloader">
@@ -104,7 +112,7 @@
                     </div>
                 </div>
                 <div class="filter-box d-flex flex-column">
-                    <label class="extra-small fw-900 text-muted ms-1 mb-1">SEARCH CLIENT / JO</label>
+                    <label class="extra-small fw-900 text-muted ms-1 mb-1">SEARCH CLIENT / JO / HUB</label>
                     <input type="text" id="globalSearch" class="ledger-input" placeholder="Keyword search..." style="width: 220px;">
                 </div>
 
@@ -127,13 +135,14 @@
         <table class="master-table" id="masterLedger">
             <thead>
                 <tr>
-                    <th style="width: 15%">Service Date</th>
-                    <th style="width: 15%">Job Order</th>
-                    <th style="width: 25%">Client</th>
-                    <th style="width: 15%">Standard Hrs</th>
+                    <th style="width: 12%">Service Date</th>
+                    <th style="width: 12%">Hub Location</th>
+                    <th style="width: 12%">Job Order</th>
+                    <th style="width: 22%">Client</th>
+                    <th style="width: 10%">Standard Hrs</th>
                     <th style="width: 10%">Actual In</th>
                     <th style="width: 10%">Actual Out</th>
-                    <th style="width: 10%">Staff</th>
+                    <th style="width: 12%">Staff</th>
                 </tr>
             </thead>
             <tbody id="ledgerBody">
@@ -141,8 +150,23 @@
                 {% set q = b.queue_records[0] if b.queue_records else None %}
                 <tr class="record-row"
                     data-date="{{ b.scheduled_time.strftime('%Y-%m-%d') }}"
-                    data-bs-toggle="offcanvas" data-bs-target="#offcanvas-{{ b.id }}">
+                    data-id="{{ b.id }}"
+                    data-client="{% if b.customer %}{{ b.customer.company_name | escape }}{% else %}{{ b.guest_name | escape }}{% endif %}"
+                    data-job-order="{{ b.job_order or 'UNASSIGNED' }}"
+                    data-service-type="{{ b.service_type | escape }}"
+                    data-materials-used="{{ q.materials_used | escape if q and q.materials_used else 'No additional materials/notes recorded.' }}"
+                    data-std-hours="{{ b.std_repair_hours or '0.0' }}"
+                    data-service-location="{{ b.service_location }}"
+                    data-hub-name="{{ b.location.name if b.location else 'Floating' }}"
+                    data-start-time="{{ q.start_time.strftime('%I:%M %p') if q and q.start_time else '---' }}"
+                    data-end-time="{{ q.end_time.strftime('%I:%M %p') if q and q.end_time else '---' }}"
+                    data-techs="{% if q and q.assigned_techs %}{% for tech in q.assigned_techs %}{{ tech.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}"
+                    data-bs-toggle="offcanvas"
+                    data-bs-target="#detailOffcanvas">
                     <td class="mono text-center">{{ b.scheduled_time.strftime('%m-%d-%Y') }}</td>
+                    <td class="fw-800 text-primary text-center" style="font-size: 0.8rem;">
+                        <i class="fa-solid fa-location-dot me-1"></i> {{ b.location.name if b.location else 'Floating' }}
+                    </td>
                     <td class="fw-900 text-navy text-center">{{ b.job_order or '---' }}</td>
                     <td>
                         <div class="fw-800 text-dark">{% if b.customer %}{{ b.customer.company_name }}{% else %}{{ b.guest_name }}{% endif %}</div>
@@ -152,7 +176,15 @@
                     <td class="mono text-center text-muted">{{ q.start_time.strftime('%I:%M %p') if q and q.start_time else '---' }}</td>
                     <td class="mono text-center text-muted">{{ q.end_time.strftime('%I:%M %p') if q and q.end_time else '---' }}</td>
                     <td class="text-center">
-                        <span class="badge bg-navy text-white fw-900">{{ q.assigned_techs|length if q and q.assigned_techs else 0 }}</span>
+                        {% if q and q.assigned_techs %}
+                            <div class="d-flex flex-wrap justify-content-center gap-1" style="max-width: 150px; margin: 0 auto;">
+                                {% for tech in q.assigned_techs %}
+                                    <span class="pill-tech m-0" style="font-size: 0.65rem; padding: 3px 6px;">{{ tech.name }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span class="text-muted extra-small fw-bold">UNASSIGNED</span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -161,35 +193,37 @@
     </main>
 </div>
 
-<!-- AUDIT SIDE PANELS (The Detailed Drill-Down Form) -->
-{% for b in bookings %}
-{% set q = b.queue_records[0] if b.queue_records else None %}
-<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="offcanvas-{{ b.id }}">
+<!-- SINGLE REUSABLE OPERATIONS AUDIT OFF-CANVAS -->
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="detailOffcanvas">
     <div class="detail-header shadow-sm">
         <div class="d-flex justify-content-between align-items-start mb-3">
             <span class="badge bg-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Operations Audit</span>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
-        <h2 class="fw-900 mb-1">{% if b.customer %}{{ b.customer.company_name }}{% else %}{{ b.guest_name }}{% endif %}</h2>
-        <p class="mb-0 opacity-75 small fw-bold">Job Order: {{ b.job_order or 'UNASSIGNED' }}</p>
+        <h2 class="fw-900 mb-1" id="offcanvas-client-name">---</h2>
+        <p class="mb-0 opacity-75 small fw-bold">Job Order: <span id="offcanvas-job-order">UNASSIGNED</span></p>
     </div>
     <div class="offcanvas-body detail-body">
 
         <div class="info-card shadow-sm">
             <span class="detail-label">Asset Technical Scope</span>
-            <div class="fw-800 text-navy h5 mb-2">{{ b.service_type }}</div>
-            <div class="extra-small text-muted fw-bold">{{ q.materials_used or 'No additional materials/notes recorded.' }}</div>
+            <div class="fw-800 text-navy h5 mb-2" id="offcanvas-service-type">---</div>
+            <div class="extra-small text-muted fw-bold" id="offcanvas-materials-used">No additional materials/notes recorded.</div>
         </div>
 
         <div class="info-card shadow-sm">
             <div class="row g-3">
                 <div class="col-6">
                     <span class="detail-label">Standard Hrs (SRH)</span>
-                    <span class="detail-val">{{ b.std_repair_hours or '0.0' }}</span>
+                    <span class="detail-val" id="offcanvas-std-hours">0.0</span>
                 </div>
                 <div class="col-6">
                     <span class="detail-label">Location Type</span>
-                    <span class="detail-val">{{ b.service_location }}</span>
+                    <span class="detail-val" id="offcanvas-service-location">---</span>
+                </div>
+                <div class="col-6 border-top pt-2">
+                    <span class="detail-label">Operational Hub</span>
+                    <span class="detail-val text-primary" id="offcanvas-hub-name">---</span>
                 </div>
             </div>
         </div>
@@ -199,43 +233,25 @@
             <div class="row text-center">
                 <div class="col-6 border-end">
                     <div class="extra-small fw-900 text-muted">START TIME</div>
-                    <div class="fw-800 text-navy">{{ q.start_time.strftime('%I:%M %p') if q and q.start_time else '---' }}</div>
+                    <div class="fw-800 text-navy" id="offcanvas-start-time">---</div>
                 </div>
                 <div class="col-6">
                     <div class="extra-small fw-900 text-muted">END TIME</div>
-                    <div class="fw-800 text-navy">{{ q.end_time.strftime('%I:%M %p') if q and q.end_time else '---' }}</div>
+                    <div class="fw-800 text-navy" id="offcanvas-end-time">---</div>
                 </div>
             </div>
         </div>
 
         <div class="info-card shadow-sm">
             <span class="detail-label mb-2">Personnel Deployed</span>
-            <div class="d-flex flex-wrap gap-2">
-                {% if q and q.assigned_techs %}
-                    {% for tech in q.assigned_techs %}
-                    <span class="pill-tech"><i class="fa-solid fa-user-gear me-1"></i> {{ tech.name }}</span>
-                    {% endfor %}
-                {% else %}
-                    <span class="small text-muted">No staff linked to this manifest.</span>
-                {% endif %}
+            <div class="d-flex flex-wrap gap-2" id="offcanvas-techs-container">
+                <!-- Dynamic technician pills are rendered here -->
             </div>
         </div>
     </div>
 </div>
-{% endfor %}
 
 <script>
-    // STANDARD PRELOADER DISMISS
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const preloader = document.getElementById('preloader');
-            if(preloader) {
-                preloader.style.opacity = '0';
-                setTimeout(() => { preloader.style.display = 'none'; }, 600);
-            }
-        }, 800);
-    });
-
     function hardRefresh() { window.location.reload(); }
 
     function applyFilters() {
@@ -259,11 +275,78 @@
     function exportToExcel() {
         const table = document.getElementById("masterLedger");
         const tableClone = table.cloneNode(true);
+
         tableClone.querySelectorAll(".record-row").forEach(row => {
-            if (row.style.display === 'none') row.remove();
+            // 1. Remove hidden rows from the spreadsheet clone
+            if (row.style.display === 'none') {
+                row.remove();
+                return;
+            }
+
+            // 2. Format the Staff column specifically for clean Excel exporting (comma separated)
+            const staffCell = row.querySelector("td:last-child");
+            if (staffCell) {
+                const techs = row.getAttribute('data-techs');
+                if (techs && techs.trim() !== '') {
+                    staffCell.innerText = techs; // Inject the raw comma-separated string
+                } else {
+                    staffCell.innerText = 'UNASSIGNED';
+                }
+            }
         });
+
         const wb = XLSX.utils.table_to_book(tableClone, { sheet: "Deployment Audit" });
         XLSX.writeFile(wb, "Coolaire_Ops_Deployment_Ledger.xlsx");
     }
+
+    /**
+     * Dynamic Offcanvas Data Binding & Preloader dismissal
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+        const detailOffcanvas = document.getElementById('detailOffcanvas');
+        if (detailOffcanvas) {
+            detailOffcanvas.addEventListener('show.bs.offcanvas', function (event) {
+                const row = event.relatedTarget;
+
+                // Set text fields
+                document.getElementById('offcanvas-client-name').innerText = row.getAttribute('data-client');
+                document.getElementById('offcanvas-job-order').innerText = row.getAttribute('data-job-order');
+                document.getElementById('offcanvas-service-type').innerText = row.getAttribute('data-service-type');
+                document.getElementById('offcanvas-materials-used').innerText = row.getAttribute('data-materials-used');
+                document.getElementById('offcanvas-std-hours').innerText = row.getAttribute('data-std-hours');
+                document.getElementById('offcanvas-service-location').innerText = row.getAttribute('data-service-location');
+                document.getElementById('offcanvas-hub-name').innerText = row.getAttribute('data-hub-name');
+                document.getElementById('offcanvas-start-time').innerText = row.getAttribute('data-start-time');
+                document.getElementById('offcanvas-end-time').innerText = row.getAttribute('data-end-time');
+
+                // Clear and bind technician list
+                const techsContainer = document.getElementById('offcanvas-techs-container');
+                techsContainer.innerHTML = '';
+
+                const techsString = row.getAttribute('data-techs');
+                if (techsString && techsString.trim() !== '') {
+                    const techsList = techsString.split(',');
+                    techsList.forEach(techName => {
+                        const span = document.createElement('span');
+                        span.className = 'pill-tech';
+                        span.innerHTML = `<i class="fa-solid fa-user-gear me-1"></i> ${techName.trim()}`;
+                        techsContainer.appendChild(span);
+                    });
+                } else {
+                    const span = document.createElement('span');
+                    span.className = 'small text-muted';
+                    span.innerText = 'No staff linked to this manifest.';
+                    techsContainer.appendChild(span);
+                }
+            });
+        }
+
+        // PRELOADER DISMISSAL
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+            preloader.style.opacity = '0';
+            setTimeout(() => { preloader.style.display = 'none'; }, 400);
+        }
+    });
 </script>
 {% endblock %}

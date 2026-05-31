@@ -1,9 +1,10 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<!-- Fonts & Icons -->
+<!-- Fonts & Icons Preconnect & Loading -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
     /* VARIABLES - UNIFIED DESIGN SYSTEM */
@@ -21,18 +22,27 @@
         --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
     }
 
+    /* LIGHTWEIGHT FADE-IN */
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     /* PRELOADER OVERLAY - CONFINED TO CONTENT AREA */
     #preloader {
         position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px;
         background: #ffffff; display: flex; flex-direction: column;
         align-items: center; justify-content: center; z-index: 10000;
-        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+        transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
     .svg-logo { width: 70px; height: 70px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
     @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
     .loader-text { color: var(--saas-primary); font-size: 0.8rem; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 1.5rem; }
 
-    /* 1. APP LAYOUT */
+    /* APP LAYOUT */
     .ledger-container {
         display: flex;
         flex-direction: column;
@@ -43,7 +53,7 @@
         min-height: 100%;
     }
 
-    /* 2. HEADER / CONTROL PANEL */
+    /* HEADER / CONTROL PANEL */
     .ledger-header {
         flex: 0 0 auto;
         padding: 1.5rem 2rem;
@@ -56,7 +66,7 @@
     .fw-900 { font-weight: 900; }
     .letter-spacing-tight { letter-spacing: -1px; }
 
-    /* CLEAN DATETIME - NO BOXES / NO LINES */
+    /* DATETIME DISPLAY */
     .datetime-display { text-align: right; line-height: 1.2; white-space: nowrap; }
     #live-time { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--saas-primary); font-size: 1.3rem; }
     #live-date { font-size: 0.65rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; }
@@ -88,7 +98,7 @@
         box-shadow: var(--saas-shadow);
     }
 
-    /* 3. TABLE CONTENT */
+    /* TABLE CONTENT */
     .ledger-content {
         flex: 1 1 auto;
     }
@@ -171,7 +181,7 @@
     .timeline-item.active::after { background: var(--saas-primary); box-shadow: 0 0 8px var(--saas-primary); }
 </style>
 
-<div class="ledger-container animate__animated animate__fadeIn">
+<div class="ledger-container animate-fade-in">
 
     <!-- LOADING PRELOADER -->
     <div id="preloader">
@@ -246,7 +256,22 @@
                         </tr>
                     {% endif %}
 
-                    <tr class="record-row" data-status="{{ r.status }}" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-{{ r.id }}">
+                    <tr class="record-row"
+                        data-status="{{ r.status }}"
+                        data-id="{{ r.id }}"
+                        data-ticket="{{ r.ticket_number }}"
+                        data-ref="{{ r.booking.ref_id if r.booking else 'W-IN' }}"
+                        data-plate="{{ r.booking.plate_number if r.booking else 'NO PLATE' }}"
+                        data-service="{{ r.booking.service_type if r.booking else 'Standard Maintenance' }}"
+                        data-jo="{{ r.booking.job_order or '---' }}"
+                        data-location="{{ r.booking.service_location if r.booking else 'In-Plant' }}"
+                        data-arrival-time="{{ r.created_at.strftime('%I:%M %p') }}"
+                        data-arrival-date="{{ r.created_at.strftime('%b %d, %Y') }}"
+                        data-start="{{ r.start_time.strftime('%I:%M %p') if r.start_time else 'NOT STARTED' }}"
+                        data-end="{{ r.end_time.strftime('%I:%M %p') if r.end_time else 'STILL ACTIVE' }}"
+                        data-notes="{{ r.internal_notes or 'No specific administrative notes were recorded for this service session.' }}"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#detailOffcanvas">
                         <td>
                             <div class="fw-900 text-navy">{{ r.ticket_number }}</div>
                             <div class="extra-small text-muted fw-bold font-monospace">REF: #{{ r.booking.ref_id if r.booking else 'W-IN' }}</div>
@@ -305,16 +330,15 @@
     </main>
 </div>
 
-<!-- AUDIT SIDE PANELS -->
-{% for r in records %}
-<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="offcanvas-{{ r.id }}">
+<!-- SINGLE DYNAMIC AUDIT SIDE PANEL -->
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="detailOffcanvas">
     <div class="detail-header shadow-sm">
         <div class="d-flex justify-content-between align-items-start mb-3">
             <span class="badge bg-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Audit Detail</span>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
-        <h2 class="fw-900 mb-1">{{ r.ticket_number }}</h2>
-        <p class="mb-0 opacity-75 small fw-bold font-monospace">UUID_REF: #{{ r.booking.ref_id if r.booking else '000000' }}</p>
+        <h2 class="fw-900 mb-1" id="offcanvas-ticket">---</h2>
+        <p class="mb-0 opacity-75 small fw-bold font-monospace">UUID_REF: #<span id="offcanvas-ref">000000</span></p>
     </div>
     <div class="offcanvas-body detail-body">
 
@@ -322,19 +346,19 @@
             <div class="row g-3">
                 <div class="col-6">
                     <span class="detail-label">Plate Number</span>
-                    <span class="detail-val">{{ r.booking.plate_number if r.booking else 'N/A' }}</span>
+                    <span class="detail-val" id="offcanvas-plate">---</span>
                 </div>
                 <div class="col-6">
                     <span class="detail-label">Service Type</span>
-                    <span class="detail-val">{{ r.booking.service_type if r.booking else 'Standard' }}</span>
+                    <span class="detail-val" id="offcanvas-service">---</span>
                 </div>
                 <div class="col-6 border-top pt-2">
                     <span class="detail-label">Job Order (JO)</span>
-                    <span class="detail-val">{{ r.booking.job_order or '---' }}</span>
+                    <span class="detail-val" id="offcanvas-jo">---</span>
                 </div>
                 <div class="col-6 border-top pt-2">
                     <span class="detail-label">Location Type</span>
-                    <span class="detail-val">{{ r.booking.service_location if r.booking else 'In-Plant' }}</span>
+                    <span class="detail-val" id="offcanvas-location">---</span>
                 </div>
             </div>
         </div>
@@ -344,42 +368,38 @@
             <div class="audit-timeline">
                 <div class="timeline-item active">
                     <div class="extra-small fw-900 text-primary">ARRIVAL / CHECK-IN</div>
-                    <div class="fw-800 text-navy">{{ r.created_at.strftime('%I:%M %p') }}</div>
-                    <div class="extra-small text-muted">{{ r.created_at.strftime('%b %d, %Y') }}</div>
+                    <div class="fw-800 text-navy" id="offcanvas-arrival-time">00:00 AM</div>
+                    <div class="extra-small text-muted" id="offcanvas-arrival-date">--- --, ----</div>
                 </div>
-                <div class="timeline-item {% if r.start_time %}active{% endif %}">
+                <div class="timeline-item" id="offcanvas-start-item">
                     <div class="extra-small fw-900">WORKFLOOR DISPATCH</div>
-                    <div class="fw-800 text-navy">{{ r.start_time.strftime('%I:%M %p') if r.start_time else 'NOT STARTED' }}</div>
+                    <div class="fw-800 text-navy" id="offcanvas-start-time">NOT STARTED</div>
                 </div>
-                <div class="timeline-item {% if r.end_time %}active{% endif %}">
+                <div class="timeline-item" id="offcanvas-end-item">
                     <div class="extra-small fw-900">FINAL RELEASE</div>
-                    <div class="fw-800 text-navy">{{ r.end_time.strftime('%I:%M %p') if r.end_time else 'STILL ACTIVE' }}</div>
+                    <div class="fw-800 text-navy" id="offcanvas-end-time">STILL ACTIVE</div>
                 </div>
             </div>
         </div>
 
         <div class="info-card shadow-sm">
             <span class="detail-label">Internal Documentation</span>
-            <p class="small fw-600 text-muted mb-0" style="line-height: 1.6;">
-                {{ r.internal_notes or 'No specific administrative notes were recorded for this service session.' }}
+            <p class="small fw-600 text-muted mb-0" style="line-height: 1.6;" id="offcanvas-notes">
+                No specific administrative notes were recorded for this service session.
             </p>
         </div>
 
-        {% if r.status == 'expired' %}
-        <a href="/staff/revert-ticket/{{ r.id }}" class="btn btn-navy w-100 py-3 rounded-4 fw-900 text-uppercase" style="background: var(--saas-navy); color: white; letter-spacing: 1px;" onclick="return confirm('Instruction: Restore this ticket to live queue?')">
-            <i class="fa-solid fa-arrow-up-from-bracket me-2"></i> Re-activate Record
-        </a>
-        {% endif %}
+        <div id="revert-btn-container" style="display: none;">
+            <a id="offcanvas-revert-link" href="#" class="btn btn-navy w-100 py-3 rounded-4 fw-900 text-uppercase" style="background: var(--saas-navy); color: white; letter-spacing: 1px;" onclick="return confirm('Instruction: Restore this ticket to live queue?')">
+                <i class="fa-solid fa-arrow-up-from-bracket me-2"></i> Re-activate Record
+            </a>
+        </div>
     </div>
 </div>
-{% endfor %}
 
 <script>
     /**
-     * INSTRUCTION: updateClock
-     * This function retrieves the current system date and time,
-     * formats them into readable strings (e.g., "Mon Jan 01, 2024" and "12:00:00 PM"),
-     * and updates the text content of the live-date and live-time elements.
+     * updateClock
      */
     function updateClock() {
         const now = new Date();
@@ -396,10 +416,7 @@
     updateClock();
 
     /**
-     * INSTRUCTION: filterStatus
-     * This function captures the user's selected status filter (e.g., 'all', 'serving').
-     * It updates the visual UI by toggling the 'active' class on the clicked tab button
-     * and then calls applySearchAndFilter() to refresh the visible table rows.
+     * filterStatus
      */
     let currentFilter = 'all';
     function filterStatus(status) {
@@ -411,11 +428,7 @@
     }
 
     /**
-     * INSTRUCTION: applySearchAndFilter
-     * This function executes the core filtering logic. It loops through every data row
-     * and checks if it matches both the current status tab AND the text entered
-     * in the search input. It also hides date group headers if no visible records
-     * exist under that specific date.
+     * applySearchAndFilter
      */
     function applySearchAndFilter() {
         const val = document.getElementById('recordSearch').value.toLowerCase();
@@ -446,10 +459,7 @@
     document.getElementById('recordSearch').addEventListener('input', applySearchAndFilter);
 
     /**
-     * INSTRUCTION: exportTableToCSV
-     * This function extracts the text content from all currently visible table rows.
-     * It cleans the data by removing newlines and wrapping values in quotes,
-     * then generates a downloadable .csv file containing the ledger data.
+     * exportTableToCSV
      */
     function exportTableToCSV(filename) {
         let csv = [];
@@ -467,22 +477,72 @@
         downloadLink.href = window.URL.createObjectURL(csvFile);
         document.body.appendChild(downloadLink);
         downloadLink.click();
+        document.body.removeChild(downloadLink);
     }
 
     /**
-     * INSTRUCTION: Preloader dismissal
-     * This listener waits for all images and resources to finish loading.
-     * Once ready, it applies a fade-out animation to the preloader overlay
-     * before removing it from the view completely to reveal the content.
+     * Dynamic Offcanvas Data Binding
      */
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const preloader = document.getElementById('preloader');
-            if(preloader) {
-                preloader.style.opacity = '0';
-                setTimeout(() => { preloader.style.display = 'none'; }, 600);
-            }
-        }, 800);
+    document.addEventListener('DOMContentLoaded', () => {
+        const detailOffcanvas = document.getElementById('detailOffcanvas');
+        if (detailOffcanvas) {
+            detailOffcanvas.addEventListener('show.bs.offcanvas', function (event) {
+                const row = event.relatedTarget;
+
+                // Set text contents
+                document.getElementById('offcanvas-ticket').innerText = row.getAttribute('data-ticket');
+                document.getElementById('offcanvas-ref').innerText = row.getAttribute('data-ref');
+                document.getElementById('offcanvas-plate').innerText = row.getAttribute('data-plate');
+                document.getElementById('offcanvas-service').innerText = row.getAttribute('data-service');
+                document.getElementById('offcanvas-jo').innerText = row.getAttribute('data-jo');
+                document.getElementById('offcanvas-location').innerText = row.getAttribute('data-location');
+
+                // Arrival
+                document.getElementById('offcanvas-arrival-time').innerText = row.getAttribute('data-arrival-time');
+                document.getElementById('offcanvas-arrival-date').innerText = row.getAttribute('data-arrival-date');
+
+                // Workfloor Dispatch
+                const startVal = row.getAttribute('data-start');
+                document.getElementById('offcanvas-start-time').innerText = startVal;
+                const startItem = document.getElementById('offcanvas-start-item');
+                if (startVal !== 'NOT STARTED') {
+                    startItem.classList.add('active');
+                } else {
+                    startItem.classList.remove('active');
+                }
+
+                // Final Release
+                const endVal = row.getAttribute('data-end');
+                document.getElementById('offcanvas-end-time').innerText = endVal;
+                const endItem = document.getElementById('offcanvas-end-item');
+                if (endVal !== 'STILL ACTIVE' && endVal !== 'NOT STARTED') {
+                    endItem.classList.add('active');
+                } else {
+                    endItem.classList.remove('active');
+                }
+
+                // Internal Documentation
+                document.getElementById('offcanvas-notes').innerText = row.getAttribute('data-notes');
+
+                // Expired / Re-activate option
+                const status = row.getAttribute('data-status');
+                const revertContainer = document.getElementById('revert-btn-container');
+                if (status === 'expired') {
+                    const recordId = row.getAttribute('data-id');
+                    document.getElementById('offcanvas-revert-link').setAttribute('href', '/staff/revert-ticket/' + recordId);
+                    revertContainer.style.display = 'block';
+                } else {
+                    revertContainer.style.display = 'none';
+                }
+            });
+        }
+
+        // PRELOADER DISMISSAL
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+            preloader.style.opacity = '0';
+            setTimeout(() => { preloader.style.display = 'none'; }, 400);
+        }
     });
 </script>
 {% endblock %}

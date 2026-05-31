@@ -1,11 +1,10 @@
-
-
 {% extends "base_staff.html" %}
 
 {% block content %}
 <!-- Typography, Icons & Chart.js -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -22,6 +21,15 @@
         --saas-danger: #ef4444;
         --saas-radius: 20px;
         --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+    }
+
+    /* LIGHTWEIGHT FADE-IN */
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     /* 1. APP LAYOUT */
@@ -43,7 +51,7 @@
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         background: #ffffff; display: flex; flex-direction: column;
         align-items: center; justify-content: center; z-index: 10000;
-        transition: all 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+        transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
     .svg-logo { width: 70px; height: 70px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
     @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
@@ -88,7 +96,7 @@
 </style>
 
 <!-- MAIN DASHBOARD -->
-<div class="dashboard-container animate__animated animate__fadeIn">
+<div class="dashboard-container animate-fade-in">
 
     <!-- STANDARD LOADER SCREEN -->
     <div id="preloader">
@@ -153,7 +161,12 @@
                 <h6 class="fw-900 mb-4 border-bottom pb-3"><i class="fa-solid fa-award text-warning me-2"></i>Performance Leaderboard</h6>
                 <div class="leader-list">
                     {% for stat in tech_stats %}
-                    <div class="leader-item" data-bs-toggle="offcanvas" data-bs-target="#drilldownTech-{{ loop.index }}">
+                    <div class="leader-item"
+                         data-tech-name="{{ stat.name }}"
+                         data-tech-jobs="{{ stat.total_jobs }}"
+                         data-monthly-count="{{ monthly_count }}"
+                         data-bs-toggle="offcanvas"
+                         data-bs-target="#drilldownTechOffcanvas">
                         <div class="rank-tag">{{ loop.index }}</div>
                         <div class="flex-grow-1 fw-800 text-dark" style="font-size: 0.85rem;">{{ stat.name }}</div>
                         <div class="fw-900 text-primary" style="font-family: 'JetBrains Mono';">{{ stat.total_jobs }}</div>
@@ -187,7 +200,7 @@
     </div>
 </div>
 
-<!-- AUDIT SIDE PANELS (The Detailed Forms) -->
+<!-- AUDIT TODAY SIDE PANEL -->
 <div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="drilldownToday">
     <div class="detail-header shadow-sm">
         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -212,42 +225,29 @@
     </div>
 </div>
 
-<!-- Tech Detail Panels Loop -->
-{% for stat in tech_stats %}
-<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="drilldownTech-{{ loop.index }}">
+<!-- SINGLE REUSABLE TECHNICIAN DETAIL OFF-CANVAS -->
+<div class="offcanvas offcanvas-end detail-panel" tabindex="-1" id="drilldownTechOffcanvas">
     <div class="detail-header shadow-sm" style="background: var(--saas-primary);">
         <div class="d-flex justify-content-between align-items-start mb-3">
             <span class="badge bg-white text-primary text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Personnel Audit</span>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
-        <h2 class="fw-900 mb-1">{{ stat.name }}</h2>
+        <h2 class="fw-900 mb-1" id="offcanvas-tech-name">---</h2>
         <p class="mb-0 opacity-75 small fw-bold text-white text-uppercase">Performance Drill-down</p>
     </div>
     <div class="offcanvas-body detail-body">
         <div class="info-card bg-white p-4 rounded-4 shadow-sm border mb-4 text-center">
             <span class="metric-label">Total Jobs Finalized</span>
-            <div class="h1 fw-950 text-navy" style="font-family: 'JetBrains Mono';">{{ stat.total_jobs }}</div>
-            <p class="extra-small text-muted fw-bold mb-0">Contributing to {{ monthly_count }} node total</p>
+            <div class="h1 fw-950 text-navy" style="font-family: 'JetBrains Mono';" id="offcanvas-tech-jobs">0</div>
+            <p class="extra-small text-muted fw-bold mb-0">Contributing to <span id="offcanvas-monthly-count">0</span> node total</p>
         </div>
         <div class="alert alert-light border shadow-sm small fw-bold">
             <i class="fa-solid fa-chart-line me-2 text-primary"></i> Data accounts for all In-Plant and Field service releases.
         </div>
     </div>
 </div>
-{% endfor %}
 
 <script>
-    // STANDARD PRELOADER DISMISS
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const preloader = document.getElementById('preloader');
-            if(preloader) {
-                preloader.style.opacity = '0';
-                setTimeout(() => { preloader.style.display = 'none'; }, 600);
-            }
-        }, 800);
-    });
-
     document.addEventListener('DOMContentLoaded', function() {
         // --- 1. FORECAST BAR CHART ---
         new Chart(document.getElementById('mainForecastChart'), {
@@ -310,6 +310,24 @@
                 scales: { x: { display: false }, y: { display: false } }
             }
         });
+
+        // --- 4. DYNAMIC OFF-CANVAS BINDING ---
+        const techOffcanvas = document.getElementById('drilldownTechOffcanvas');
+        if (techOffcanvas) {
+            techOffcanvas.addEventListener('show.bs.offcanvas', function (event) {
+                const trigger = event.relatedTarget;
+                document.getElementById('offcanvas-tech-name').innerText = trigger.getAttribute('data-tech-name');
+                document.getElementById('offcanvas-tech-jobs').innerText = trigger.getAttribute('data-tech-jobs');
+                document.getElementById('offcanvas-monthly-count').innerText = trigger.getAttribute('data-monthly-count');
+            });
+        }
+
+        // --- 5. PRELOADER DISMISSAL ---
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+            preloader.style.opacity = '0';
+            setTimeout(() => { preloader.style.display = 'none'; }, 400);
+        }
     });
 </script>
 {% endblock %}

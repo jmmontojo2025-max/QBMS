@@ -1,9 +1,10 @@
 {% extends "base_staff.html" %}
 
 {% block content %}
-<!-- Fonts & Icons -->
+<!-- Fonts & Icons Preconnect & Loading -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <style>
     :root {
@@ -19,13 +20,22 @@
         --saas-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
     }
 
+    /* LIGHTWEIGHT FADE-IN */
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     .dashboard-container {
         display: flex;
         flex-direction: column;
         font-family: 'Plus Jakarta Sans', sans-serif;
         color: var(--saas-navy);
-        position: relative;
-        gap: 1.25rem;
+        position: relative; /* Crucial for Scoped Loader */
+        gap: 1.5rem;
         min-height: 100%;
     }
 
@@ -34,7 +44,7 @@
         position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px;
         background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(4px);
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        z-index: 1000; transition: 0.6s;
+        z-index: 1000; transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
     .svg-draw { width: 60px; height: 60px; fill: none; stroke: var(--saas-primary); stroke-width: 4; stroke-dasharray: 300; animation: logo-draw 2.5s infinite alternate ease-in-out; }
     @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
@@ -94,9 +104,9 @@
     .instruction-text { font-size: 0.75rem; color: var(--saas-slate); font-weight: 600; line-height: 1.4; }
 </style>
 
-<div class="dashboard-container animate__animated animate__fadeIn">
+<div class="dashboard-container animate-fade-in">
 
-    <!-- SCOPED CONTENT LOADER -->
+    <!-- SCOPED CONTENT LOADER (Side menu remains clickable) -->
     <div id="inner-loader">
         <svg class="svg-draw" viewBox="0 0 100 100"><path d="M50 5 L90 25 L90 75 L50 95 L10 75 L10 25 Z" /></svg>
         <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; letter-spacing: 4px; margin-top: 1rem; color: var(--saas-primary);">SYNCING PERMISSIONS...</div>
@@ -206,8 +216,6 @@
     function updateClock() {
         const now = new Date();
         const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-
-        // Instruction: hour12: true provides the AM/PM format
         const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
 
         const dateEl = document.getElementById('live-date');
@@ -236,22 +244,23 @@
         checkboxes.forEach(cb => cb.checked = !allChecked);
     }
 
-    // 4. Scoped Content Loader
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const loader = document.getElementById('inner-loader');
-            if(loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => { loader.style.display = 'none'; }, 600);
-            }
-        }, 800);
+    /**
+     * Scoped Content Loader & Submit Feedback
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+        const loader = document.getElementById('inner-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 400);
+        }
     });
 
-    // 5. Submit Feedback (Manual Loader trigger)
     document.getElementById('permForm').addEventListener('submit', function() {
         const loader = document.getElementById('inner-loader');
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
+        if (loader) {
+            loader.style.display = 'flex';
+            loader.style.opacity = '1';
+        }
     });
 </script>
 {% endblock %}
