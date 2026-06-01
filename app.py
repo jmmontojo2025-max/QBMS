@@ -1,42 +1,32 @@
 import os
 import random
 import string
-
-import kwargs
-import requests
+import json
 import smtplib
 import threading  # For background tasks
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
+from functools import wraps
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
+import kwargs
+import requests
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import func, extract
+from sqlalchemy import func, extract, or_, and_
 from flask_wtf.csrf import CSRFProtect
-
-from flask import request
-
-from datetime import date, datetime
-from flask import render_template, session
-from flask_login import login_required, current_user
-
-
-from functools import wraps
-
 from requests_oauthlib import OAuth1
-
-import json  # Ensure this is at the top of app.py
-from sqlalchemy import or_, and_, func
+from itsdangerous import URLSafeTimedSerializer
 
 # Define Philippine Time (UTC+8)
 PHT = timezone(timedelta(hours=8))
 
 def get_pht_now():
-    return datetime.now(PHT)
+    # Returns the current local PHT time as a database-safe naive object
+    return datetime.now(PHT).replace(tzinfo=None)
 
 app = Flask(__name__)
 # IMPORTANT: Use a strong, random key from environment for production.
@@ -60,9 +50,12 @@ def roles_required(*roles):
             if not current_user.is_authenticated:
                 return redirect(url_for('login'))
 
-            # This checks the 'role' column in your User table
-            if current_user.role not in ['admin', 'coordinator', 'advisor', 'super_admin']:
-                # This automatically sends them to your custom 403.html
+            # SUPER ADMIN BYPASS: Always allow super_admin
+            if current_user.role == 'super_admin':
+                return f(*args, **kwargs)
+
+            # Check if user has one of the allowed roles
+            if current_user.role not in roles:
                 abort(403)
             return f(*args, **kwargs)
 
@@ -289,14 +282,15 @@ class RolePermission(db.Model):
 # Helper to check staff access and location
 def require_staff_location():
     # Allow Super Admin, Admin, and Staff
-    if current_user.is_authenticated and current_user.role not in ['staff', 'admin', 'super_admin']:
+    if current_user.is_authenticated and current_user.role not in ['staff', 'admin', 'super_admin', 'coordinator',
+                                                                   'advisor']:
         abort(403)
 
     if not current_user.is_authenticated:
         return redirect(url_for('login'))
 
         # If you are management but haven't picked a hub, go to the picker
-    if current_user.role in ['staff', 'admin', 'super_admin'] and 'loc_id' not in session:
+    if current_user.role in ['staff', 'admin', 'super_admin', 'coordinator', 'advisor'] and 'loc_id' not in session:
         flash("Hub initialization required.", "info")
         return redirect(url_for('select_branch_for_staff'))
 
@@ -328,10 +322,8 @@ def utility_processor():
         if not current_user.is_authenticated:
             return False
 
-        # Check if the permission exists in the user's assigned permissions
-        # (This depends on how your database is set up)
-        user_permissions = [p.name for p in current_user.permissions]
-        return permission_name in user_permissions
+        # Check if the permission exists in the user's assigned permissions via check_permission
+        return check_permission(permission_name)
 
     return dict(has_perm=has_perm)
 
@@ -341,6 +333,12 @@ def check_permission(feature_key):
     if current_user.role == 'super_admin': return True
 
     user_role = current_user.role.lower().strip()
+
+    # Sensible defaults: Always allow coordinators, advisors, and admins to dispatch/recall
+    if feature_key.lower().strip() in ['start-work', 'recall-ticket'] and user_role in ['admin', 'coordinator',
+                                                                                        'advisor']:
+        return True
+
     perm = RolePermission.query.filter_by(role=user_role, feature_key=feature_key.lower().strip()).first()
     return perm.is_allowed if perm else False
 
@@ -385,7 +383,7 @@ def root_redirect_to_login():
 @login_required
 def select_branch_for_staff():
     # ADD 'super_admin' to this check
-    if current_user.role not in ['staff', 'admin', 'super_admin']:
+    if current_user.role not in ['staff', 'admin', 'super_admin', 'coordinator', 'advisor']:
         flash("Management clearance required.", "danger")
         return redirect(url_for('login'))
 
@@ -415,7 +413,7 @@ def set_branch(loc_id):
     db.session.commit()
 
     # Ensure Super Admin goes to the correct panel
-    if current_user.role in ['staff', 'admin', 'super_admin']:
+    if current_user.role in ['staff', 'admin', 'super_admin', 'coordinator', 'advisor']:
         return redirect(url_for('staff_panel'))
 
     return redirect(url_for('dashboard'))
@@ -527,7 +525,6 @@ def admin_workflow():
 
     categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
     return render_template('admin_workflow.html', hub_data=hub_data, categories=categories, title="Global Workflow Audit")
-
 
 
 @app.route('/staff/save-materials/<int:q_id>', methods=['POST'])
@@ -707,7 +704,6 @@ def login():
 @app.route('/staff/users/approve/<int:user_id>')
 @login_required
 def approve_user(user_id):
-    # Fix: use 'not in' for list comparison
     if current_user.role not in ['admin', 'super_admin']:
         abort(403)
 
@@ -802,7 +798,7 @@ def register():
 def dashboard():
     # 1. ROLE SECURITY: Redirect any Staff/Admin nodes to the Command Console
     # This ensures Super Admins and Staff don't see the Customer UI
-    if current_user.role in ['super_admin', 'admin', 'staff']:
+    if current_user.role in ['super_admin', 'admin', 'staff', 'coordinator', 'advisor']:
         return redirect(url_for('staff_panel'))
 
     # 2. DATA RETRIEVAL: Fetch full deployment history for this specific client
@@ -845,9 +841,6 @@ def dashboard():
                            booking=active_booking,
                            branch_forecast=branch_forecast,
                            title="Fleet Dashboard")
-
-
-from datetime import datetime, timezone
 
 
 @app.route('/book', methods=['GET', 'POST'])
@@ -989,27 +982,6 @@ def delete_location(loc_id):
         flash("An error occurred while deleting the branch.", "danger")
 
     return redirect(url_for('staff_locations'))
-
-
-@login_required
-def staff_panel():
-    app.logger.info(f"Accessing staff_panel for {current_user.username}")
-    redirect_response = require_staff_location()
-    if redirect_response:
-        app.logger.warning(f"Redirecting {current_user.username} from staff_panel: {redirect_response.location}")
-        return redirect_response
-
-    loc_id = session.get('loc_id')  # Guaranteed to be set by now
-    app.logger.info(f"Staff Panel loc_id: {loc_id} for {current_user.username}")
-
-    waiting = Queue.query.filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
-    serving = Queue.query.filter_by(location_id=loc_id, status='serving').all()
-    current_occupancy = len(serving)
-    techs = Technician.query.filter_by(location_id=loc_id, is_active=True).all()
-
-    app.logger.info(f"Rendering staff.html for {current_user.username} (Location: {session.get('loc_name')})")
-    return render_template('staff.html', waiting_tickets=waiting, serving_list=serving, technicians=techs,
-                           title="Live Console")
 
 
 @app.route('/staff/complete-work/<int:q_id>', methods=['POST'])  # MUST BE POST
@@ -1487,9 +1459,6 @@ def get_latest_queue():
     })
 
 
-from datetime import datetime, timezone  # Ensure these are imported at the top
-
-
 @app.route('/staff/users', methods=['GET', 'POST'])
 @login_required
 @permission_required('users')
@@ -1549,9 +1518,6 @@ def staff_users():
         now_utc=datetime.now(timezone.utc)
     )
 
-
-# Removed the redundant /staff/settings/update route.
-# The POST logic for settings is handled directly in staff_settings.
 
 @app.before_request
 def update_last_seen():
@@ -1729,10 +1695,6 @@ def revert_ticket(q_id):
 
         flash(f"Ticket {q.ticket_number} returned to queue.", "success")
     return redirect(url_for('staff_records'))
-
-
-import threading
-from flask import current_app
 
 
 def notify_customer(user, plate_number, status_type, queue_id=None, ticket_number=None, booking_list=None,
@@ -2114,27 +2076,6 @@ def save_job_notes(q_id):
     return redirect(url_for('staff_panel'))
 
 
-def roles_required(*roles):
-    def wrapper(f):
-        @wraps(f)
-        def decorated_view(*args, **kwargs):
-            if not current_user.is_authenticated:
-                return redirect(url_for('login'))
-
-            # SUPER ADMIN BYPASS: Always allow super_admin
-            if current_user.role == 'super_admin':
-                return f(*args, **kwargs)
-
-            # Check if user has one of the allowed roles
-            if current_user.role not in roles:
-                abort(403)
-            return f(*args, **kwargs)
-
-        return decorated_view
-
-    return wrapper
-
-
 # CUSTOM ERROR HANDLER FOR 403
 @app.errorhandler(403)
 def forbidden_error(error):
@@ -2199,8 +2140,10 @@ def manage_permissions():
         ('users', 'User Registry'),
         ('settings', 'System Settings'),
         ('global_bookings', 'Global Ledger'),
-        ('technicians', 'Manage Technicians'),  # Add this
-        ('locations', 'Manage Branches')  # Add this
+        ('technicians', 'Manage Technicians'),
+        ('locations', 'Manage Branches'),
+        ('start-work', 'Dispatch Work / Start Floor Job'),  # Added
+        ('recall-ticket', 'Recall Tickets on TV Monitor')    # Added
     ]
 
     if request.method == 'POST':
@@ -2322,8 +2265,6 @@ def edit_user(user_id):
 
     return redirect(url_for('staff_users'))
 
-from itsdangerous import URLSafeTimedSerializer
-
 
 # 1. Initialize the Serializer (Add this after app = Flask(__name__))
 def get_serializer():
@@ -2385,15 +2326,7 @@ def reset_password(token):
             flash("Your password has been updated. You may now login.", "success")
             return redirect(url_for('login'))
 
-    return render_template('reset_password.html', token=token)
-
-
-# Define Philippine Time (UTC+8)
-PHT = timezone(timedelta(hours=8))
-
-def get_pht_now():
-    # Returns the current local PHT time as a database-safe naive object
-    return datetime.now(PHT).replace(tzinfo=None)
+    return render_template('password_reset.html', token=token)
 
 
 @app.route('/logout')
