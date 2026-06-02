@@ -48,7 +48,7 @@
     @keyframes logo-draw { 0% { stroke-dashoffset: 300; opacity: 0.2; } 100% { stroke-dashoffset: 0; opacity: 1; } }
     .loader-text { color: var(--saas-primary); font-size: 0.8rem; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 1.5rem; }
 
-    /* ENTRANCE TRANSITION (Snappy Entrance Animation) */
+    /* ENTRANCE TRANSITION */
     #staff-viewport {
         opacity: 0;
         transform: translateY(10px);
@@ -158,7 +158,7 @@
     .live-clock { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--saas-primary); font-size: 0.9rem; padding: 8px 16px; background: #eff6ff; border-radius: 10px; border: 1px solid #dbeafe; }
     .btn-action { border-radius: 12px; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; padding: 12px 24px; transition: 0.3s; }
 
-    /* MANUAL REFRESH BUTTON FOR STAFF CONTROL PANEL */
+    /* MANUAL REFRESH BUTTON */
     .btn-refresh-dashboard {
         background: var(--saas-bg-white);
         border: 1px solid var(--saas-border);
@@ -199,19 +199,17 @@
         <div class="network-capacity-container" id="hubScrollContainer">
             {% for hub in hub_data %}
 
-                {# CALCULATION LOGIC: Exclude released 'done' tickets from actively occupying capacity #}
+                {# CALCULATION LOGIC #}
                 {% set active_tickets = hub.tickets | rejectattr("status", "equalto", "done") | list %}
                 {% set floor_count = active_tickets | selectattr("status", "in", ["serving", "served"]) | list | length %}
                 {% set queue_count = active_tickets | selectattr("status", "equalto", "waiting") | list | length %}
 
-                {# CAPACITY LOAD: Changed to strictly represent the size of the waiting queue #}
-                {% set total_load = queue_count %}
+                {# Capacity load is now computed as the sum of ongoing floor jobs and waiting queue jobs #}
+                {% set total_load = floor_count + queue_count %}
                 {% set cap = hub.info.capacity or 10 %}
-
-                {# PERCENTAGE COMPUTATION #}
                 {% set total_perc = (total_load / cap * 100)|round %}
 
-                {# TECHNICIAN LOGIC FIX #}
+                {# TECHNICIAN LOGIC #}
                 {% set present_techs = hub.techs | selectattr("is_present") | list | length %}
                 {% set tech_stats = namespace(busy=0) %}
                 {% for tech in hub.techs %}
@@ -260,7 +258,12 @@
                     <span class="vr mx-2"></span>
                     <span title="Kiosk Status">KIOSK: <i class="fa-solid fa-tablet-screen-button {% if current_location and current_location.kiosk_online %}text-success status-pulse{% else %}text-danger opacity-50{% endif %}"></i></span>
                 </div>
-                <!-- Manual Dashboard Sync Button -->
+
+                <!-- SWITCH HUB / BACK TO LOCATION SELECT -->
+                <a href="/select-branch-for-staff" class="btn btn-outline-danger btn-action shadow-sm d-inline-flex align-items-center justify-content-center" title="Switch Selected Hub Node">
+                    <i class="fa-solid fa-right-from-bracket me-1"></i> Switch Hub
+                </a>
+
                 <button type="button" onclick="triggerManualRefresh(this)" class="btn-refresh-dashboard shadow-sm" title="Sync Latest Telemetry and Grid">
                     <i class="fa-solid fa-arrows-rotate"></i> Sync Dashboard
                 </button>
@@ -288,7 +291,7 @@
             <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="pane-{{ hub.info.id }}" role="tabpanel">
                 <main class="system-grid">
 
-                    <!-- COLUMN 1: ACTIVE WORKFLOOR (ONGOING - HAS STAFF) -->
+                    <!-- COLUMN 1: ACTIVE WORKFLOOR -->
                     <section>
                         <h5 class="col-label"><i class="fa-solid fa-screwdriver-wrench text-primary"></i> Awaiting SOW & Release</h5>
 
@@ -303,9 +306,8 @@
                         <div class="column-scroll-area">
                             <div class="row g-3">
                                 {% for s in hub.tickets %}
-                                    <!-- Only show tickets when coordinator/advisor has finished inputting start and end times -->
                                     {% if s.status == 'served' %}
-                                    <div class="col-xl-6"> <!-- 2 TICKETS PER LINE -->
+                                    <div class="col-xl-6">
                                         <div class="ticket-card">
                                             <div class="status-strip strip-ongoing"></div>
                                             <div class="p-4 pt-5">
@@ -339,7 +341,14 @@
                                                 <form action="/staff/complete-work/{{ s.id }}" method="POST" class="border-top mt-3 pt-3">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                                                    <!-- EDITABLE TIME SELECTIONS PRE-FILLED WITH CO-ORDINATOR LOG VALUES -->
+                                                    <!-- DATE OF WORK INPUT SELECTION -->
+                                                    <div class="mb-3">
+                                                        <label class="extra-small fw-900 text-muted">DATE OF WORK</label>
+                                                        <input type="date" name="date_of_work" class="form-control form-control-sm fw-bold border-2"
+                                                               value="{{ s.date_of_work.strftime('%Y-%m-%d') if s.date_of_work else today_date }}" required>
+                                                    </div>
+
+                                                    <!-- EDITABLE TIME SELECTIONS -->
                                                     <div class="row g-2 mb-3">
                                                         <div class="col-6">
                                                             <label class="extra-small fw-900 text-muted">START TIME</label>
@@ -362,10 +371,17 @@
                                                         <label class="extra-small fw-900 text-primary">SCOPE OF WORK (SOW)</label>
                                                         <textarea name="scope_of_work" class="form-control form-control-sm fw-bold border-2" rows="2" placeholder="Describe actual work performed..." required>{{ s.booking.scope_of_work or '' }}</textarea>
                                                     </div>
+
+                                                    <!-- RETURN TO QUEUE ACTION TRIGGER -->
+                                                    <div class="mb-3">
+                                                        <a href="/staff/revert-ticket/{{ s.id }}" class="btn btn-outline-danger w-100 btn-action shadow-sm" onclick="return confirm('Are you sure you want to return Ticket {{ s.ticket_number }} back to the waiting queue?')">
+                                                            <i class="fa-solid fa-arrow-rotate-left me-1"></i> Return to Queue
+                                                        </a>
+                                                    </div>
+
                                                     <div class="d-flex gap-2">
                                                         <button type="button" class="btn btn-light border px-3" data-bs-toggle="modal" data-bs-target="#jobDetails-{{ s.id }}"><i class="fa-solid fa-ellipsis-vertical"></i></button>
 
-                                                        <!-- TV RECALL INTEGRATION: Manually recall customer on public TV monitor -->
                                                         <a href="/staff/recall-ticket/{{ s.id }}" class="btn btn-outline-warning px-3 d-inline-flex align-items-center justify-content-center shadow-sm" style="border-radius: 12px;" title="Recall on TV Monitor">
                                                             <i class="fa-solid fa-volume-high"></i>
                                                         </a>
@@ -382,7 +398,7 @@
                         </div>
                     </section>
 
-                    <!-- COLUMN 2: RELEASED TODAY (COMPLETED SERVICES) -->
+                    <!-- COLUMN 2: RELEASED TODAY -->
                     <section>
                         <h5 class="col-label"><i class="fa-solid fa-circle-check text-success"></i> Released Today</h5>
 
@@ -436,17 +452,21 @@
                             <div class="roster-head"><h6>Personnel Status</h6></div>
                             <div class="column-scroll-area" style="max-height: 600px;">
                                 {% for tech in hub.techs | sort(attribute='name') %}
-                                    {% set assignment = hub.busy_map.get(tech.id) %}
+                                    {% set assignments = (busy_map | default({})).get(tech.id) %}
                                     <div class="tech-row" style="{% if not tech.is_present %}opacity: 0.5; background: #f8fafc;{% endif %}">
-                                        <span class="tech-status-dot {% if not tech.is_present %}dot-away{% elif assignment %}dot-busy{% else %}dot-active{% endif %}"></span>
+                                        <span class="tech-status-dot {% if not tech.is_present %}dot-away{% elif assignments %}dot-busy{% else %}dot-active{% endif %}"></span>
                                         <div class="flex-grow-1">
                                             <div class="fw-800 text-navy" style="font-size: 0.95rem;">{{ tech.name }}</div>
                                             <div class="small">
                                                 {% if not tech.is_present %}<span class="text-muted fw-800 extra-small">OFF-DUTY</span>
-                                                {% elif assignment %}
-                                                    <div class="d-flex flex-column gap-1 mt-1">
-                                                        <span class="text-primary fw-900" style="font-size: 0.65rem; text-transform: uppercase;"><i class="fa-solid fa-tag me-1"></i> TICKET: {{ assignment.ticket }}</span>
-                                                        <span class="text-muted fw-700" style="font-size: 0.6rem;">{{ assignment.service }}</span>
+                                                {% elif assignments %}
+                                                    <div class="d-flex flex-column gap-2 mt-1">
+                                                        {% for assignment in assignments %}
+                                                        <div class="p-1 rounded bg-light border border-warning-subtle" style="font-size: 0.65rem; line-height: 1.2;">
+                                                            <span class="text-primary fw-900 d-block" style="font-size: 0.65rem; text-transform: uppercase;"><i class="fa-solid fa-tag me-1"></i> TICKET: {{ assignment.ticket }}</span>
+                                                            <span class="text-muted fw-700 d-block" style="font-size: 0.6rem;">{{ assignment.service }}</span>
+                                                        </div>
+                                                        {% endfor %}
                                                     </div>
                                                 {% else %}<span class="text-success fw-900 extra-small">READY</span>{% endif %}
                                             </div>
@@ -490,6 +510,8 @@
                             <div class="col-4"><label class="extra-small fw-800">PLATE</label><input type="text" id="sPlate" class="form-control fw-bold border-light bg-light"></div>
                             <div class="col-4"><label class="extra-small fw-800">JO#</label><input type="text" id="sJO" class="form-control fw-bold border-light bg-light"></div>
                             <div class="col-4"><label class="extra-small fw-800">SRH</label><input type="number" step="0.5" id="sSRH" class="form-control fw-bold border-light bg-light" placeholder="Hrs"></div>
+                            <div class="col-6"><label class="extra-small fw-800 text-uppercase text-muted">Date of Entry (Today)</label><input type="date" id="sEntryDate" class="form-control fw-bold border-light bg-light" value="{{ today_date }}" readonly></div>
+                            <div class="col-6"><label class="extra-small fw-800 text-uppercase text-muted">Preferred Date of Service</label><input type="date" id="sPreferredDate" class="form-control fw-bold border-light bg-light" value="{{ today_date }}"></div>
                             <div class="col-12 mt-2"><label class="extra-small fw-800">SERVICE CATEGORY</label><select id="sService" class="form-select fw-bold border-light bg-light"><option value="" selected disabled>Select Category...</option>{% for cat in categories %}<option value="{{ cat.name }}">{{ cat.name }}</option>{% endfor %}</select></div>
                         </div>
                         <button type="button" onclick="addStaffManifest()" class="btn btn-navy btn-action w-100 text-white shadow-sm" style="background: var(--saas-navy);"><i class="fa-solid fa-plus-circle me-1"></i> Add Unit to Manifest</button>
@@ -546,7 +568,6 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Trigger loader spinning effect and reload the window (Snappy response)
     function triggerManualRefresh(button) {
         const icon = button.querySelector('i');
         if (icon) {
@@ -555,12 +576,10 @@
         window.location.reload();
     }
 
-    // FAST PRELOADER DISMISSAL & TAB PERSISTENCE
     document.addEventListener('DOMContentLoaded', () => {
         const preloader = document.getElementById('preloader');
         const viewport = document.getElementById('staff-viewport');
 
-        // Restore active tab/node state on reload
         const activeTabTarget = localStorage.getItem('activeStaffTab');
         if (activeTabTarget) {
             const tabTrigger = document.querySelector(`#hubTabs button[data-bs-target="${activeTabTarget}"]`);
@@ -574,7 +593,6 @@
             }
         }
 
-        // Setup click listener to save active tab state to localStorage
         const tabButtons = document.querySelectorAll('#hubTabs button[data-bs-toggle="pill"]');
         tabButtons.forEach(button => {
             button.addEventListener('shown.bs.tab', (e) => {
@@ -582,7 +600,6 @@
             });
         });
 
-        // Fast fade-out preloader dismissal
         if (preloader) {
             preloader.style.transition = 'opacity 0.2s ease-out';
             preloader.style.opacity = '0';
@@ -603,8 +620,10 @@
         const service = document.getElementById('sService').value;
         const jo = document.getElementById('sJO').value.trim();
         const srh = document.getElementById('sSRH').value.trim();
+        const entry_date = document.getElementById('sEntryDate').value;
+        const preferred_date = document.getElementById('sPreferredDate').value;
         if(!client || !plate || !service) { alert("Fill Client, Plate, and select a Service."); return; }
-        staffManifest.push({client, plate, service, site: 'In-Plant', jo, srh});
+        staffManifest.push({client, plate, service, site: 'In-Plant', jo, srh, entry_date, preferred_date});
         renderStaffManifest();
         document.getElementById('sPlate').value = "";
         document.getElementById('sJO').value = "";
@@ -620,7 +639,13 @@
         staffManifest.forEach((m, idx) => {
             itemsDiv.innerHTML += `
                 <div class="d-flex justify-content-between align-items-center small fw-bold border-bottom py-3">
-                    <span><i class="fa-solid fa-truck-front me-2 text-primary"></i>${m.plate} [${m.service}]</span>
+                    <span>
+                        <i class="fa-solid fa-truck-front me-2 text-primary"></i>${m.plate} [${m.service}]
+                        <br>
+                        <small class="text-muted" style="font-size: 0.65rem; margin-left: 1.5rem;">
+                            Entry: ${m.entry_date} | Preferred: ${m.preferred_date}
+                        </small>
+                    </span>
                     <i class="fa-solid fa-circle-minus text-danger fs-5" style="cursor:pointer;" onclick="removeStaffManifest(${idx})"></i>
                 </div>`;
         });

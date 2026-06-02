@@ -50,7 +50,7 @@
     @keyframes logo-draw { 0% { stroke-dashoffset: 300; } 100% { stroke-dashoffset: 0; } }
     .loader-text { color: var(--saas-primary); font-size: 0.75rem; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 1rem; }
 
-    /* 2. ENTRANCE ANIMATION (Optimized to 0.3s for faster perception) */
+    /* 2. ENTRANCE ANIMATION */
     #staff-viewport {
         opacity: 0; transform: translateY(10px);
         transition: opacity 0.3s ease-out, transform 0.3s ease-out;
@@ -95,7 +95,7 @@
     .stat-pill .label { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: var(--saas-slate); margin-bottom: 0.25rem; }
     .stat-pill .value { font-weight: 800; font-family: 'JetBrains Mono'; color: #000; font-size: 1.1rem; }
 
-    /* LOCATION BADGES (RESORED) */
+    /* LOCATION BADGES */
     .loc-tag { font-size: 0.65rem; font-weight: 900; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
     .loc-in { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
     .loc-out { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; animation: pulse-red 2s infinite; }
@@ -130,7 +130,7 @@
 
     .card-header-inner { padding: 1.25rem; border-bottom: 1px solid var(--saas-border); display: flex; justify-content: space-between; align-items: flex-start; background: #fcfcfc; }
     .ticket-id { font-weight: 900; color: var(--saas-navy); font-size: 1.6rem; letter-spacing: -1.5px; line-height: 1; }
-    .plate-badge { background-color: var(--saas-navy); color: white; padding: 4px 10px; border-radius: 6px; font-family: 'JetBrains Mono'; font-size: 0.85rem; font-weight: 700; margin-top: 8px; display: inline-block; }
+    .plate-badge { background-color: var(--saas-navy); color: white; padding: 4px 10px; border-radius: 6px; font-family: 'JetBrains Mono'; font-size: 0.85rem; font-weight: 700; margin-top: 8px; display: inline-block; margin-right: 4px; }
     .service-text { font-size: 0.75rem; font-weight: 800; color: var(--saas-primary); text-transform: uppercase; background: #eff6ff; padding: 5px 12px; border-radius: 6px; margin-top: 10px; display: inline-block; }
 
     /* ROSTER CARD */
@@ -145,7 +145,6 @@
 
     .btn-saas { border-radius: 12px; font-weight: 800; padding: 10px 20px; text-transform: uppercase; font-size: 0.75rem; transition: 0.3s; }
 
-    /* CUSTOM REFRESH BUTTON CONFIGURATION */
     .btn-refresh-console {
         background-color: var(--saas-bg-white);
         border: 1px solid var(--saas-border);
@@ -201,14 +200,19 @@
         <div class="d-flex align-items-center gap-3">
             <div class="stat-pill" style="min-width: 180px; border-left: 4px solid var(--saas-primary);">
                 <label class="label">Utilization</label>
-                <div class="value">{{ current_occupancy }}/{{ max_capacity }}</div>
-                <div class="progress mt-1" style="height: 4px; width: 100%;"><div class="progress-bar {% if capacity_percent >= 90 %}bg-danger{% else %}bg-primary{% endif %}" style="width: {{ capacity_percent }}%"></div></div>
+                <div class="value">{{ current_occupancy | default(0) }}/{{ max_capacity | default(20) }}</div>
+                <div class="progress mt-1" style="height: 4px; width: 100%;">
+                    <div class="progress-bar {% if (capacity_percent | default(0)) >= 90 %}bg-danger{% else %}bg-primary{% endif %}" style="width: {{ capacity_percent | default(0) }}%"></div>
+                </div>
             </div>
-            <div class="stat-pill"><label class="label">In Queue</label><div class="value text-warning">{{ waiting_tickets|length }}</div></div>
-            <div class="stat-pill"><label class="label">On Floor</label><div class="value text-primary">{{ serving_list|length }}</div></div>
+            <div class="stat-pill"><label class="label">In Queue</label><div class="value text-warning">{{ (waiting_tickets | default([])) | length }}</div></div>
+            <div class="stat-pill"><label class="label">On Floor</label><div class="value text-primary">{{ (serving_list | default([])) | length }}</div></div>
 
-            <div class="action-button-group d-flex gap-2">
-                <!-- Manual Console Refresh Button -->
+            <div class="action-button-group d-flex gap-2 align-items-center">
+                <!-- SWITCH HUB / BACK TO LOCATION SELECT -->
+                <a href="/select-branch-for-staff" class="btn btn-outline-danger fw-bold btn-saas shadow-sm d-inline-flex align-items-center justify-content-center" title="Switch Selected Hub Node">
+                    <i class="fa-solid fa-right-from-bracket me-1"></i> Switch Hub
+                </a>
                 <button type="button" onclick="triggerManualRefresh(this)" class="btn-refresh-console shadow-sm" title="Sync Latest Tickets">
                     <i class="fa-solid fa-arrows-rotate text-primary"></i> Sync Dashboard
                 </button>
@@ -233,7 +237,7 @@
 
             <div class="column-scroll-area">
                 <div class="row g-3">
-                    {% for s in serving_list %}
+                    {% for s in (serving_list | default([])) %}
                     <div class="col-xl-6">
                         <div class="ticket-card">
                             <div class="status-strip bg-ongoing"></div>
@@ -251,13 +255,20 @@
                                     </div>
 
                                     <span class="service-text">{% if s.booking %}{{ s.booking.service_type }}{% endif %}</span>
+
+                                    <!-- ENTRY AND PREFERRED DATE DISPLAY -->
+                                    {% if s.booking %}
+                                    <div class="mt-2 text-start" style="font-size: 0.725rem; line-height: 1.4;">
+                                        <div class="text-muted"><i class="fa-solid fa-calendar-plus me-1 text-primary"></i> Entry Date: <span class="fw-bold text-dark">{{ s.booking.date_of_entry }}</span></div>
+                                        <div class="text-primary"><i class="fa-solid fa-calendar-check me-1 text-success"></i> Preferred: <span class="fw-bold">{{ s.booking.preferred_service_date }}</span></div>
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 <div class="text-end"><span class="badge bg-warning text-dark fw-bold px-3 py-2" style="border-radius: 8px; font-size: 0.6rem;">SERVING</span></div>
                             </div>
                             <div class="p-3">
                                 <div class="mb-3">
                                     <label class="extra-small fw-800 text-muted text-uppercase d-block mb-2">Technicians Assigned</label>
-                                    <!-- SORT ASSIGNED TECHS ALPHABETICALLY -->
                                     <div class="d-flex flex-wrap gap-2">
                                         {% for tech in s.assigned_techs | sort(attribute='name') %}
                                         <span class="badge bg-light text-dark border p-2" style="font-size: 0.65rem;">{{ tech.name }}</span>
@@ -270,14 +281,28 @@
                                         <div class="col-7"><label class="extra-small fw-800 text-primary">OFFICIAL JO#</label><input type="text" name="job_order" class="form-control form-control-sm fw-bold" placeholder="JO-XXXX" value="{{ s.booking.job_order or '' }}"></div>
                                         <div class="col-5"><label class="extra-small fw-800 text-primary">STD HRS</label><input type="number" step="0.1" name="std_repair_hours" class="form-control form-control-sm fw-bold" value="{{ s.booking.std_repair_hours or '' }}"></div>
                                     </div>
+
+                                    <!-- DATE OF WORK INPUT FIELD -->
+                                    <div class="mb-3">
+                                        <label class="extra-small fw-800 text-muted text-uppercase">Date of Work</label>
+                                        <input type="date" name="date_of_work" class="form-control form-control-sm fw-bold" value="{{ today_date }}" required>
+                                    </div>
+
                                     <div class="row g-2 mb-4">
                                         <div class="col-6"><label class="extra-small fw-800 text-muted text-uppercase">Work Start</label><input type="time" name="manual_start" class="form-control form-control-sm fw-bold" required></div>
                                         <div class="col-6"><label class="extra-small fw-800 text-muted text-uppercase">Work End</label><input type="time" name="manual_end" class="form-control form-control-sm fw-bold" required></div>
                                     </div>
+
+                                    <!-- RETURN ACTIVE WORKFLOOR TICKET BACK TO WAITING LIST -->
+                                    <div class="mb-3">
+                                        <a href="/staff/revert-ticket/{{ s.id }}" class="btn btn-outline-danger w-100 btn-saas fw-bold shadow-sm" onclick="return confirm('Are you sure you want to return Ticket {{ s.ticket_number }} back to the waiting queue? This will release the assigned technicians.')">
+                                            <i class="fa-solid fa-arrow-rotate-left me-1"></i> Return to Queue
+                                        </a>
+                                    </div>
+
                                     <div class="d-flex gap-1">
                                         <button type="button" class="btn btn-light border px-3" data-bs-toggle="modal" data-bs-target="#jobDetails-{{ s.id }}"><i class="fa-solid fa-circle-info text-muted"></i></button>
 
-                                        <!-- MANUAL TV RECALL TRIGGER -->
                                         <a href="/staff/recall-ticket/{{ s.id }}" class="btn btn-outline-warning px-3 d-inline-flex align-items-center justify-content-center shadow-sm" style="border-radius: 12px;" title="Chime & Call on TV Monitor">
                                             <i class="fa-solid fa-volume-high"></i>
                                         </a>
@@ -306,7 +331,7 @@
             </div>
 
             <div class="column-scroll-area">
-                {% for t in waiting_tickets %}
+                {% for t in (waiting_tickets | default([])) %}
                 <div class="ticket-card mb-3">
                     <div class="status-strip bg-queue"></div>
                     <div class="p-4">
@@ -325,6 +350,14 @@
                                     </div>
                                 </div>
                                 <div class="d-block"><span class="service-text" style="background: #fef3c7; color: #92400e;">{% if t.booking %}{{ t.booking.service_type }}{% endif %}</span></div>
+
+                                <!-- ENTRY AND PREFERRED DATE DISPLAY -->
+                                {% if t.booking %}
+                                <div class="mt-3 text-start" style="font-size: 0.725rem; line-height: 1.4;">
+                                    <div class="text-muted"><i class="fa-solid fa-calendar-plus me-1 text-primary"></i> Entry Date: <span class="fw-bold text-dark">{{ t.booking.date_of_entry }}</span></div>
+                                    <div class="text-primary"><i class="fa-solid fa-calendar-check me-1 text-success"></i> Preferred: <span class="fw-bold">{{ t.booking.preferred_service_date }}</span></div>
+                                </div>
+                                {% endif %}
                             </div>
                             <a href="/staff/expire-ticket/{{ t.id }}" class="text-danger opacity-50" onclick="return confirm('Dismiss ticket?')"><i class="fa-solid fa-xmark fs-4"></i></a>
                         </div>
@@ -334,7 +367,6 @@
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <label class="d-block mb-2 extra-small fw-800 text-muted">ASSIGN TEAM FOR FLOOR DEPLOYMENT</label>
                             {% if technicians|length > 0 %}
-                                <!-- SORT DISPATCH dropdown ALPHABETICALLY -->
                                 <select name="technician_ids" class="form-select mb-3 fw-bold border-2" multiple required style="height: 100px;">
                                     {% for tech in technicians | sort(attribute='name') %}
                                     <option value="{{ tech.id }}"> {{ tech.name }}</option>
@@ -365,19 +397,22 @@
                     </div>
                 </div>
                 <div class="column-content">
-                    <!-- SORT ROSTER ALPHABETICALLY -->
-                    {% for tech in roster | sort(attribute='name') %}
-                        {% set assignment = busy_map.get(tech.id) %}
+                    {% for tech in (roster | default([])) | sort(attribute='name') %}
+                        {% set assignments = (busy_map | default({})).get(tech.id) %}
                         <div class="d-flex align-items-center py-3 px-3 border-bottom" style="{% if not tech.is_present %}opacity: 0.5; background: #f8fafc;{% endif %}">
-                            <span class="tech-status-dot {% if not tech.is_present %}dot-offline{% elif assignment %}dot-busy{% else %}dot-online{% endif %}"></span>
+                            <span class="tech-status-dot {% if not tech.is_present %}dot-offline{% elif assignments %}dot-busy{% else %}dot-online{% endif %}"></span>
                             <div class="flex-grow-1">
                                 <div class="fw-800 text-dark" style="font-size: 0.95rem;">{{ tech.name }}</div>
                                 <div class="small mt-1">
                                     {% if not tech.is_present %}<span class="text-muted fw-800 extra-small">OFF-DUTY</span>
-                                    {% elif assignment %}
-                                        <div class="d-flex flex-column gap-1">
-                                            <span class="text-warning fw-800" style="font-size: 0.65rem; text-transform: uppercase;"><i class="fa-solid fa-thumbtack me-1"></i> {{ assignment.ticket }}</span>
-                                            <span class="text-primary fw-700" style="font-size: 0.6rem; text-transform: uppercase;">{{ assignment.service }}</span>
+                                    {% elif assignments %}
+                                        <div class="d-flex flex-column gap-2">
+                                            {% for assignment in assignments %}
+                                            <div class="p-1 rounded bg-light border border-warning-subtle" style="font-size: 0.65rem; line-height: 1.2;">
+                                                <span class="text-warning fw-800 d-block" style="text-transform: uppercase;"><i class="fa-solid fa-thumbtack me-1"></i> {{ assignment.ticket }}</span>
+                                                <span class="text-primary fw-700 d-block" style="text-transform: uppercase;">{{ assignment.plate }} - {{ assignment.service }}</span>
+                                            </div>
+                                            {% endfor %}
                                         </div>
                                     {% else %}<span class="text-success fw-800" style="font-size: 0.7rem;">READY</span>{% endif %}
                                 </div>
@@ -419,6 +454,8 @@
                             </div>
                             <div class="col-4"><label class="extra-small fw-800">JO#</label><input type="text" id="sJO" class="form-control fw-bold border-0 shadow-sm" placeholder="Optional"></div>
                             <div class="col-4"><label class="extra-small fw-800">SRH</label><input type="number" step="0.5" id="sSRH" class="form-control fw-bold border-0 shadow-sm" placeholder="Hrs"></div>
+                            <div class="col-6"><label class="extra-small fw-800 text-uppercase text-muted">Date of Entry (Today)</label><input type="date" id="sEntryDate" class="form-control fw-bold border-0 shadow-sm" value="{{ today_date }}" readonly></div>
+                            <div class="col-6"><label class="extra-small fw-800 text-uppercase text-muted">Pref Date of Service</label><input type="date" id="sPreferredDate" class="form-control fw-bold border-0 shadow-sm" value="{{ today_date }}"></div>
                             <div class="col-12 mt-2"><label class="extra-small fw-800">SERVICE CATEGORY</label><select id="sService" class="form-select fw-bold border-0 shadow-sm"><option value="" selected disabled>Select Service Type...</option>{% for cat in categories %}<option value="{{ cat.name }}">{{ cat.name }}</option>{% endfor %}</select></div>
                             <div class="col-12 mt-2"><label class="extra-small fw-800 d-block mb-1">SERVICE LOCATION</label><div class="d-flex gap-3"><label class="small fw-bold"><input type="radio" name="sLoc" value="In-Plant" checked> In-Plant</label><label class="small fw-bold"><input type="radio" name="sLoc" value="Out-Plant"> Out-Plant</label></div></div>
                         </div>
@@ -431,7 +468,7 @@
     </div>
 </div>
 
-{% for s in serving_list %}
+{% for s in (serving_list | default([])) %}
 <!-- MODAL: JOB DETAILS -->
 <div class="modal fade" id="jobDetails-{{ s.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -481,26 +518,26 @@
         window.location.reload();
     }
 
-    // FAST PRELOADER DISMISSAL (Runs immediately when HTML structure is ready)
+    // FAST PRELOADER DISMISSAL
     document.addEventListener('DOMContentLoaded', () => {
         const preloader = document.getElementById('preloader');
         const viewport = document.getElementById('staff-viewport');
 
         if (preloader) {
-            preloader.style.transition = 'opacity 0.2s ease-out'; // Faster CSS transition
+            preloader.style.transition = 'opacity 0.2s ease-out';
             preloader.style.opacity = '0';
 
             setTimeout(() => {
                 preloader.style.display = 'none';
                 if (viewport) {
-                    viewport.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out'; // Snappier entrance
+                    viewport.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
                     viewport.classList.add('is-active');
                 }
-            }, 200); // Dismiss preloader frame within 200ms instead of 600ms
+            }, 200);
         }
     });
 
-    // MANIFEST LOGIC (RETAINED)
+    // MANIFEST LOGIC
     let staffManifest = [];
     function addStaffManifest() {
         const client = document.getElementById('sClient').value.trim();
@@ -509,8 +546,11 @@
         const site = document.querySelector('input[name="sLoc"]:checked').value;
         const jo = document.getElementById('sJO').value.trim();
         const srh = document.getElementById('sSRH').value.trim();
+        const entry_date = document.getElementById('sEntryDate').value;
+        const preferred_date = document.getElementById('sPreferredDate').value;
+
         if(!client || !plate || !service) { alert("Fill Client, Plate, and select a Service."); return; }
-        staffManifest.push({client, plate, service, site, jo, srh});
+        staffManifest.push({client, plate, service, site, jo, srh, entry_date, preferred_date});
         renderStaffManifest();
         document.getElementById('sPlate').value = "";
         document.getElementById('sJO').value = "";
@@ -526,7 +566,13 @@
         staffManifest.forEach((m, idx) => {
             itemsDiv.innerHTML += `
                 <div class="d-flex justify-content-between align-items-center small fw-bold border-bottom py-3">
-                    <span><i class="fa-solid fa-truck-front me-2 text-primary"></i>${m.plate} [${m.service}]</span>
+                    <span>
+                        <i class="fa-solid fa-truck-front me-2 text-primary"></i>${m.plate} [${m.service}]
+                        <br>
+                        <small class="text-muted" style="font-size: 0.65rem; margin-left: 1.5rem;">
+                            Entry: ${m.entry_date} | Preferred: ${m.preferred_date}
+                        </small>
+                    </span>
                     <i class="fa-solid fa-circle-minus text-danger fs-5" style="cursor:pointer;" onclick="removeStaffManifest(${idx})"></i>
                 </div>`;
         });
