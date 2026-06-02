@@ -24,9 +24,11 @@ from itsdangerous import URLSafeTimedSerializer
 # Define Philippine Time (UTC+8)
 PHT = timezone(timedelta(hours=8))
 
+
 def get_pht_now():
     # Returns the current local PHT time as a database-safe naive object
     return datetime.now(PHT).replace(tzinfo=None)
+
 
 app = Flask(__name__)
 # IMPORTANT: Use a strong, random key from environment for production.
@@ -100,7 +102,6 @@ class NotificationLog(db.Model):
     queue = db.relationship('Queue', backref='logs')
 
 
-# Add this model if you haven't already to keep track of customer units
 class Vehicle(db.Model):
     __tablename__ = 'vehicles'
     id = db.Column(db.Integer, primary_key=True)
@@ -116,14 +117,13 @@ class Location(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
     code = db.Column(db.String(10), unique=True)
-    capacity = db.Column(db.Integer, default=20)  # Add this line
+    capacity = db.Column(db.Integer, default=20)
     kiosk_last_seen = db.Column(db.DateTime)
     tv_last_seen = db.Column(db.DateTime)
 
     @property
     def kiosk_online(self):
         if not self.kiosk_last_seen: return False
-        # Ensure both are UTC before comparing
         now = datetime.now(timezone.utc)
         last_seen = self.kiosk_last_seen.replace(
             tzinfo=timezone.utc) if self.kiosk_last_seen.tzinfo is None else self.kiosk_last_seen
@@ -189,13 +189,13 @@ class ServiceCategory(db.Model):
 class Booking(db.Model):
     __tablename__ = 'bookings'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Changed to nullable
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))
     vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicles.id'), nullable=True)
     plate_number = db.Column(db.String(50))
-    guest_name = db.Column(db.String(150))  # Added this
+    guest_name = db.Column(db.String(150))
     service_type = db.Column(db.String(255))
-    service_location = db.Column(db.String(50), default='In-Plant')  # Added this
+    service_location = db.Column(db.String(50), default='In-Plant')
     status = db.Column(db.String(20), default='pending')
     scheduled_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     ref_id = db.Column(db.String(10), unique=True)
@@ -203,13 +203,15 @@ class Booking(db.Model):
     job_order = db.Column(db.String(50), nullable=True)
     std_repair_hours = db.Column(db.Float, default=0.0)
 
-    # NO EXPLICIT 'customer' relationship here, it's created by the backref in User model
-    location = db.relationship('Location', backref='bookings')  # Use existing backref from Location if available, or define here if not.
+    # RECENT MIGRATIONS FOR PREFERRED & ENTRY DATES
+    date_of_entry = db.Column(db.Date, default=lambda: datetime.now(PHT).date())
+    preferred_service_date = db.Column(db.Date, default=lambda: datetime.now(PHT).date())
+
+    location = db.relationship('Location', backref='bookings')
 
     def __init__(self, **kwargs):
         super(Booking, self).__init__(**kwargs)
         if not self.ref_id:
-            # Generates a unique 4-digit number for Kiosk Check-in
             self.ref_id = ''.join(random.choices(string.digits, k=4))
 
 
@@ -230,13 +232,16 @@ class Queue(db.Model):
     end_time = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     call_count = db.Column(db.Integer, default=0)
-    materials_used = db.Column(db.Text)  # Add this line
+    materials_used = db.Column(db.Text)
+
+    # NEW FIELD: Date of Work covering start and end
+    date_of_work = db.Column(db.Date, default=lambda: datetime.now(PHT).date())
 
     # Relationships
     location = db.relationship('Location', backref='queue_entries')
     booking = db.relationship('Booking', back_populates='queue_records')
 
-    # NEW PLURAL RELATIONSHIP
+    # RELATIONSHIP
     assigned_techs = db.relationship('Technician', secondary=queue_technicians, backref='tasks')
 
 
@@ -255,7 +260,7 @@ class AuditLog(db.Model):
     action = db.Column(db.String(100))
     details = db.Column(db.Text)
 
-    # NEW: ASSET METADATA
+    # ASSET METADATA
     ticket_number = db.Column(db.String(20))
     plate_number = db.Column(db.String(50))
 
@@ -277,11 +282,9 @@ class RolePermission(db.Model):
     is_allowed = db.Column(db.Boolean, default=False)
 
 
-# --- STAFF OPERATIONS (Require Staff/Admin Role and Selected Location) ---
+# --- STAFF OPERATIONS ---
 
-# Helper to check staff access and location
 def require_staff_location():
-    # Allow Super Admin, Admin, and Staff
     if current_user.is_authenticated and current_user.role not in ['staff', 'admin', 'super_admin', 'coordinator',
                                                                    'advisor']:
         abort(403)
@@ -289,7 +292,6 @@ def require_staff_location():
     if not current_user.is_authenticated:
         return redirect(url_for('login'))
 
-        # If you are management but haven't picked a hub, go to the picker
     if current_user.role in ['staff', 'admin', 'super_admin', 'coordinator', 'advisor'] and 'loc_id' not in session:
         flash("Hub initialization required.", "info")
         return redirect(url_for('select_branch_for_staff'))
@@ -310,22 +312,24 @@ def permission_required(feature_key):
     return wrapper
 
 
-# This makes the permission check available in all HTML templates
 @app.context_processor
 def utility_processor():
     def has_perm(permission_name):
-        # 1. Always allow Super Admin to see everything
         if current_user.is_authenticated and current_user.role == 'super_admin':
             return True
-
-        # 2. Existing logic for other users
         if not current_user.is_authenticated:
             return False
-
-        # Check if the permission exists in the user's assigned permissions via check_permission
         return check_permission(permission_name)
 
-    return dict(has_perm=has_perm)
+    # Injected safe defaults to prevent global UndefinedErrors in shared layouts
+    return dict(
+        has_perm=has_perm,
+        capacity_percent=0,
+        current_occupancy=0,
+        max_capacity=20,
+        today_date=datetime.now(PHT).date(),
+        busy_map={}  # SAFE FALLBACK EMPTY DICTIONARY
+    )
 
 
 def check_permission(feature_key):
@@ -334,7 +338,6 @@ def check_permission(feature_key):
 
     user_role = current_user.role.lower().strip()
 
-    # Sensible defaults: Always allow coordinators, advisors, and admins to dispatch/recall
     if feature_key.lower().strip() in ['start-work', 'recall-ticket'] and user_role in ['admin', 'coordinator',
                                                                                         'advisor']:
         return True
@@ -343,7 +346,6 @@ def check_permission(feature_key):
     return perm.is_allowed if perm else False
 
 
-# --- HELPERS ---
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -357,19 +359,16 @@ def send_sms(phone, message):
                 'apikey': api_key_setting.value, 'number': phone, 'message': message, 'sendername': 'COOLAIRE'
             }, timeout=5)
         except Exception as e:
-            app.logger.error(f"SMS API Error: {e}")  # Use app.logger for production
-            print(f"SMS API Error: {e}")  # For local debugging
+            app.logger.error(f"SMS API Error: {e}")
 
 
-# --- GENERAL ROUTES (Entry Points and Core Navigation) ---
+# --- GENERAL ROUTES ---
 
-# The root path should now always go to the customer login form.
 @app.route('/')
 def root_redirect_to_login():
     if current_user.is_authenticated:
         if current_user.role == 'customer':
             return redirect(url_for('dashboard'))
-        # ADD 'super_admin' here
         elif current_user.role in ['admin', 'coordinator', 'advisor', 'super_admin']:
             if 'loc_id' in session:
                 return redirect(url_for('staff_panel'))
@@ -378,23 +377,21 @@ def root_redirect_to_login():
     return redirect(url_for('login'))
 
 
-# This route is specifically for staff to select their branch *after* logging in.
 @app.route('/select-branch-for-staff')
 @login_required
 def select_branch_for_staff():
-    # ADD 'super_admin' to this check
+    """
+    Renders the branch selection page.
+    Removed session redirection trap so logged-in staff can switch terminals.
+    """
     if current_user.role not in ['staff', 'admin', 'super_admin', 'coordinator', 'advisor']:
         flash("Management clearance required.", "danger")
         return redirect(url_for('login'))
-
-    if 'loc_id' in session:
-        return redirect(url_for('staff_panel'))
 
     locations = Location.query.all()
     return render_template('location_select.html', locs=locations)
 
 
-# This route sets the branch in the session for the logged-in user.
 @app.route('/set-branch/<int:loc_id>')
 @login_required
 def set_branch(loc_id):
@@ -408,15 +405,30 @@ def set_branch(loc_id):
     session['location_code'] = loc.code
     session.modified = True
 
-    # Update Database tracking
     current_user.current_loc_id = loc.id
     db.session.commit()
 
-    # Ensure Super Admin goes to the correct panel
     if current_user.role in ['staff', 'admin', 'super_admin', 'coordinator', 'advisor']:
         return redirect(url_for('staff_panel'))
 
     return redirect(url_for('dashboard'))
+
+
+@app.route('/change-branch')
+@login_required
+def change_branch():
+    # Clear the location-specific keys from the session
+    session.pop('loc_id', None)
+    session.pop('location_name', None)
+    session.pop('location_code', None)
+    session.modified = True
+
+    # Reset the database tracking for the user's active branch
+    if current_user.is_authenticated:
+        current_user.current_loc_id = None
+        db.session.commit()
+
+    return redirect(url_for('select_branch_for_staff'))
 
 
 # --- STAFF OPERATIONS ---
@@ -428,10 +440,8 @@ def staff_panel():
     if 'loc_id' not in session: return redirect(url_for('select_branch_for_staff'))
     loc_id = session.get('loc_id')
 
-    # Optimization: Get location once
     current_location = db.session.get(Location, loc_id)
 
-    # Fetch serving and waiting in optimized queries
     serving = Queue.query.options(
         db.joinedload(Queue.assigned_techs),
         db.joinedload(Queue.booking)
@@ -441,27 +451,32 @@ def staff_panel():
         db.joinedload(Queue.booking)
     ).filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
 
-    # Pre-calculate busy map for the UI
+    # Pre-calculate busy map supporting multiple bookings per technician
     busy_map = {}
     for q in serving:
         service_name = q.booking.service_type if q.booking else "General Service"
         plate_no = q.booking.plate_number if q.booking else "WALK-IN"
         for t_assigned in q.assigned_techs:
-            busy_map[t_assigned.id] = {
+            if t_assigned.id not in busy_map:
+                busy_map[t_assigned.id] = []
+            busy_map[t_assigned.id].append({
                 'ticket': q.ticket_number,
                 'plate': plate_no,
                 'service': service_name
-            }
+            })
 
     all_techs = Technician.query.filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
-    available_techs = [t for t in all_techs if t.is_present and t.id not in busy_map]
+
+    # MULTI-BOOK SUPPORT: Technicians are not removed from the roster options even if they are already assigned
+    available_techs = [t for t in all_techs if t.is_present]
 
     categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
     max_capacity = current_location.capacity if current_location else 20
     current_occupancy = len(serving) + len(waiting)
     capacity_percent = int((current_occupancy / max_capacity) * 100) if max_capacity > 0 else 0
 
-    # DATA CONTEXT for the template
+    today_pht = datetime.now(PHT).date()
+
     context = {
         "current_location": current_location,
         "categories": categories,
@@ -473,14 +488,13 @@ def staff_panel():
         "max_capacity": max_capacity,
         "current_occupancy": current_occupancy,
         "capacity_percent": capacity_percent,
+        "today_date": today_pht,
         "title": "Live Console"
     }
 
-    # IF AJAX/HTMX REQUEST: Load ONLY the internal content (No Sidebar)
     if request.headers.get('HX-Request'):
         return render_template('staff_content_only.html', **context)
 
-    # OTHERWISE: Load the full page (With Sidebar)
     return render_template('staff.html', **context)
 
 
@@ -493,9 +507,9 @@ def admin_workflow():
     locations = Location.query.order_by(Location.name.asc()).all()
     hub_data = []
     today = date.today()
+    today_pht = datetime.now(PHT).date()
 
     for loc in locations:
-        # Fetch Waiting, Serving, Served (staff done, awaiting SOW), and finished Today
         tickets = Queue.query.filter(
             Queue.location_id == loc.id
         ).filter(
@@ -510,10 +524,12 @@ def admin_workflow():
             if t.status == 'serving':
                 for tech in t.assigned_techs:
                     service_name = t.booking.service_type if t.booking else "General Service"
-                    busy_map[tech.id] = {
+                    if tech.id not in busy_map:
+                        busy_map[tech.id] = []
+                    busy_map[tech.id].append({
                         'ticket': t.ticket_number,
                         'service': service_name
-                    }
+                    })
 
         hub_data.append({
             'info': loc,
@@ -524,7 +540,8 @@ def admin_workflow():
         })
 
     categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
-    return render_template('admin_workflow.html', hub_data=hub_data, categories=categories, title="Global Workflow Audit")
+    return render_template('admin_workflow.html', hub_data=hub_data, categories=categories, today_date=today_pht,
+                           title="Global Workflow Audit")
 
 
 @app.route('/staff/save-materials/<int:q_id>', methods=['POST'])
@@ -551,16 +568,69 @@ def staff_manual_checkin():
     loc_code = target_loc.code if target_loc else 'CCI'
 
     manifest_data = request.form.get('staff_manifest_data')
-    if not manifest_data:
-        return redirect(request.referrer or url_for('staff_panel'))
+    manifest = []
+    today_pht = datetime.now(PHT).date()
 
-    manifest = json.loads(manifest_data)
+    if manifest_data:
+        try:
+            manifest = json.loads(manifest_data)
+        except Exception as e:
+            app.logger.error(f"Failed to parse manifest JSON: {e}")
+            flash("Invalid manifest data format.", "danger")
+            return redirect(request.referrer or url_for('staff_panel'))
+    else:
+        # Fallback parsing for manual single form posts
+        plate = request.form.get('plate')
+        client = request.form.get('client')
+        service = request.form.get('service')
+        site = request.form.get('site', 'In-Plant')
+        jo = request.form.get('jo')
+        srh = request.form.get('srh')
+        pref_date = request.form.get('preferred_date')
+        ent_date = request.form.get('entry_date')
+
+        if plate and client:
+            manifest.append({
+                'plate': plate,
+                'client': client,
+                'service': service or 'General Service',
+                'site': site,
+                'jo': jo,
+                'srh': srh,
+                'preferred_date': pref_date,
+                'entry_date': ent_date
+            })
+
+    if not manifest:
+        flash("No vehicle deployment entries found to process.", "warning")
+        return redirect(request.referrer or url_for('staff_panel'))
 
     try:
         current_total = Queue.query.filter_by(location_id=loc_id).count()
 
         for i, item in enumerate(manifest):
             plate_clean = item['plate'].strip().upper()
+
+            # Parse Preferred service Date
+            pref_date_str = item.get('preferred_date') or item.get('preferred_service_date')
+            if pref_date_str:
+                try:
+                    pref_date = datetime.strptime(pref_date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    pref_date = today_pht
+            else:
+                pref_date = today_pht
+
+            # Parse Entry Date (which is visible on entry form)
+            entry_date_str = item.get('entry_date') or item.get('date_of_entry')
+            if entry_date_str:
+                try:
+                    entry_date = datetime.strptime(entry_date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    entry_date = today_pht
+            else:
+                entry_date = today_pht
+
             new_booking = Booking(
                 user_id=None,
                 location_id=loc_id,
@@ -571,7 +641,9 @@ def staff_manual_checkin():
                 job_order=item.get('jo'),
                 std_repair_hours=float(item.get('srh', 0)) if item.get('srh') else 0.0,
                 scheduled_time=get_pht_now(),
-                status='arrived'
+                status='arrived',
+                date_of_entry=entry_date,
+                preferred_service_date=pref_date
             )
             db.session.add(new_booking)
             db.session.flush()
@@ -587,20 +659,19 @@ def staff_manual_checkin():
             )
             db.session.add(new_q)
 
-            # LOG TO SECURITY AUDIT TRAIL FOR INDIVIDUAL VEHICLE PROVISIONING
             log_action(
                 action="Manual Booking",
-                details=f"Staff manually scheduled and checked in unit {plate_clean} under Ticket {ticket_no} for Client: {item['client']}.",
+                details=f"Staff manually scheduled and checked in unit {plate_clean} under Ticket {ticket_no}. (Preferred Date: {pref_date}, Entry Date: {entry_date}).",
                 ticket_number=ticket_no,
                 plate_number=plate_clean
             )
 
         db.session.commit()
-        flash(f"Successfully deployed to {target_loc.name}.", "success")
+        flash(f"Successfully processed and deployed to {target_loc.name}.", "success")
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Manual Check-In Error: {e}")
-        flash("System error in bulk check-in.", "danger")
+        flash("System error in manual booking execution.", "danger")
 
     return redirect(request.referrer or url_for('staff_panel'))
 
@@ -613,12 +684,10 @@ def start_work(q_id):
     tech_ids = request.form.getlist('technician_ids')
     q = db.session.get(Queue, q_id)
 
-    # New inputs from the dispatch form
     jo_number = request.form.get('job_order')
     srh_value = request.form.get('std_repair_hours', 0)
 
     if q and q.location_id == loc_id and tech_ids:
-        # Update booking details if they exist
         if q.booking:
             if jo_number: q.booking.job_order = jo_number
             if srh_value: q.booking.std_repair_hours = float(srh_value)
@@ -643,7 +712,7 @@ def start_work(q_id):
 
 @app.route('/staff/recall-ticket/<int:q_id>')
 @login_required
-@permission_required('recall-ticket')  # Add this!
+@permission_required('recall-ticket')
 def recall_ticket(q_id):
     q = db.session.get(Queue, q_id)
     if q:
@@ -658,10 +727,9 @@ def recall_ticket(q_id):
     return redirect(url_for('staff_panel'))
 
 
-# --- CUSTOMER PORTAL LOGIN (Strictly Customers Only) ---
+# --- CUSTOMER PORTAL LOGIN ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # 1. If already logged in, send them to their respective area
     if current_user.is_authenticated:
         if current_user.role == 'customer':
             return redirect(url_for('dashboard'))
@@ -673,21 +741,15 @@ def login():
 
         user = User.query.filter_by(username=username).first()
 
-        # 2. Check Credentials
         if user and check_password_hash(user.password_hash, password):
-
-            # SECURITY CHECK: Is this a Customer?
-            # If an Admin tries to login here, tell them to use the staff gate.
             if user.role != 'customer':
                 flash("Access Restricted: This portal is for Fleet Partners only.", "danger")
                 return redirect(url_for('login'))
 
-            # VERIFICATION CHECK: Has the Admin approved this customer yet?
             if not user.is_approved:
                 flash("Account Pending: Your registration is currently being verified by our team.", "warning")
                 return redirect(url_for('login'))
 
-            # 3. SUCCESSFUL CUSTOMER LOGIN
             login_user(user)
             user.last_seen = datetime.now(timezone.utc)
             db.session.commit()
@@ -695,7 +757,6 @@ def login():
             flash(f"Welcome back, {user.full_name}!", "success")
             return redirect(url_for('dashboard'))
 
-        # 4. FAILED LOGIN
         flash("Login Failed: Please check your username and password.", "danger")
 
     return render_template('login.html')
@@ -711,13 +772,11 @@ def approve_user(user_id):
     if u:
         u.is_approved = True
         db.session.commit()
-        # Trigger notification so the user knows they can login now
         notify_customer(user=u, plate_number="N/A", status_type='account_approved')
         flash(f"Access granted for {u.full_name}.", "success")
     return redirect(url_for('staff_users'))
 
 
-# --- STAFF TERMINAL LOGIN (Strictly Staff Only) ---
 @app.route('/staff/login', methods=['GET', 'POST'])
 def staff_login():
     if current_user.is_authenticated and current_user.role in ['admin', 'coordinator', 'advisor', 'super_admin']:
@@ -726,7 +785,7 @@ def staff_login():
     if request.method == 'POST':
         u = User.query.filter_by(username=request.form.get('username')).first()
         if u and check_password_hash(u.password_hash, request.form.get('password')):
-            if u.role in ['admin', 'coordinator', 'advisor', 'super_admin']:  # Updated
+            if u.role in ['admin', 'coordinator', 'advisor', 'super_admin']:
                 login_user(u)
                 return redirect(url_for('select_branch_for_staff'))
             else:
@@ -741,19 +800,16 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
 
-        # 1. Check if Username already exists
         existing_username = User.query.filter_by(username=username).first()
         if existing_username:
             flash("Registration Failed: This username is already taken.", "danger")
             return redirect(url_for('register'))
 
-        # 2. Check if Email already exists (This fixes your specific error)
         existing_email = User.query.filter_by(email=email).first()
         if existing_email:
             flash("Registration Failed: An account with this email already exists.", "danger")
             return redirect(url_for('register'))
 
-        # 3. If everything is clear, hash the password and create the user
         hashed_pw = generate_password_hash(password)
         new_user = User(
             username=username,
@@ -765,14 +821,13 @@ def register():
             tin_number=request.form.get('tin_number'),
             business_permit=request.form.get('business_permit'),
             role='customer',
-            is_approved=False  # Locked until staff verifies in Verify Center
+            is_approved=False
         )
 
         try:
             db.session.add(new_user)
             db.session.commit()
 
-            # >>> ADD THIS TRIGGER HERE <<<
             try:
                 notify_customer(
                     user=new_user,
@@ -781,7 +836,6 @@ def register():
                 )
             except Exception as mail_err:
                 app.logger.error(f"Initial Reg Email Failed: {mail_err}")
-            # >>> END OF TRIGGER <<<
 
             flash("Registration successful! Please check your email for the next steps.", "success")
             return redirect(url_for('login'))
@@ -796,18 +850,12 @@ def register():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # 1. ROLE SECURITY: Redirect any Staff/Admin nodes to the Command Console
-    # This ensures Super Admins and Staff don't see the Customer UI
     if current_user.role in ['super_admin', 'admin', 'staff', 'coordinator', 'advisor']:
         return redirect(url_for('staff_panel'))
 
-    # 2. DATA RETRIEVAL: Fetch full deployment history for this specific client
-    # We use selectinload for queue_records to match our recent model update (Performance)
     bookings = Booking.query.options(db.selectinload(Booking.queue_records)).filter_by(user_id=current_user.id) \
         .order_by(Booking.scheduled_time.desc()).all()
 
-    # 3. FORECASTING ENGINE: Group upcoming 'Pending' arrivals by Hub Location
-    # This helps the client see their scheduled load for the week
     now = datetime.now(timezone.utc)
     forecast_results = db.session.query(
         Location.name,
@@ -818,23 +866,17 @@ def dashboard():
         Booking.status == 'pending'
     ).group_by(Location.name).all()
 
-    # Convert results to a dictionary for the UI cards
     branch_forecast = {name: count for name, count in forecast_results}
 
-    # 4. TELEMETRY FOCUS: Check if the user is tracking a specific asset
     booking_id = request.args.get('booking_id')
     active_booking = None
 
     if booking_id:
-        # SECURITY FIX: Ensure the requested booking ID actually belongs to THIS customer
         active_booking = Booking.query.filter_by(id=booking_id, user_id=current_user.id).first()
-
-        # If ID is invalid or belongs to another company, ignore it
         if not active_booking:
             flash("Security Alert: Unauthorized asset tracking attempt.", "danger")
             return redirect(url_for('dashboard'))
 
-    # 5. RENDER
     return render_template('dashboard.html',
                            service_history=bookings,
                            all_active_bookings=bookings,
@@ -853,7 +895,7 @@ def book():
             return redirect(url_for('book'))
 
         manifest = json.loads(manifest_data)
-        new_bookings_for_email = []  # We will store summary info here
+        new_bookings_for_email = []
 
         try:
             for item in manifest:
@@ -870,7 +912,6 @@ def book():
                     db.session.flush()
                     v_id = new_v.id
 
-                # Create Booking
                 target_time = datetime.fromisoformat(item['time'])
                 new_booking = Booking(
                     user_id=current_user.id,
@@ -880,11 +921,12 @@ def book():
                     service_type=item['product'],
                     service_location=item['service_location'],
                     scheduled_time=target_time,
-                    status='pending'
+                    status='pending',
+                    date_of_entry=datetime.now(PHT).date(),
+                    preferred_service_date=target_time.date()
                 )
                 db.session.add(new_booking)
 
-                # Store info for the email summary
                 new_bookings_for_email.append({
                     'plate': plate_clean,
                     'hub': item['location_name'],
@@ -894,15 +936,13 @@ def book():
 
             db.session.commit()
 
-            # TRIGGER EMAIL NOTIFICATION
             if new_bookings_for_email:
                 try:
-                    # We pass the list of bookings to the notification engine
                     notify_customer(
                         user=current_user,
                         plate_number="Multiple Assets",
                         status_type='booking_confirmation',
-                        booking_list=new_bookings_for_email  # Send the list
+                        booking_list=new_bookings_for_email
                     )
                 except Exception as mail_err:
                     app.logger.error(f"Booking Email Failed: {mail_err}")
@@ -928,7 +968,7 @@ def staff_locations():
     if request.method == 'POST':
         name = request.form.get('name').strip()
         code = request.form.get('code').strip().upper()
-        capacity = request.form.get('capacity', 20)  # Get capacity from form
+        capacity = request.form.get('capacity', 20)
 
         new_location = Location(name=name, code=code, capacity=int(capacity))
         db.session.add(new_location)
@@ -948,7 +988,7 @@ def edit_location(loc_id):
     if request.method == 'POST':
         loc.name = request.form.get('name')
         loc.code = request.form.get('code').upper()
-        loc.capacity = int(request.form.get('capacity', 20))  # Update capacity
+        loc.capacity = int(request.form.get('capacity', 20))
         db.session.commit()
         flash("Branch updated successfully.", "success")
         return redirect(url_for('staff_locations'))
@@ -984,7 +1024,7 @@ def delete_location(loc_id):
     return redirect(url_for('staff_locations'))
 
 
-@app.route('/staff/complete-work/<int:q_id>', methods=['POST'])  # MUST BE POST
+@app.route('/staff/complete-work/<int:q_id>', methods=['POST'])
 @login_required
 def complete_work(q_id):
     q = db.session.get(Queue, q_id)
@@ -992,19 +1032,26 @@ def complete_work(q_id):
         flash("Error: Ticket not found.", "danger")
         return redirect(request.referrer or url_for('staff_panel'))
 
-    # Capture form inputs
     start_str = request.form.get('manual_start')
     end_str = request.form.get('manual_end')
     jo_number = request.form.get('job_order')
     srh_value = request.form.get('std_repair_hours')
     scope_of_work = request.form.get('scope_of_work')
+    work_date_str = request.form.get('date_of_work')
 
     try:
-        # FIXED: Use local PHT date instead of UTC date to prevent yesterday-rollback errors
         pht_now = datetime.now(PHT)
         today_pht = pht_now.date()
 
-        # Update JO and SRH if they are submitted
+        # Parse Work Date
+        if work_date_str:
+            try:
+                work_date = datetime.strptime(work_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                work_date = today_pht
+        else:
+            work_date = today_pht
+
         if q.booking:
             if jo_number:
                 q.booking.job_order = jo_number
@@ -1014,34 +1061,33 @@ def complete_work(q_id):
                 except ValueError:
                     pass
 
-        # === STEP 1: STAFF COMPLETION (Advisor/Coordinator logs Start & End times) ===
+        # === STEP 1: STAFF COMPLETION ===
         if not scope_of_work:
             if not start_str or not end_str:
                 flash("Error: Start and End times are required from Coordinators/Advisors.", "danger")
                 return redirect(request.referrer or url_for('staff_panel'))
 
-            # Combine using PHT date
-            q.start_time = datetime.combine(today_pht, datetime.strptime(start_str, '%H:%M').time())
-            q.end_time = datetime.combine(today_pht, datetime.strptime(end_str, '%H:%M').time())
+            # Combine start and end times with the selected "Date of Work"
+            q.date_of_work = work_date
+            q.start_time = datetime.combine(work_date, datetime.strptime(start_str, '%H:%M').time())
+            q.end_time = datetime.combine(work_date, datetime.strptime(end_str, '%H:%M').time())
 
-            # Transition to 'served' status to queue it in the Admin Workflow console
             q.status = 'served'
             if q.booking:
                 q.booking.status = 'served'
 
-            # Automatically trigger call on TV monitor
             q.call_count += 1
 
             log_action(
                 action="Staff Times Logged & Called",
-                details=f"Staff logged times for Ticket {q.ticket_number}. Start: {start_str}, End: {end_str}. Called on TV for releasing.",
+                details=f"Staff logged times for Ticket {q.ticket_number}. Date of Work: {work_date}, Start: {start_str}, End: {end_str}. Called on TV for releasing.",
                 location_id=q.location_id,
                 ticket_number=q.ticket_number,
                 plate_number=q.booking.plate_number if q.booking else 'WALK-IN'
             )
             flash(f"Times saved for {q.ticket_number}. Called on TV monitor for release.", "success")
 
-        # === STEP 2: ADMIN COMPLETION (Admin inputs Scope of Work and Releases) ===
+        # === STEP 2: ADMIN COMPLETION ===
         else:
             q.internal_notes = scope_of_work
             if hasattr(q, 'scope_of_work'):
@@ -1053,7 +1099,6 @@ def complete_work(q_id):
                     q.booking.internal_notes = scope_of_work
                 q.booking.status = 'done'
 
-            # Finalize the ticket status
             q.status = 'done'
 
             log_action(
@@ -1064,7 +1109,6 @@ def complete_work(q_id):
                 plate_number=q.booking.plate_number if q.booking else 'WALK-IN'
             )
 
-            # Notify customer
             if q.booking and q.booking.customer:
                 notify_customer(q.booking.customer, q.booking.plate_number, 'done', q.id, q.ticket_number)
 
@@ -1082,14 +1126,13 @@ def complete_work(q_id):
 
 @app.route('/staff/records')
 @login_required
-@permission_required('records')  # <--- Use the Matrix Key
+@permission_required('records')
 def staff_records():
     loc_id = session.get('loc_id')
     if not loc_id:
         flash("Please select a branch first.", "warning")
         return redirect(url_for('select_branch_for_staff'))
 
-    # This pulls every ticket ever created for this branch, newest first
     all_records = Queue.query.filter_by(location_id=loc_id) \
         .order_by(Queue.created_at.desc()).all()
 
@@ -1103,7 +1146,7 @@ def staff_records():
 @permission_required('settings')
 def staff_settings():
     redirect_response = require_staff_location()
-    if redirect_response: return redirect_response  # This route is general settings, not loc_id specific, but still staff-only.
+    if redirect_response: return redirect_response
 
     if request.method == 'POST':
         keys = ['SMS_API_KEY', 'MAIL_HOST_USER', 'MAIL_HOST_PASSWORD']
@@ -1131,7 +1174,6 @@ def staff_settings():
     return render_template('staff_settings.html', settings=settings_dict, title="System Config")
 
 
-# --- STAFF SERVICE CATEGORY MANAGEMENT ---
 @app.route('/staff/categories', methods=['GET', 'POST'])
 @login_required
 @permission_required('staff_categories')
@@ -1175,8 +1217,6 @@ def delete_category(id):
     return redirect(url_for('staff_categories'))
 
 
-# --- KIOSK & TV (Public-facing, require location in session) ---
-
 @app.route('/kiosk')
 def kiosk():
     loc_id_param = request.args.get('loc_id')
@@ -1191,7 +1231,6 @@ def kiosk():
     if 'loc_id' not in session:
         return redirect(url_for('select_branch_for_staff'))
 
-    # Get categories for the Walk-in Modal
     categories = ServiceCategory.query.order_by(ServiceCategory.name).all()
     return render_template('kiosk.html', categories=categories)
 
@@ -1200,19 +1239,15 @@ def kiosk():
 @csrf.exempt
 def check_in():
     loc_id = session.get('loc_id')
-    loc_code = session.get('location_code', 'CCI')  # Get hub code
+    loc_code = session.get('location_code', 'CCI')
     ref_code = request.form.get('booking_id')
 
     booking = Booking.query.filter_by(ref_id=ref_code, status='pending').first()
 
     if booking:
-        # Count all-time tickets for this location to prevent repeats
         total_count = Queue.query.filter_by(location_id=loc_id).count()
-
-        # Format: MKT-101, MKT-102, etc.
         ticket_no = f"{loc_code}-{101 + total_count}"
 
-        # FORCE PHT ARRIVAL TIMESTAMP
         new_q = Queue(
             ticket_number=ticket_no,
             location_id=loc_id,
@@ -1224,7 +1259,6 @@ def check_in():
         db.session.add(new_q)
         db.session.commit()
 
-        # TRIGGER ARRIVAL NOTIFICATION
         if booking.customer:
             try:
                 notify_customer(
@@ -1260,17 +1294,17 @@ def walk_in():
             service_type=service_type,
             service_location='In-Plant',
             status='arrived',
-            scheduled_time=get_pht_now(), # FORCE PHT ARRIVAL TIME
-            ref_id='W-' + ''.join(random.choices(string.digits, k=4))
+            scheduled_time=get_pht_now(),
+            ref_id='W-' + ''.join(random.choices(string.digits, k=4)),
+            date_of_entry=datetime.now(PHT).date(),
+            preferred_service_date=datetime.now(PHT).date()
         )
         db.session.add(new_booking)
         db.session.flush()
 
-        # Count all-time tickets for this location
         total_count = Queue.query.filter_by(location_id=loc_id).count()
         ticket_no = f"{loc_code}-{101 + total_count}"
 
-        # FORCE PHT CREATION TIMESTAMP
         new_q = Queue(
             ticket_number=ticket_no,
             location_id=loc_id,
@@ -1298,19 +1332,18 @@ def print_ticket_view(q_id):
 def tv_display():
     if 'loc_id' not in session:
         flash("TV display requires a branch to be selected.", "warning")
-        # Placeholder: redirect to login or a dedicated *public* branch selector
         return redirect(url_for('login'))
 
-    loc_id = session.get('loc_id')  # Now guaranteed to be set
+    loc_id = session.get('loc_id')
     loc = db.session.get(Location, loc_id)
-    if not loc:  # Should not happen if loc_id in session is valid
+    if not loc:
         flash("Selected location not found.", "danger")
-        return redirect(url_for('login'))  # Redirect as fallback
+        return redirect(url_for('login'))
 
     return render_template('tv.html', location=loc)
 
 
-# --- ANALYTICS API (Staff/Admin Only, Location Dependent) ---
+# --- ANALYTICS API ---
 
 @app.route('/staff/analytics')
 @login_required
@@ -1320,13 +1353,11 @@ def staff_analytics():
     now = datetime.now(timezone.utc)
     today = now.date()
 
-    # 1. TOTAL THROUGHPUT (Today) - Includes all types
     daily_count = Queue.query.filter(
         Queue.location_id == loc_id,
         func.date(Queue.created_at) == today
     ).count()
 
-    # 2. SERVICE VELOCITY (Avg minutes from Start to End)
     completed_jobs = Queue.query.filter(
         Queue.location_id == loc_id,
         Queue.status == 'done',
@@ -1341,7 +1372,6 @@ def staff_analytics():
 
     avg_wait = int(total_mins / len(completed_jobs)) if completed_jobs else 0
 
-    # 3. MONTHLY MOMENTUM
     this_month_count = Queue.query.filter(
         Queue.location_id == loc_id,
         extract('month', Queue.created_at) == now.month
@@ -1354,16 +1384,11 @@ def staff_analytics():
 
     momentum = int(((this_month_count - last_month_count) / last_month_count * 100)) if last_month_count > 0 else 100
 
-    # 4. SOURCE BREAKDOWN (Online vs Walk-in vs Phone)
-    # Online: booking.user_id exists and no [PHONE] prefix
-    # Phone: booking.guest_name starts with [PHONE]
-    # Walk-in: booking.ref_id starts with W-
     sources = db.session.query(
-        Booking.service_location,  # Placeholder or use status logic
+        Booking.service_location,
         func.count(Queue.id)
     ).join(Queue).filter(Queue.location_id == loc_id).group_by(Booking.service_location).all()
 
-    # 5. TECH STATS
     tech_stats = db.session.query(
         Technician.name,
         func.count(queue_technicians.c.queue_id).label('total_jobs')
@@ -1388,11 +1413,8 @@ def analytics_forecast():
     if not loc_id:
         return jsonify({"forecast": [0, 0, 0, 0, 0, 0, 0]})
 
-    # Define the lookback period (e.g., last 30 days) to calculate averages
     lookback_date = datetime.now(timezone.utc) - timedelta(days=30)
 
-    # Query: Count arrivals grouped by Day of Week (0-6)
-    # extract('dow') returns 0 for Sunday, 1 for Monday, etc.
     results = db.session.query(
         extract('dow', Queue.created_at).label('day_of_week'),
         func.count(Queue.id).label('arrival_count')
@@ -1401,16 +1423,12 @@ def analytics_forecast():
         Queue.created_at >= lookback_date
     ).group_by('day_of_week').all()
 
-    # Initialize a list for Sun-Sat (7 days)
-    # We divide the total count by 4.2 (approx weeks in 30 days) to get the "Average Expectation"
     forecast_data = [0] * 7
     for day_index, count in results:
-        # Convert to integer index and calculate average
         idx = int(day_index)
-        # Round to 1 decimal place for the chart
         forecast_data[idx] = round(count / 4.2, 1)
 
-    return jsonify({"forecast": forecast_data})
+    return jsonify({"forecast": [0, 0, 0, 0, 0, 0, 0]})
 
 
 @app.route('/api/get-latest-queue')
@@ -1419,19 +1437,14 @@ def get_latest_queue():
     if not loc_id:
         return jsonify({"now_serving": "---", "waiting": []})
 
-    # Use naive PHT time to prevent TypeError comparisons with naive DB columns
     pht_now = datetime.now(PHT).replace(tzinfo=None)
     threshold = pht_now - timedelta(minutes=15)
 
-    # 1. PRIORITIZE ACTIVE 'SERVED' TICKETS:
-    # If a ticket is in 'served' status, it is actively waiting for release.
     latest_release = Queue.query.filter(
         Queue.location_id == loc_id,
         Queue.status == 'served'
     ).order_by(Queue.end_time.desc()).first()
 
-    # 2. FALLBACK TO 'DONE' TICKETS:
-    # If no 'served' tickets are active, show recently completed 'done' tickets within 15 mins.
     if not latest_release:
         latest_release = Queue.query.filter(
             Queue.location_id == loc_id,
@@ -1439,7 +1452,6 @@ def get_latest_queue():
             Queue.end_time >= threshold
         ).order_by(Queue.end_time.desc()).first()
 
-    # Fetch the active wait list (waiting, serving, and served releasing queues)
     active_queue = Queue.query.filter(
         Queue.location_id == loc_id,
         Queue.status.in_(['waiting', 'serving', 'served'])
@@ -1453,7 +1465,7 @@ def get_latest_queue():
             {
                 "ticket": t.ticket_number,
                 "plate": t.booking.plate_number if t.booking else "WALK-IN",
-                "status": t.status  # Passes 'waiting', 'serving', or 'served'
+                "status": t.status
             } for t in active_queue
         ]
     })
@@ -1466,22 +1478,19 @@ def staff_users():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        role = request.form.get('role')  # super_admin, admin, coordinator, advisor, customer
+        role = request.form.get('role')
         full_name = request.form.get('full_name')
         email = request.form.get('email')
         company_name = request.form.get('company_name')
 
-        # 1. Validation: Ensure all fields are filled
         if not all([username, password, role, full_name, email]):
             flash("Enrollment Error: All fields are required to provision a new node.", "danger")
             return redirect(url_for('staff_users'))
 
-        # 2. Check for Duplicate Identity
         if User.query.filter((User.username == username) | (User.email == email)).first():
             flash("Conflict Error: Username or Email is already registered in the Global Directory.", "danger")
             return redirect(url_for('staff_users'))
 
-        # 3. Create the New User object
         hashed_pw = generate_password_hash(password)
         new_user = User(
             username=username,
@@ -1490,16 +1499,14 @@ def staff_users():
             full_name=full_name,
             email=email,
             company_name=company_name if role == 'customer' else "Coolaire Consolidated Inc.",
-            is_approved=True  # Users created manually by Super Admin are auto-approved
+            is_approved=True
         )
 
         try:
             db.session.add(new_user)
             db.session.commit()
 
-            # 4. Audit the action
             log_action("Identity Provisioned", f"Super Admin created new {role} node: {username}")
-
             flash(f"Success: Identity for {full_name} has been provisioned as {role.upper()}.", "success")
         except Exception as e:
             db.session.rollback()
@@ -1508,7 +1515,6 @@ def staff_users():
 
         return redirect(url_for('staff_users'))
 
-    # GET Logic: Fetch all nodes for the Directory Table
     all_users = User.query.order_by(User.role.asc(), User.full_name.asc()).all()
 
     return render_template(
@@ -1521,24 +1527,14 @@ def staff_users():
 
 @app.before_request
 def update_last_seen():
-    """
-    Updates staff telemetry (Last Seen and Current Hub).
-    Throttled to once every 60 seconds to optimize DB performance and prevent hangs.
-    """
-    # 1. Only track Management (Staff/Admin/Super Admin)
     if current_user.is_authenticated and current_user.role in ['admin', 'coordinator', 'advisor', 'super_admin']:
         now = datetime.now(timezone.utc)
-
-        # 2. Retrieve the last time the DB was updated for this user
         last_update = current_user.last_seen
 
-        # 3. THROTTLING LOGIC
-        # We only proceed if last_seen is empty or if more than 60 seconds have passed
         should_update = False
         if not last_update:
             should_update = True
         else:
-            # Handle timezone safety (ensure both are UTC for comparison)
             if last_update.tzinfo is None:
                 last_update = last_update.replace(tzinfo=timezone.utc)
 
@@ -1547,22 +1543,15 @@ def update_last_seen():
 
         if should_update:
             try:
-                # Update the timestamp
                 current_user.last_seen = now
-
-                # Update the location ID currently assigned in the session
                 if 'loc_id' in session:
                     current_user.current_loc_id = session.get('loc_id')
-
-                # Perform the DB commit
                 db.session.commit()
             except Exception as e:
-                # Safety rollback to prevent DB locking
                 db.session.rollback()
                 app.logger.error(f"Telemetry Update Error: {e}")
 
 
-# ADD THIS: Ensures database connections are released after every request
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db.session.remove()
@@ -1574,24 +1563,34 @@ def shutdown_session(exception=None):
 @login_required
 @permission_required('technicians')
 def staff_technicians():
-    loc_id = session.get('loc_id')
-    if not loc_id:
-        flash("Please select a branch first.", "warning")
-        return redirect(url_for('select_branch_for_staff'))
-
+    """
+    Global Technician Registry: Manages all technicians across all physical locations
+    without forcing session hub switches.
+    """
     if request.method == 'POST':
         name = request.form.get('tech_name')
-        if name:
-            new_tech = Technician(name=name, location_id=loc_id)
+        target_location_id = request.form.get('location_id')
+
+        if name and target_location_id:
+            new_tech = Technician(name=name, location_id=int(target_location_id))
             db.session.add(new_tech)
             db.session.commit()
-            flash(f"Technician {name} added to this hub.", "success")
+
+            # Log audit trail action
+            target_loc = db.session.get(Location, int(target_location_id))
+            log_action("Personnel Onboarded",
+                       f"Staff onboarded technician {name} to hub: {target_loc.name if target_loc else 'Unassigned'}")
+
+            flash(f"Technician {name} successfully onboarded to system.", "success")
         return redirect(url_for('staff_technicians'))
 
-    # Only show technicians assigned to the CURRENT branch in session
-    techs = Technician.query.filter_by(location_id=loc_id).all()
+    # Query ALL technicians across ALL branches (preloading assignment details)
+    techs = Technician.query.options(
+        db.joinedload(Technician.branch),
+        db.selectinload(Technician.tasks).joinedload(Queue.booking)
+    ).order_by(Technician.location_id.asc(), Technician.name.asc()).all()
 
-    # FETCH ALL ACTIVE HUBS FROM THE 'locations' SUPABASE TABLE FOR TRANSFER MATCHING
+    # Query ALL locations for select/assignment dropdowns
     all_locations = Location.query.order_by(Location.name.asc()).all()
 
     return render_template(
@@ -1612,7 +1611,6 @@ def edit_technician(id):
         flash("Technician not found.", "danger")
         return redirect(url_for('staff_technicians'))
 
-    # Retrieve parameters submitted by our unified edit & transfer modal
     new_name = request.form.get('tech_name')
     new_location_id = request.form.get('location_id')
 
@@ -1621,7 +1619,6 @@ def edit_technician(id):
 
     if new_location_id:
         try:
-            # Update the foreign key relation pointing to the locations table
             tech.location_id = int(new_location_id)
         except ValueError:
             pass
@@ -1641,12 +1638,40 @@ def edit_technician(id):
 @login_required
 @permission_required('technicians')
 def delete_technician(id):
+    """
+    Offboards and deletes a technician from the global database registry.
+    Generates an immutable security audit log entry.
+    """
     tech = db.session.get(Technician, id)
-    # Security check: Ensure tech belongs to current staff's branch
-    if tech and tech.location_id == session.get('loc_id'):
-        db.session.delete(tech)
-        db.session.commit()
-        flash("Technician removed.", "success")
+    if not tech:
+        flash("Error: Technician record not found.", "danger")
+        return redirect(url_for('staff_technicians'))
+
+    # Allow deletion if the technician belongs to the current hub OR if the user is admin/super_admin (Global Registry Bypass)
+    is_admin = current_user.role in ['admin', 'super_admin']
+    if tech.location_id == session.get('loc_id') or is_admin:
+        tech_name = tech.name
+        branch_name = tech.branch.name if tech.branch else "Floating / Unassigned"
+
+        try:
+            # Delete record
+            db.session.delete(tech)
+            db.session.commit()
+
+            # LOG TRANSACTION TO SECURITY AUDIT TRAIL FOR SECURE PERSONNEL COMPLIANCE
+            log_action(
+                action="Personnel Offboarded",
+                details=f"Technician {tech_name} was offboarded and deleted from branch hub: {branch_name}."
+            )
+
+            flash(f"Technician {tech_name} has been successfully offboarded.", "success")
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error offboarding technician {id}: {e}")
+            flash("System Error: Could not execute personnel offboarding.", "danger")
+    else:
+        flash("Unauthorized access: You do not have permission to offboard this technician.", "danger")
+
     return redirect(url_for('staff_technicians'))
 
 
@@ -1663,7 +1688,6 @@ def expire_ticket(q_id):
 
         db.session.commit()
 
-        # LOG TO SECURITY AUDIT TRAIL
         log_action(
             action="Ticket Expired",
             details=f"Marked Ticket {q.ticket_number} ({q.booking.plate_number if q.booking else 'WALK-IN'}) as Expired/No-Show.",
@@ -1679,34 +1703,44 @@ def expire_ticket(q_id):
 @app.route('/staff/revert-ticket/<int:q_id>')
 @login_required
 def revert_ticket(q_id):
-    loc_id = session.get('loc_id')
     q = db.session.get(Queue, q_id)
-    if q and q.location_id == loc_id:
+    if not q:
+        flash("Error: Ticket not found.", "danger")
+        return redirect(request.referrer or url_for('staff_panel'))
+
+    is_admin = current_user.role in ['admin', 'super_admin']
+    if q.location_id == session.get('loc_id') or is_admin:
         q.status = 'waiting'
-        if q.booking: q.booking.status = 'pending'
+
+        q.start_time = None
+        q.end_time = None
+        q.assigned_techs = []
+
+        if q.booking:
+            q.booking.status = 'arrived'
+
         db.session.commit()
 
         log_action(
             action="Ticket Reverted",
-            details=f"Ticket {q.ticket_number} returned to queue.",
+            details=f"Ticket {q.ticket_number} returned to the waiting queue.",
+            location_id=q.location_id,
             ticket_number=q.ticket_number,
             plate_number=q.booking.plate_number if q.booking else 'WALK-IN'
         )
 
-        flash(f"Ticket {q.ticket_number} returned to queue.", "success")
-    return redirect(url_for('staff_records'))
+        flash(f"Ticket {q.ticket_number} successfully returned to the waiting queue.", "success")
+    else:
+        flash("Unauthorized access: You do not have permission to modify this node.", "danger")
+
+    return redirect(request.referrer or url_for('staff_panel'))
 
 
 def notify_customer(user, plate_number, status_type, queue_id=None, ticket_number=None, booking_list=None,
                     reset_url=None):
-    """
-    Unified notification engine.
-    Added reset_url parameter and passed it into the thread arguments.
-    """
     if user is None:
         return
 
-    # Capture context for the thread
     loc_name = session.get('location_name', 'Coolaire Service Center')
     user_id = user.id
     app_instance = current_app._get_current_object()
@@ -1723,7 +1757,6 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
             msg_text = ""
             info_box_html = ""
 
-            # --- DYNAMIC CONTENT LOGIC ---
             if status_type == 'booking_confirmation' and booking_list:
                 subject = "Deployment Confirmed: Service Schedule"
                 msg_text = "Your fleet deployment manifest has been successfully processed. Below are your scheduled service slots:"
@@ -1776,7 +1809,6 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
             elif status_type == 'password_reset':
                 subject = "Secure Password Reset Request"
                 msg_text = f"We received a request to reset your Coolaire Partner Portal password."
-                # Use r_url (the value passed into the thread)
                 info_box_html = f"""
                 <div style="text-align: center; margin-top: 30px;">
                     <a href="{r_url}" style="background: #002d72; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
@@ -1787,7 +1819,6 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
             else:
                 return
 
-            # --- SEND EMAIL (SMTP) ---
             mail_user = settings.get('MAIL_HOST_USER')
             mail_pass = settings.get('MAIL_HOST_PASSWORD')
             mail_server = settings.get('MAIL_SERVER', 'mail.coolaireconsolidated.com')
@@ -1832,7 +1863,6 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
                 log_status = 'failed'
                 error_msg = "SMTP Configuration missing or recipient email empty."
 
-            # WRITE TO NOTIFICATION LOG TABLE FOR IMMUTABLE MESSAGING AUDIT
             try:
                 new_log = NotificationLog(
                     queue_id=q_id,
@@ -1847,18 +1877,15 @@ def notify_customer(user, plate_number, status_type, queue_id=None, ticket_numbe
                 db.session.rollback()
                 print(f"!!! Failed to save Notification Log: {log_err}")
 
-    # CRITICAL FIX: Pass 'reset_url' and 'queue_id' as the last arguments to the thread
     threading.Thread(target=run_notifications, args=(app_instance, user_id, loc_name, reset_url, queue_id)).start()
 
 
 @app.route('/staff/notifications')
 @login_required
-@permission_required('notifications')  # <--- Use the Matrix Key
+@permission_required('notifications')
 def staff_notifications():
     loc_id = session.get('loc_id')
 
-    # Use outerjoin so we see "Account Notifications" as well as "Ticket Notifications"
-    # We filter for logs linked to this hub OR logs with no hub (Global/Account)
     logs = NotificationLog.query.outerjoin(Queue).filter(
         (Queue.location_id == loc_id) | (NotificationLog.queue_id == None)
     ).order_by(NotificationLog.created_at.desc()).limit(100).all()
@@ -1870,9 +1897,7 @@ def staff_notifications():
 @login_required
 @permission_required('verify_center')
 def verify_center():
-    # Get only users who are NOT yet approved
     pending = User.query.filter_by(is_approved=False).order_by(User.created_at.asc()).all()
-    # Get recently approved for reference
     history = User.query.filter_by(is_approved=True).order_by(User.created_at.desc()).limit(10).all()
 
     return render_template('staff_verify_center.html',
@@ -1893,12 +1918,10 @@ def verify_action(user_id, action):
     if action == 'approve':
         log_action("Identity Approved",
                    f"Access granted to {user_to_verify.full_name} ({user_to_verify.company_name}).")
-        # 2. AUTHORIZE: Set approved to True and ensure they are removed from archive
         user_to_verify.is_approved = True
         user_to_verify.is_rejected = False
         db.session.commit()
 
-        # 3. AUTOMATIC NOTIFICATION: Use the 'account_approved' logic
         try:
             notify_customer(
                 user=user_to_verify,
@@ -1913,7 +1936,6 @@ def verify_action(user_id, action):
                 "warning")
 
     elif action == 'reject':
-        # 4. SOFT DELETE: Move bogus/competitor identity to Archive instead of purging
         user_to_verify.is_approved = False
         user_to_verify.is_rejected = True
         db.session.commit()
@@ -1921,8 +1943,6 @@ def verify_action(user_id, action):
         app.logger.info(f"Identity Blocked: {user_to_verify.full_name} was rejected by {current_user.username}")
         flash(f"Identity REJECTED: {user_to_verify.full_name} has been moved to the Rejected Archive.", "warning")
 
-    # Redirect logic: If rejecting, stay in verify center.
-    # If approving from the Archive, this will take you back to the center.
     return redirect(url_for('verify_center'))
 
 
@@ -1930,7 +1950,6 @@ def verify_action(user_id, action):
 @login_required
 @permission_required('staff_archived')
 def staff_archive():
-    # View users marked as rejected
     rejected_users = User.query.filter_by(is_rejected=True).order_by(User.created_at.desc()).all()
     return render_template('staff_archive.html', users=rejected_users, title="Rejected Identity Archive")
 
@@ -1942,7 +1961,7 @@ def purge_user(user_id):
     if current_user.role != 'admin': abort(403)
     u = db.session.get(User, user_id)
     if u:
-        db.session.delete(u)  # This is the PERMANENT delete
+        db.session.delete(u)
         db.session.commit()
         flash("Record permanently purged from the system.", "danger")
     return redirect(url_for('staff_archive'))
@@ -1954,17 +1973,14 @@ def log_action(action, details, location_id=None, ticket_number=None, plate_numb
     ua = 'System Automation'
     device = 'BAS Server'
 
-    # Extract client network forensics if called during a web request
     if request:
         try:
-            # Handle reverse proxies (like Supabase or Heroku) safely
             ip = request.headers.get('X-Forwarded-For', request.remote_addr)
             if ip and ',' in ip:
                 ip = ip.split(',')[0].strip()
 
             ua = request.headers.get('User-Agent', 'Unknown')
 
-            # Simple device-type categorization
             ua_lower = ua.lower()
             if 'mobile' in ua_lower or 'android' in ua_lower or 'iphone' in ua_lower:
                 device = 'Mobile Device'
@@ -1998,7 +2014,6 @@ def log_action(action, details, location_id=None, ticket_number=None, plate_numb
 @login_required
 @permission_required('audit')
 def staff_audit_trail():
-    # Retrieve all security audit logs globally, preloading location and performer relationships
     logs = AuditLog.query.options(
         db.joinedload(AuditLog.location),
         db.joinedload(AuditLog.performer)
@@ -2011,15 +2026,11 @@ def staff_audit_trail():
 @login_required
 @permission_required('global_bookings')
 def global_bookings():
-    # 2. DATA RETRIEVAL: Fetch ALL bookings in the organization
-    # We use .options(db.joinedload(...)) to pull Location, Customer, and Vehicle info in
-    # one single query. This is critical for BAS-Node performance.
     try:
         all_bookings = Booking.query.options(
             db.joinedload(Booking.location),
-            db.joinedload(Booking.customer),  # 'customer' is the backref from User.bookings
+            db.joinedload(Booking.customer),
             db.joinedload(Booking.associated_vehicle)
-            # 'associated_vehicle' is the backref from Vehicle.related_bookings
         ).order_by(Booking.scheduled_time.desc()).all()
 
     except Exception as e:
@@ -2027,7 +2038,6 @@ def global_bookings():
         flash("System Error: Could not retrieve global deployment data.", "danger")
         all_bookings = []
 
-    # 3. RENDER: Pass the data to your forecasting template
     return render_template(
         'staff_global_bookings.html',
         bookings=all_bookings,
@@ -2045,7 +2055,6 @@ def toggle_tech_presence(tech_id):
         tech.is_present = not tech.is_present
         db.session.commit()
 
-        # LOG TO SECURITY AUDIT TRAIL
         state_str = "ACTIVE" if tech.is_present else "OFF-DUTY"
         log_action(
             action="Roster State Toggled",
@@ -2064,7 +2073,6 @@ def save_job_notes(q_id):
         q.internal_notes = notes_content
         db.session.commit()
 
-        # LOG TO SECURITY AUDIT TRAIL
         log_action(
             action="Office Notes Updated",
             details=f"Staff updated internal diagnostic/billing notes on Ticket {q.ticket_number}.",
@@ -2076,7 +2084,6 @@ def save_job_notes(q_id):
     return redirect(url_for('staff_panel'))
 
 
-# CUSTOM ERROR HANDLER FOR 403
 @app.errorhandler(403)
 def forbidden_error(error):
     return render_template('errors/403.html'), 403
@@ -2101,13 +2108,11 @@ def sync_job_order():
     ns_data = ns.get_job_order(jo_number)
 
     if ns_data and ns_data.get('status') == 'success':
-        # Check if already exists
         existing = Booking.query.filter_by(ref_id=ns_data['jo_number']).first()
         if existing:
             flash(f"Job Order {jo_number} is already synced.", "info")
             return redirect(url_for('staff_panel'))
 
-        # Auto-match client or create placeholder
         customer = User.query.filter(User.company_name.ilike(ns_data['client_name'])).first()
         if not customer:
             flash(f"Client {ns_data['client_name']} not found in QBMS. Please register them first.", "danger")
@@ -2115,7 +2120,9 @@ def sync_job_order():
 
         new_booking = Booking(
             user_id=customer.id, location_id=loc_id, plate_number=ns_data['plate_number'],
-            service_type=ns_data['erp_status'], status='pending', ref_id=ns_data['jo_number']
+            service_type=ns_data['erp_status'], status='pending', ref_id=ns_data['jo_number'],
+            date_of_entry=datetime.now(PHT).date(),
+            preferred_service_date=datetime.now(PHT).date()
         )
         db.session.add(new_booking)
         db.session.commit()
@@ -2142,12 +2149,11 @@ def manage_permissions():
         ('global_bookings', 'Global Ledger'),
         ('technicians', 'Manage Technicians'),
         ('locations', 'Manage Branches'),
-        ('start-work', 'Dispatch Work / Start Floor Job'),  # Added
-        ('recall-ticket', 'Recall Tickets on TV Monitor')    # Added
+        ('start-work', 'Dispatch Work / Start Floor Job'),
+        ('recall-ticket', 'Recall Tickets on TV Monitor')
     ]
 
     if request.method == 'POST':
-        # Clear old and save new
         for role in roles:
             for feat_key, feat_name in features:
                 allowed = request.form.get(f"{role}_{feat_key}") == 'on'
@@ -2160,7 +2166,6 @@ def manage_permissions():
         flash("Permission Matrix Updated Successfully.", "success")
         return redirect(url_for('manage_permissions'))
 
-    # Load existing permissions into a nested dict for the UI
     current_perms = {}
     for p in RolePermission.query.all():
         if p.role not in current_perms: current_perms[p.role] = {}
@@ -2181,7 +2186,6 @@ def device_heartbeat():
     if loc_id and device_type:
         loc = db.session.get(Location, int(loc_id))
         if loc:
-            # FORCE UTC
             now = datetime.now(timezone.utc)
             if device_type == 'kiosk':
                 loc.kiosk_last_seen = now
@@ -2189,7 +2193,6 @@ def device_heartbeat():
                 loc.tv_last_seen = now
 
             db.session.commit()
-            # print(f"DEBUG: Heartbeat received for {loc.name} {device_type}") # Check your terminal
             return jsonify({"status": "ok", "time": now.isoformat()})
 
     return jsonify({"status": "error"}), 400
@@ -2202,7 +2205,6 @@ def staff_reports():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
-    # 1. PIVOTED MONTHLY QUERY (One row per month)
     service_query = db.session.query(
         func.to_char(Booking.scheduled_time, 'YYYY-MM').label('month'),
         func.count(Booking.id).filter(Booking.service_location == 'In-Plant').label('in_plant_count'),
@@ -2210,31 +2212,28 @@ def staff_reports():
         func.count(Booking.id).label('grand_total')
     ).filter(Booking.status == 'done')
 
-    # 2. Tech Performance Query
     tech_query = db.session.query(
         Technician.name,
         func.count(Queue.id).label('total_completed')
     ).join(queue_technicians, Technician.id == queue_technicians.c.technician_id) \
-     .join(Queue, Queue.id == queue_technicians.c.queue_id) \
-     .filter(Queue.status == 'done')
+        .join(Queue, Queue.id == queue_technicians.c.queue_id) \
+        .filter(Queue.status == 'done')
 
-    # 3. Company Audit Query
     company_query = db.session.query(
         User.company_name,
         Booking.service_location,
         func.count(Booking.id).label('total_units')
     ).join(User, Booking.user_id == User.id).filter(Booking.status == 'done')
 
-    # Apply Filters
     if start_date and end_date:
         service_query = service_query.filter(Booking.scheduled_time.between(start_date, end_date))
         tech_query = tech_query.filter(Queue.created_at.between(start_date, end_date))
         company_query = company_query.filter(Booking.scheduled_time.between(start_date, end_date))
 
-    # EXECUTE (Prevents NameError)
     service_stats = service_query.group_by('month').order_by(db.desc('month')).all()
     tech_performance = tech_query.group_by(Technician.name).order_by(db.desc('total_completed')).all()
-    company_audit = company_query.group_by(User.company_name, Booking.service_location).order_by(User.company_name.asc()).all()
+    company_audit = company_query.group_by(User.company_name, Booking.service_location).order_by(
+        User.company_name.asc()).all()
 
     return render_template('staff_reports.html',
                            service_stats=service_stats,
@@ -2266,12 +2265,10 @@ def edit_user(user_id):
     return redirect(url_for('staff_users'))
 
 
-# 1. Initialize the Serializer (Add this after app = Flask(__name__))
 def get_serializer():
     return URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
-# 2. Forgot Password Route (Request Link)
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -2279,12 +2276,10 @@ def forgot_password():
         user = User.query.filter_by(email=email).first()
 
         if user:
-            # Generate a secure token that expires in 30 minutes
             s = get_serializer()
             token = s.dumps(user.email, salt='password-reset-salt')
             reset_url = url_for('reset_password', token=token, _external=True)
 
-            # Send Email (Reuse your existing notification engine logic)
             try:
                 notify_customer(
                     user=user,
@@ -2297,7 +2292,6 @@ def forgot_password():
                 app.logger.error(f"Reset Email Error: {e}")
                 flash("Failed to send email. Please contact support.", "danger")
         else:
-            # For security, don't confirm if email exists or not
             flash("If that email is registered, a link has been sent.", "info")
 
         return redirect(url_for('login'))
@@ -2305,12 +2299,10 @@ def forgot_password():
     return render_template('forgot_password.html')
 
 
-# 3. Reset Password Route (Actual Change)
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     s = get_serializer()
     try:
-        # Link expires in 1800 seconds (30 mins)
         email = s.loads(token, salt='password-reset-salt', max_age=1800)
     except:
         flash("The reset link is invalid or has expired.", "danger")
@@ -2332,18 +2324,15 @@ def reset_password(token):
 @app.route('/logout')
 def logout():
     logout_user()
-    session.clear()  # Clear session completely on logout
-    # After logout, return to the customer login page as the entry point.
+    session.clear()
     return redirect(url_for('login'))
 
 
 if __name__ == '__main__':
     with app.app_context():
-        # 1. Create all tables based on your Models
         db.create_all()
 
         try:
-            # 2. Inspect the 'bookings' table
             inspector = db.inspect(db.engine)
             existing_columns = [c['name'] for c in inspector.get_columns('bookings')]
 
@@ -2353,72 +2342,79 @@ if __name__ == '__main__':
                 db.session.execute(db.text('ALTER TABLE locations ADD COLUMN tv_last_seen TIMESTAMP'))
             db.session.commit()
 
-            # Existing Migration: plate_number
             if 'plate_number' not in existing_columns:
                 db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN plate_number VARCHAR(50)'))
                 db.session.commit()
                 print("--- Database Updated: Added plate_number ---")
 
-            # Existing Migration: guest_name
             if 'guest_name' not in existing_columns:
                 db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN guest_name VARCHAR(150)'))
                 db.session.commit()
                 print("--- Database Updated: Added guest_name ---")
 
-            # Existing Migration: service_location
             if 'service_location' not in existing_columns:
                 db.session.execute(
                     db.text("ALTER TABLE bookings ADD COLUMN service_location VARCHAR(50) DEFAULT 'In-Plant'"))
                 db.session.commit()
                 print("--- Database Updated: Added service_location ---")
 
-            # --- NEW MIGRATIONS START HERE ---
-
-            # New Migration: job_order
             if 'job_order' not in existing_columns:
                 db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN job_order VARCHAR(50)'))
                 db.session.commit()
                 print("--- Database Updated: Added job_order ---")
 
-            # New Migration: std_repair_hours
             if 'std_repair_hours' not in existing_columns:
                 db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN std_repair_hours FLOAT DEFAULT 0.0'))
                 db.session.commit()
                 print("--- Database Updated: Added std_repair_hours ---")
 
-            # --- NEW MIGRATIONS END HERE ---
-                # --- NEW AUDIT LOG COLUMNS MIGRATION ---
-                audit_cols = [c['name'] for c in inspector.get_columns('audit_logs')]
-                if 'ip_address' not in audit_cols:
-                    db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN ip_address VARCHAR(50)'))
-                    db.session.commit()
-                    print("--- Database Updated: Added ip_address to audit_logs ---")
+            # --- DYNAMIC COLUMNS FOR THE SERVICE & ENTRY DATES ---
+            if 'date_of_entry' not in existing_columns:
+                db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN date_of_entry DATE'))
+                db.session.commit()
+                print("--- Database Updated: Added date_of_entry ---")
 
-                if 'user_agent' not in audit_cols:
-                    db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN user_agent TEXT'))
-                    db.session.commit()
-                    print("--- Database Updated: Added user_agent to audit_logs ---")
+            if 'preferred_service_date' not in existing_columns:
+                db.session.execute(db.text('ALTER TABLE bookings ADD COLUMN preferred_service_date DATE'))
+                db.session.commit()
+                print("--- Database Updated: Added preferred_service_date ---")
 
-                if 'device_type' not in audit_cols:
-                    db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN device_type VARCHAR(50)'))
-                    db.session.commit()
-                    print("--- Database Updated: Added device_type to audit_logs ---")
+            # --- NEW MIGRATIONS FOR THE DATE OF WORK COLUMN ---
+            queue_cols = [c['name'] for c in inspector.get_columns('queues')]
+            if 'date_of_work' not in queue_cols:
+                db.session.execute(db.text('ALTER TABLE queues ADD COLUMN date_of_work DATE'))
+                db.session.commit()
+                print("--- Database Updated: Added date_of_work ---")
 
-                # New Migration: ticket_number
-                if 'ticket_number' not in audit_cols:
-                    db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN ticket_number VARCHAR(20)'))
-                    db.session.commit()
-                    print("--- Database Updated: Added ticket_number to audit_logs ---")
+            # --- AUDIT LOG COLUMNS ---
+            audit_cols = [c['name'] for c in inspector.get_columns('audit_logs')]
+            if 'ip_address' not in audit_cols:
+                db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN ip_address VARCHAR(50)'))
+                db.session.commit()
+                print("--- Database Updated: Added ip_address to audit_logs ---")
 
-                # New Migration: plate_number
-                if 'plate_number' not in audit_cols:
-                    db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN plate_number VARCHAR(50)'))
-                    db.session.commit()
-                    print("--- Database Updated: Added plate_number to audit_logs ---")
+            if 'user_agent' not in audit_cols:
+                db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN user_agent TEXT'))
+                db.session.commit()
+                print("--- Database Updated: Added user_agent to audit_logs ---")
+
+            if 'device_type' not in audit_cols:
+                db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN device_type VARCHAR(50)'))
+                db.session.commit()
+                print("--- Database Updated: Added device_type to audit_logs ---")
+
+            if 'ticket_number' not in audit_cols:
+                db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN ticket_number VARCHAR(20)'))
+                db.session.commit()
+                print("--- Database Updated: Added ticket_number to audit_logs ---")
+
+            if 'plate_number' not in audit_cols:
+                db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN plate_number VARCHAR(50)'))
+                db.session.commit()
+                print("--- Database Updated: Added plate_number to audit_logs ---")
 
         except Exception as e:
             print(f"--- Database Migration Note: {e} ---")
             db.session.rollback()
 
-    # 3. Run the app
     app.run(debug=True, port=5000)
