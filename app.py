@@ -38,6 +38,7 @@ raw_db_url = os.environ.get("DATABASE_URL",
                             "postgresql://postgres.mguajchtxgunyfzotipa:Itadmin36155912030*@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres")
 app.config['SQLALCHEMY_DATABASE_URI'] = raw_db_url.replace("postgres://", "postgresql://")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['WTF_CSRF_TIME_LIMIT'] = None
 
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
@@ -158,6 +159,14 @@ class Technician(db.Model):
     is_present = db.Column(db.Boolean, default=True)
 
 
+class Advisor(db.Model):
+    __tablename__ = 'advisors'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    is_active = db.Column(db.Boolean, default=True)
+
+
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -203,9 +212,14 @@ class Booking(db.Model):
     job_order = db.Column(db.String(50), nullable=True)
     std_repair_hours = db.Column(db.Float, default=0.0)
 
-    # RECENT MIGRATIONS FOR PREFERRED & ENTRY DATES
+    # DYNAMIC DATES & TIMES MIGRATION MAPPINGS
     date_of_entry = db.Column(db.Date, default=lambda: datetime.now(PHT).date())
     preferred_service_date = db.Column(db.Date, default=lambda: datetime.now(PHT).date())
+    preferred_service_time = db.Column(db.String(10), default='08:00')
+
+    # RELATIONS
+    advisor_id = db.Column(db.Integer, db.ForeignKey('advisors.id'), nullable=True)
+    advisor = db.relationship('Advisor', backref='bookings')
 
     location = db.relationship('Location', backref='bookings')
 
@@ -234,7 +248,7 @@ class Queue(db.Model):
     call_count = db.Column(db.Integer, default=0)
     materials_used = db.Column(db.Text)
 
-    # NEW FIELD: Date of Work covering start and end
+    # Date of Work covering start and end
     date_of_work = db.Column(db.Date, default=lambda: datetime.now(PHT).date())
 
     # Relationships
@@ -433,6 +447,10 @@ def change_branch():
 
 # --- STAFF OPERATIONS ---
 
+# --- STAFF OPERATIONS ---
+
+# --- STAFF OPERATIONS ---
+
 @app.route('/staff')
 @login_required
 @roles_required('super_admin', 'admin', 'coordinator', 'advisor')
@@ -442,14 +460,20 @@ def staff_panel():
 
     current_location = db.session.get(Location, loc_id)
 
-    serving = Queue.query.options(
-        db.joinedload(Queue.assigned_techs),
-        db.joinedload(Queue.booking)
-    ).filter_by(location_id=loc_id, status='serving').all()
+    # OPTIMIZED: Fetch all active queue entries, preloading relationships to eliminate N+1 latency
+    active_queues = Queue.query.options(
+        db.selectinload(Queue.assigned_techs),
+        db.joinedload(Queue.booking).joinedload(Booking.advisor),
+        db.joinedload(Queue.booking).joinedload(Booking.customer)
+    ).filter(
+        Queue.location_id == loc_id,
+        Queue.status.in_(['waiting', 'serving', 'served'])
+    ).all()
 
-    waiting = Queue.query.options(
-        db.joinedload(Queue.booking)
-    ).filter_by(location_id=loc_id, status='waiting').order_by(Queue.created_at.asc()).all()
+    # Calculate exact mathematical segments
+    waiting = [q for q in active_queues if q.status == 'waiting']
+    serving = [q for q in active_queues if q.status == 'serving']
+    served = [q for q in active_queues if q.status == 'served']  # Fetch completed served tickets
 
     # Pre-calculate busy map supporting multiple bookings per technician
     busy_map = {}
@@ -465,23 +489,29 @@ def staff_panel():
                 'service': service_name
             })
 
-    all_techs = Technician.query.filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
+    # OPTIMIZED: Preload tasks and task details for all techs in the side panel
+    all_techs = Technician.query.options(
+        db.selectinload(Technician.tasks).joinedload(Queue.booking).joinedload(Booking.customer)
+    ).filter_by(location_id=loc_id, is_active=True).order_by(Technician.name.asc()).all()
 
-    # MULTI-BOOK SUPPORT: Technicians are not removed from the roster options even if they are already assigned
     available_techs = [t for t in all_techs if t.is_present]
 
     categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
     max_capacity = current_location.capacity if current_location else 20
-    current_occupancy = len(serving) + len(waiting)
+
+    # Occupancy is calculated as the sum of visible waiting and serving tickets
+    current_occupancy = len(waiting) + len(serving)
     capacity_percent = int((current_occupancy / max_capacity) * 100) if max_capacity > 0 else 0
 
     today_pht = datetime.now(PHT).date()
+    active_advisors = Advisor.query.filter_by(is_active=True).order_by(Advisor.name.asc()).all()
 
     context = {
         "current_location": current_location,
         "categories": categories,
         "waiting_tickets": waiting,
         "serving_list": serving,
+        "served_list": served,  # Added served list context
         "technicians": available_techs,
         "roster": all_techs,
         "busy_map": busy_map,
@@ -489,6 +519,7 @@ def staff_panel():
         "current_occupancy": current_occupancy,
         "capacity_percent": capacity_percent,
         "today_date": today_pht,
+        "advisors": active_advisors,
         "title": "Live Console"
     }
 
@@ -510,14 +541,22 @@ def admin_workflow():
     today_pht = datetime.now(PHT).date()
 
     for loc in locations:
-        tickets = Queue.query.filter(
+        # OPTIMIZED: Preload nested relationships to eliminate N+1 latency loops
+        tickets = Queue.query.options(
+            db.joinedload(Queue.booking).joinedload(Booking.advisor),
+            db.joinedload(Queue.booking).joinedload(Booking.customer),
+            db.selectinload(Queue.assigned_techs)
+        ).filter(
             Queue.location_id == loc.id
         ).filter(
             (Queue.status.in_(['waiting', 'serving', 'served'])) |
             ((Queue.status == 'done') & (func.date(Queue.created_at) == today))
         ).order_by(Queue.created_at.asc()).all()
 
-        techs = Technician.query.filter_by(location_id=loc.id).all()
+        # OPTIMIZED: Preload active tasks inside roster cards to eliminate N+1 loops
+        techs = Technician.query.options(
+            db.selectinload(Technician.tasks).joinedload(Queue.booking).joinedload(Booking.customer)
+        ).filter_by(location_id=loc.id).all()
 
         busy_map = {}
         for t in tickets:
@@ -531,17 +570,75 @@ def admin_workflow():
                         'service': service_name
                     })
 
+        # Calculate active tickets, excluding done and no-show states
+        active_tickets = [t for t in tickets if t.status in ['waiting', 'serving']]
+
         hub_data.append({
             'info': loc,
             'tickets': tickets,
             'techs': techs,
             'busy_map': busy_map,
-            'ticket_count': len([t for t in tickets if t.status in ['waiting', 'serving', 'served']])
+            'ticket_count': len(active_tickets)
         })
 
     categories = ServiceCategory.query.order_by(ServiceCategory.name.asc()).all()
-    return render_template('admin_workflow.html', hub_data=hub_data, categories=categories, today_date=today_pht,
-                           title="Global Workflow Audit")
+    active_advisors = Advisor.query.filter_by(is_active=True).order_by(Advisor.name.asc()).all()
+
+    return render_template(
+        'admin_workflow.html',
+        hub_data=hub_data,
+        categories=categories,
+        today_date=today_pht,
+        advisors=active_advisors,
+        title="Global Workflow Audit"
+    )
+
+
+# --- STAFF ADVISOR MANAGEMENT ---
+@app.route('/staff/advisors', methods=['GET', 'POST'])
+@login_required
+@roles_required('super_admin', 'admin', 'coordinator', 'advisor')
+def manage_advisors():
+    """
+    Roster management endpoint for registering, tracking and deactivating
+    Service Advisors with audit logs.
+    """
+    if request.method == 'POST':
+        name = request.form.get('advisor_name').strip()
+        if name:
+            new_adv = Advisor(name=name)
+            db.session.add(new_adv)
+            db.session.commit()
+
+            # Record audit trail action
+            log_action(
+                action="Advisor Registered",
+                details=f"Staff enrolled new Service Advisor: {name} with automatic timestamps."
+            )
+            flash(f"Advisor {name} enrolled successfully.", "success")
+        return redirect(url_for('manage_advisors'))
+
+    all_advisors = Advisor.query.filter_by(is_active=True).order_by(Advisor.created_at.desc()).all()
+    return render_template('staff_advisors.html', advisors=all_advisors, title="Service Advisors")
+
+
+@app.route('/staff/advisors/delete/<int:id>')
+@login_required
+@roles_required('super_admin', 'admin', 'coordinator')
+def delete_advisor(id):
+    adv = db.session.get(Advisor, id)
+    if adv:
+        adv_name = adv.name
+        adv.is_active = False  # Soft deactivation
+        db.session.commit()
+
+        # Record audit trail action
+        log_action(
+            action="Advisor Deactivated",
+            details=f"Staff deactivated advisor record: {adv_name}."
+        )
+        flash(f"Advisor {adv_name} deactivated.", "warning")
+    return redirect(url_for('manage_advisors'))
 
 
 @app.route('/staff/save-materials/<int:q_id>', methods=['POST'])
@@ -587,7 +684,9 @@ def staff_manual_checkin():
         jo = request.form.get('jo')
         srh = request.form.get('srh')
         pref_date = request.form.get('preferred_date')
+        pref_time = request.form.get('preferred_time', '08:00')
         ent_date = request.form.get('entry_date')
+        adv_id = request.form.get('advisor_id')
 
         if plate and client:
             manifest.append({
@@ -598,7 +697,9 @@ def staff_manual_checkin():
                 'jo': jo,
                 'srh': srh,
                 'preferred_date': pref_date,
-                'entry_date': ent_date
+                'preferred_time': pref_time,
+                'entry_date': ent_date,
+                'advisor_id': adv_id
             })
 
     if not manifest:
@@ -631,6 +732,9 @@ def staff_manual_checkin():
             else:
                 entry_date = today_pht
 
+            pref_time = item.get('preferred_time', '08:00')
+            advisor_id = item.get('advisor_id')
+
             new_booking = Booking(
                 user_id=None,
                 location_id=loc_id,
@@ -643,10 +747,16 @@ def staff_manual_checkin():
                 scheduled_time=get_pht_now(),
                 status='arrived',
                 date_of_entry=entry_date,
-                preferred_service_date=pref_date
+                preferred_service_date=pref_date,
+                preferred_service_time=pref_time
             )
+
+            # Map Advisor if assigned
+            if advisor_id and advisor_id != 'none':
+                new_booking.advisor_id = int(advisor_id)
+
             db.session.add(new_booking)
-            db.session.flush()
+            db.session.commit()
 
             ticket_no = f"{loc_code}-{101 + current_total + i}"
 
@@ -659,9 +769,13 @@ def staff_manual_checkin():
             )
             db.session.add(new_q)
 
+            # Record overridden entry date details to Immutable Audit Trail
+            is_backtracked = entry_date != today_pht
+            audit_action = "Backdated Manual Booking" if is_backtracked else "Manual Booking"
             log_action(
-                action="Manual Booking",
-                details=f"Staff manually scheduled and checked in unit {plate_clean} under Ticket {ticket_no}. (Preferred Date: {pref_date}, Entry Date: {entry_date}).",
+                action=audit_action,
+                details=f"Staff manual deployment processed for Ticket {ticket_no}. Preferred slot: {pref_date} @ {pref_time}. Overridden Entry Date: {entry_date} (Real-time Transaction Entry: {today_pht}).",
+                location_id=loc_id,
                 ticket_number=ticket_no,
                 plate_number=plate_clean
             )
@@ -1440,21 +1554,26 @@ def get_latest_queue():
     pht_now = datetime.now(PHT).replace(tzinfo=None)
     threshold = pht_now - timedelta(minutes=15)
 
-    latest_release = Queue.query.filter(
+    # Join with Booking table to filter out Out-Plant release entries
+    latest_release = Queue.query.join(Queue.booking).filter(
         Queue.location_id == loc_id,
-        Queue.status == 'served'
+        Queue.status == 'served',
+        Booking.service_location != 'Out-Plant'
     ).order_by(Queue.end_time.desc()).first()
 
     if not latest_release:
-        latest_release = Queue.query.filter(
+        latest_release = Queue.query.join(Queue.booking).filter(
             Queue.location_id == loc_id,
             Queue.status == 'done',
-            Queue.end_time >= threshold
+            Queue.end_time >= threshold,
+            Booking.service_location != 'Out-Plant'
         ).order_by(Queue.end_time.desc()).first()
 
-    active_queue = Queue.query.filter(
+    # Filter the queue list to include only In-Plant active items
+    active_queue = Queue.query.join(Queue.booking).filter(
         Queue.location_id == loc_id,
-        Queue.status.in_(['waiting', 'serving', 'served'])
+        Queue.status.in_(['waiting', 'serving', 'served']),
+        Booking.service_location != 'Out-Plant'
     ).order_by(Queue.created_at.asc()).limit(5).all()
 
     return jsonify({
@@ -1585,9 +1704,10 @@ def staff_technicians():
         return redirect(url_for('staff_technicians'))
 
     # Query ALL technicians across ALL branches (preloading assignment details)
+    # Preload the customer details within technician active tasks
     techs = Technician.query.options(
         db.joinedload(Technician.branch),
-        db.selectinload(Technician.tasks).joinedload(Queue.booking)
+        db.selectinload(Technician.tasks).joinedload(Queue.booking).joinedload(Booking.customer)
     ).order_by(Technician.location_id.asc(), Technician.name.asc()).all()
 
     # Query ALL locations for select/assignment dropdowns
@@ -2412,6 +2532,20 @@ if __name__ == '__main__':
                 db.session.execute(db.text('ALTER TABLE audit_logs ADD COLUMN plate_number VARCHAR(50)'))
                 db.session.commit()
                 print("--- Database Updated: Added plate_number to audit_logs ---")
+
+            # --- PREFERRED TIME COLUMN MIGRATION ---
+            if 'preferred_service_time' not in existing_columns:
+                db.session.execute(
+                    db.text("ALTER TABLE bookings ADD COLUMN preferred_service_time VARCHAR(10) DEFAULT '08:00'"))
+                db.session.commit()
+                print("--- Database Updated: Added preferred_service_time ---")
+
+            # --- ADVISOR MIGRATIONS ---
+            if 'advisor_id' not in existing_columns:
+                db.session.execute(db.text(
+                    "ALTER TABLE bookings ADD COLUMN advisor_id INTEGER REFERENCES advisors(id) ON DELETE SET NULL"))
+                db.session.commit()
+                print("--- Database Updated: Added advisor_id to bookings ---")
 
         except Exception as e:
             print(f"--- Database Migration Note: {e} ---")
