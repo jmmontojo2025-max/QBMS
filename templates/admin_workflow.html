@@ -7,8 +7,8 @@
 <style>
     /* VARIABLES - SYSTEM DESIGN SYSTEM */
     :root {
-        --saas-primary: #2563eb;
-        --saas-primary-light: #dbeafe;
+        --saas-primary: #3b82f6;
+        --saas-primary-light: #eff6ff;
         --saas-navy: #0f172a;
         --saas-slate: #64748b;
         --saas-border: #e2e8f0;
@@ -18,7 +18,7 @@
         --saas-warning: #f59e0b;
         --saas-danger: #ef4444;
         --saas-radius: 16px;
-        --saas-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --saas-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
     }
 
     /* GLOBAL PAGE SCROLLBAR */
@@ -37,7 +37,6 @@
         overflow: hidden;
     }
 
-    /* SYNCING DATA PRELOADER (WHITE OVERLAY) */
     #preloader {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         background: #ffffff; display: flex; flex-direction: column;
@@ -88,7 +87,7 @@
     .scroll-btn.right { right: 10px; }
 
     .hub-node-card {
-        min-width: 300px; background: var(--saas-bg-light); border: 1px solid var(--saas-border);
+        min-width: 320px; background: var(--saas-bg-light); border: 1px solid var(--saas-border);
         padding: 1.25rem; border-radius: 14px; position: relative;
     }
     .hub-node-card .hub-name { font-size: 0.7rem; font-weight: 900; color: var(--saas-slate); text-transform: uppercase; letter-spacing: 1px; }
@@ -113,52 +112,125 @@
     .nav-pills-custom .nav-link { color: var(--saas-slate); font-weight: 800; font-size: 0.8rem; border-radius: 10px; padding: 10px 24px; transition: 0.3s; border: none; text-transform: uppercase; }
     .nav-pills-custom .nav-link.active { background: white !important; color: var(--saas-primary) !important; box-shadow: var(--saas-shadow); }
 
-    /* 3-COLUMN GRID SYSTEM */
+    /* --- ALIGNED 3-COLUMN GRID SYSTEM (EQUAL WIDTHS) --- */
     .dashboard-container { padding: 1.5rem; display: flex; flex-direction: column; gap: 2rem; }
-    .system-grid { display: grid; grid-template-columns: 2.2fr 1.2fr 300px; gap: 2rem; align-items: start; }
+    .system-grid { display: grid; grid-template-columns: 1.5fr 1.5fr 320px; gap: 2rem; align-items: start; }
     .col-label { font-weight: 900; color: var(--saas-navy); font-size: 1.1rem; letter-spacing: -0.5px; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 12px; }
 
-    /* TICKETS WITH STATUS STRIP ON TOP */
-    .ticket-card {
-        background: white; border: 1px solid var(--saas-border); border-radius: 14px;
-        position: relative; overflow: hidden; box-shadow: var(--saas-shadow);
-        transition: all 0.3s ease; margin-bottom: 1.25rem;
+    /* COMPACT LIST STYLING */
+    .compact-ticket-item {
+        background: #ffffff;
+        border: 1px solid var(--saas-border);
+        border-radius: 12px;
+        padding: 1.25rem;
+        cursor: default;
+        transition: all 0.2s ease-in-out;
+        margin-bottom: 0.75rem;
     }
-    .status-strip { height: 8px; width: 100%; position: absolute; top: 0; left: 0; }
-    .strip-ongoing { background: var(--saas-primary); }
-    .strip-waiting { background: var(--saas-warning); }
+    .compact-ticket-item:hover {
+        border-color: var(--saas-primary);
+        box-shadow: var(--saas-shadow);
+    }
+    .card-strip-active { border-left: 4px solid var(--saas-primary) !important; }
+    .card-strip-done { border-left: 4px solid var(--saas-success) !important; }
 
     .status-badge { font-size: 0.6rem; font-weight: 900; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; }
-    .badge-serving { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
-    .badge-waiting { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 
     .loc-tag { font-size: 0.65rem; font-weight: 900; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; display: inline-block; }
-    .loc-in { background: #f1f5f9; color: var(--saas-navy); border: 1px solid var(--saas-border); }
-    .loc-out { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 
-    .ticket-id-text { font-weight: 900; font-size: 1.8rem; color: var(--saas-navy); letter-spacing: -1.5px; line-height: 1; }
-    .plate-pill { background: var(--saas-navy); color: white; font-family: 'JetBrains Mono'; padding: 6px 12px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; display: inline-block; margin-top: 10px; }
-    .service-pill { background: #f8fafc; color: var(--saas-slate); border: 1px solid var(--saas-border); font-size: 0.75rem; font-weight: 800; padding: 6px 14px; border-radius: 8px; text-transform: uppercase; margin-top: 12px; display: inline-block; }
-
-    /* PERSONNEL PILLS ON TICKETS */
-    .assigned-staff-box { background: #f8fafc; border: 1px solid var(--saas-border); border-radius: 12px; padding: 12px; margin-top: 15px; }
-    .staff-pill { background: white; color: var(--saas-navy); border: 1px solid var(--saas-border); font-size: 0.7rem; font-weight: 800; padding: 5px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+    .ticket-id-text { font-weight: 900; font-size: 1.4rem; color: var(--saas-navy); letter-spacing: -1px; line-height: 1; }
+    .plate-pill { background: var(--saas-navy); color: white; font-family: 'JetBrains Mono'; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; display: inline-block; }
+    .service-pill { background: #f8fafc; color: var(--saas-slate); border: 1px solid var(--saas-border); font-size: 0.75rem; font-weight: 800; padding: 6px 14px; border-radius: 8px; text-transform: uppercase; display: inline-block; }
 
     /* ROSTER BOX */
     .roster-container { background: white; border: 1px solid var(--saas-border); border-radius: 20px; box-shadow: var(--saas-shadow); overflow: hidden; }
     .roster-head { background: var(--saas-navy); color: white; padding: 1.25rem; display: flex; align-items: center; gap: 12px; }
     .roster-head h6 { margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.85rem; }
 
-    .tech-row { display: flex; align-items: center; padding: 1.25rem 1rem; border-bottom: 1px solid var(--saas-border); transition: 0.2s; }
-    .tech-status-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-right: 1rem; }
-    .dot-active { background: var(--saas-success); box-shadow: 0 0 10px var(--saas-success); }
-    .dot-busy { background: var(--saas-warning); box-shadow: 0 0 10px var(--saas-warning); }
-    .dot-away { background: #cbd5e1; }
+    /* --- ROSTER CARD HIGH-FIDELITY ALIGNMENT --- */
+    .tech-row {
+        display: flex;
+        align-items: flex-start;
+        padding: 1.25rem 1rem;
+        border-bottom: 1px solid var(--saas-border);
+        background: #ffffff;
+        transition: background 0.2s ease;
+    }
+    .tech-row-muted {
+        opacity: 0.5;
+    }
+    .tech-status-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        margin-right: 1.25rem;
+        margin-top: 4px;
+        flex-shrink: 0;
+        display: inline-block;
+    }
+    .dot-active {
+        background-color: #10b981;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+    .dot-busy {
+        background-color: #f59e0b;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    }
+    .dot-away {
+        background-color: #cbd5e1;
+    }
+    .tech-name-text {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 500;
+        color: #1e293b;
+        font-size: 0.95rem;
+        margin-bottom: 2px;
+    }
+    .tech-status-label {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+    .tech-status-ready {
+        color: #10b981;
+    }
+    .tech-status-off-duty {
+        color: #94a3b8;
+    }
+
+    /* STACKED ASSIGNMENT PILLS styling matching screenshot */
+    .tech-task-pill {
+        border: 1.5px solid #fcd34d;
+        background-color: #fffdf5;
+        border-radius: 8px;
+        padding: 6px 12px;
+        margin-top: 6px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        line-height: 1.3;
+    }
+    .tech-task-header {
+        font-weight: 700;
+        color: #d97706;
+        font-size: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        text-transform: uppercase;
+    }
+    .tech-task-desc {
+        color: #3b82f6;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        display: block;
+        margin-top: 2px;
+    }
 
     .live-clock { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--saas-primary); font-size: 0.9rem; padding: 8px 16px; background: #eff6ff; border-radius: 10px; border: 1px solid #dbeafe; }
     .btn-action { border-radius: 12px; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; padding: 12px 24px; transition: 0.3s; }
 
-    /* MANUAL REFRESH BUTTON */
     .btn-refresh-dashboard {
         background: var(--saas-bg-white);
         border: 1px solid var(--saas-border);
@@ -193,18 +265,19 @@
 
 <div id="staff-viewport">
 
-    <!-- 1. HUB NETWORK CAPACITY STRIP WITH ARROWS -->
+    <!-- 1. HUB NETWORK CAPACITY STRIP -->
     <div class="hub-scroll-wrapper">
         <div class="scroll-btn left" onclick="scrollHubs(-320)"><i class="fa-solid fa-chevron-left"></i></div>
         <div class="network-capacity-container" id="hubScrollContainer">
             {% for hub in hub_data %}
 
                 {# CALCULATION LOGIC #}
-                {% set active_tickets = hub.tickets | rejectattr("status", "equalto", "done") | list %}
-                {% set floor_count = active_tickets | selectattr("status", "in", ["serving", "served"]) | list | length %}
+                {% set active_tickets = hub.tickets | rejectattr("status", "in", ["done", "expired", "missed"]) | list %}
+                {% set floor_count = active_tickets | selectattr("status", "equalto", "serving") | list | length %}
                 {% set queue_count = active_tickets | selectattr("status", "equalto", "waiting") | list | length %}
+                {% set served_count = active_tickets | selectattr("status", "equalto", "served") | list | length %}
 
-                {# Capacity load is now computed as the sum of ongoing floor jobs and waiting queue jobs #}
+                {# Capacity load represents floor, queue and served elements #}
                 {% set total_load = floor_count + queue_count %}
                 {% set cap = hub.info.capacity or 10 %}
                 {% set total_perc = (total_load / cap * 100)|round %}
@@ -219,22 +292,24 @@
                 {% set tech_busy_perc = (tech_stats.busy / present_techs * 100)|round if present_techs > 0 else 0 %}
 
             <div class="hub-node-card shadow-sm">
-                <div class="d-flex justify-content-between align-items-end">
-                    <div>
-                        <div class="hub-name">{{ hub.info.name }} Node</div>
-                        <div class="hub-val">{{ total_load }} / {{ cap }} <small class="text-muted">UNITS</small></div>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div>
+                            <div class="hub-name">{{ hub.info.name }} Node</div>
+                            <div class="hub-val">{{ total_load }} / {{ cap }} <small class="text-muted">UNITS</small></div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge {% if total_perc >= 90 %}bg-danger{% elif total_perc >= 70 %}bg-warning{% else %}bg-primary{% endif %}" style="font-size: 0.65rem;">{{ total_perc }}% LOAD</span>
+                        </div>
                     </div>
-                    <div class="text-end">
-                        <span class="badge {% if total_perc >= 90 %}bg-danger{% elif total_perc >= 70 %}bg-warning{% else %}bg-primary{% endif %}" style="font-size: 0.65rem;">{{ total_perc }}% LOAD</span>
+                    <div class="capacity-track">
+                        <div class="capacity-fill" style="width: {{ total_perc }}%; background: {% if total_perc >= 90 %}var(--saas-danger){% elif total_perc >= 70 %}var(--saas-warning){% else %}var(--saas-primary){% endif %};"></div>
                     </div>
-                </div>
-                <div class="capacity-track">
-                    <div class="capacity-fill" style="width: {{ total_perc }}%; background: {% if total_perc >= 90 %}var(--saas-danger){% elif total_perc >= 70 %}var(--saas-warning){% else %}var(--saas-primary){% endif %};"></div>
-                </div>
-                <div class="d-flex justify-content-between mb-2" style="font-size: 0.7rem; font-weight: 800;">
-                    <span class="text-warning"><i class="fa-solid fa-clock-rotate-left me-1"></i> QUEUE: {{ queue_count }}</span>
-                    <span class="text-primary"><i class="fa-solid fa-wrench me-1"></i> FLOOR: {{ floor_count }}</span>
-                </div>
+                    <!-- DISPLAY SEGMENT PILLS -->
+                    <div class="d-flex justify-content-between mb-2 text-nowrap" style="font-size: 0.7rem; font-weight: 800; gap: 8px;">
+                        <span class="text-warning"><i class="fa-solid fa-clock-rotate-left me-1"></i> QUEUE: {{ queue_count }}</span>
+                        <span class="text-primary"><i class="fa-solid fa-screwdriver-wrench me-1"></i> FLOOR: {{ floor_count }}</span>
+                        <span class="text-success"><i class="fa-solid fa-circle-check me-1"></i> SERVED: {{ served_count }}</span>
+                    </div>
                 <div class="pt-2 border-top d-flex justify-content-between align-items-center">
                     <div class="extra-small fw-900 text-uppercase text-muted">Techs: {{ tech_busy_perc }}% Busy</div>
                     <div class="extra-small fw-900 text-navy">{{ tech_stats.busy }} Busy / {{ available_techs }} Avail</div>
@@ -250,24 +325,34 @@
         <header class="card border-0 shadow-sm p-4 rounded-4 bg-white d-flex flex-row justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-4">
                 <div class="live-clock shadow-sm" id="live-datetime">--/--/-- | 00:00:00</div>
-                <h1 class="hub-main-title">Admin Control</h1>
+                <h1 class="hub-main-title fw-bold" style="font-size: 1.8rem; margin: 0;">Global Workflow Console</h1>
             </div>
-            <div class="d-flex gap-3 align-items-center">
-                <div class="hub-status-badge shadow-sm">
-                    <span title="TV Monitor Status">TV SYSTEM: <i class="fa-solid fa-tv {% if current_location and current_location.tv_online %}text-success status-pulse{% else %}text-danger opacity-50{% endif %}"></i></span>
-                    <span class="vr mx-2"></span>
-                    <span title="Kiosk Status">KIOSK: <i class="fa-solid fa-tablet-screen-button {% if current_location and current_location.kiosk_online %}text-success status-pulse{% else %}text-danger opacity-50{% endif %}"></i></span>
-                </div>
 
-                <!-- SWITCH HUB / BACK TO LOCATION SELECT -->
-                <a href="/select-branch-for-staff" class="btn btn-outline-danger btn-action shadow-sm d-inline-flex align-items-center justify-content-center" title="Switch Selected Hub Node">
+            <!-- GLOBAL REAL-TIME SEARCH BAR FOR ADMIN CONSOLE -->
+            <div class="flex-grow-1 mx-4" style="max-width: 340px;">
+                <div class="input-group bg-light rounded-3 border">
+                    <span class="input-group-text bg-transparent border-0"><i class="fa-solid fa-magnifying-glass text-muted" style="font-size: 0.8rem;"></i></span>
+                    <input type="text" id="adminConsoleSearch" class="form-control border-0 bg-transparent fw-bold" placeholder="Search plate, company, JO#, advisor..." style="font-size: 0.8rem;">
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 align-items-center">
+                <!-- SWITCH HUB -->
+                <a href="/change-branch" class="btn btn-outline-danger btn-action shadow-sm d-inline-flex align-items-center justify-content-center" title="Switch Selected Hub Node" style="height: 38px;">
                     <i class="fa-solid fa-right-from-bracket me-1"></i> Switch Hub
                 </a>
 
-                <button type="button" onclick="triggerManualRefresh(this)" class="btn-refresh-dashboard shadow-sm" title="Sync Latest Telemetry and Grid">
-                    <i class="fa-solid fa-arrows-rotate"></i> Sync Dashboard
+                <!-- RESTORED SYNC DASHBOARD BUTTON -->
+                <button type="button" onclick="triggerManualRefresh(this)" class="btn-refresh-dashboard shadow-sm d-inline-flex align-items-center gap-2" title="Sync Latest Telemetry and Grid" style="height: 38px; border-radius: 12px; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; padding: 0 16px;">
+                    <i class="fa-solid fa-arrows-rotate text-primary"></i> Sync Dashboard
                 </button>
-                <button type="button" class="btn btn-primary btn-action shadow-sm" data-bs-toggle="modal" data-bs-target="#manualCheckinModal"><i class="fa-solid fa-plus-circle me-2"></i> HUB Override</button>
+
+                <button type="button" class="btn btn-primary btn-action shadow-sm d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#manualCheckinModal" style="height: 38px;"><i class="fa-solid fa-plus-circle me-2"></i> PHONE BOOKING</button>
+
+                <!-- TV VIEW SHORTCUT LINK -->
+                <a href="/tv" target="_blank" class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px; padding: 0; border-radius: 12px;" title="TV Display">
+                    <i class="fa-solid fa-display"></i>
+                </a>
             </div>
         </header>
 
@@ -291,151 +376,717 @@
             <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="pane-{{ hub.info.id }}" role="tabpanel">
                 <main class="system-grid">
 
-                    <!-- COLUMN 1: ACTIVE WORKFLOOR -->
+                    <!-- COLUMN 1: ACTIVE WORKFLOOR (Awaiting SOW & Release) -->
                     <section>
-                        <h5 class="col-label"><i class="fa-solid fa-screwdriver-wrench text-primary"></i> Awaiting SOW & Release</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="col-label mb-0"><i class="fa-solid fa-screwdriver-wrench text-primary"></i> Awaiting SOW & Release</h5>
+                            <ul class="nav nav-pills border bg-white p-1 rounded-3" id="activeWorkfloorTabs-{{ hub.info.id }}" role="tablist" style="font-size: 0.7rem;">
+                                <li class="nav-item">
+                                    <button class="nav-link active py-1 px-3 fw-bold text-uppercase" id="active-inplant-tab-{{ hub.info.id }}" data-bs-toggle="pill" data-bs-target="#active-inplant-{{ hub.info.id }}" type="button" role="tab">In-Plant</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link py-1 px-3 fw-bold text-uppercase" id="active-outplant-tab-{{ hub.info.id }}" data-bs-toggle="pill" data-bs-target="#active-outplant-{{ hub.info.id }}" type="button" role="tab">Out-Plant</button>
+                                </li>
+                            </ul>
+                        </div>
 
                         <div class="op-instruction">
-                            <h6>Workfloor Guide: ONGOING STATUS</h6>
-                            <p>Manage units inside service bays.<br>
-                            1. <b>Personnel:</b> View the team assigned to this ticket.<br>
-                            2. <b>Tracking:</b> Encoding <b>Job Order (JO)</b> and <b>Standard Hours</b> is optional.<br>
-                            3. <b>Release:</b> Review times, write SOW details, and click <b>Complete & Release</b>.</p>
+                            <h6>Workfloor Guide: Awaiting SOW</h6>
+                            <p>Verify if work is In-Plant or Out-Plant. Form completion is inline for clean, fast administrative updates.</p>
                         </div>
 
                         <div class="column-scroll-area">
-                            <div class="row g-3">
-                                {% for s in hub.tickets %}
-                                    {% if s.status == 'served' %}
-                                    <div class="col-xl-6">
-                                        <div class="ticket-card">
-                                            <div class="status-strip strip-ongoing"></div>
-                                            <div class="p-4 pt-5">
-                                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                                    <div>
-                                                        <div class="ticket-id-text">{{ s.ticket_number }}</div>
-                                                        <div class="mt-2">
-                                                            <span class="loc-tag {% if s.booking and s.booking.service_location == 'Out-Plant' %}loc-out{% else %}loc-in{% endif %}">
-                                                                <i class="fa-solid {% if s.booking and s.booking.service_location == 'Out-Plant' %}fa-truck-fast{% else %}fa-warehouse{% endif %} me-1"></i>
-                                                                {{ s.booking.service_location if s.booking else 'In-Plant' }}
-                                                            </span>
-                                                            <span class="status-badge bg-success text-white ms-1">
-                                                                READY FOR SOW
-                                                            </span>
-                                                        </div>
+                            <div class="tab-content" id="activeWorkfloorTabContent-{{ hub.info.id }}">
+
+                                <!-- IN-PLANT ACTIVE -->
+                                <div class="tab-pane fade show active" id="active-inplant-{{ hub.info.id }}" role="tabpanel">
+                                    {% for t in hub.tickets %}
+                                        {% if t.status == 'served' and (not t.booking or t.booking.service_location != 'Out-Plant') %}
+                                        <div class="compact-ticket-item card-strip-active mb-3 shadow-sm bg-white p-3" style="border-radius: 12px; transition: 0.2s;">
+                                            <div class="d-flex justify-content-between align-items-start">
+
+                                                <!-- Left Panel Content matches requested layout -->
+                                                <div class="d-flex flex-column gap-1">
+                                                    <div class="fw-medium text-uppercase text-slate" style="font-size: 1.1rem; color: #475569; letter-spacing: 0.2px;">
+                                                        {{ t.booking.customer.company_name if (t.booking and t.booking.customer) else t.booking.guest_name if t.booking else "Walk-In Guest" }}
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
+                                                        <i class="fa-solid fa-house-chimney text-success fs-5" title="In-Plant"></i>
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">In-Plant</span>
+
+                                                        <span class="fw-extrabold text-dark font-monospace" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">
+                                                            {{ t.ticket_number }}
+                                                        </span>
+
+                                                        <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
+                                                            {{ t.booking.plate_number if t.booking else "WALK-IN" }}
+                                                        </span>
+
+                                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">
+                                                            {{ t.booking.service_type if t.booking else "General Service" }}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-1 mt-2" style="font-size: 0.8rem;">
+                                                        <i class="fa-solid fa-user-tie text-primary" style="font-size: 0.85rem;"></i>
+                                                        <span class="fw-bold text-slate" style="color: #334155;">Advisor:</span>
+                                                        <span class="fw-medium text-muted" style="color: #94a3b8;">
+                                                            {% if t.booking and t.booking.advisor %}
+                                                                {{ t.booking.advisor.name }}
+                                                            {% else %}
+                                                                Unassigned
+                                                            {% endif %}
+                                                        </span>
                                                     </div>
                                                 </div>
 
-                                                <div class="plate-pill">{{ s.booking.plate_number if s.booking else 'WALK-IN' }}</div>
-                                                <div class="d-block"><span class="service-pill">{{ s.booking.service_type if s.booking else 'Standard Service' }}</span></div>
+                                                <!-- Right Panel Content matches requested layout -->
+                                                <div class="text-end d-flex flex-column align-items-end gap-1">
+                                                    <!-- Preferred Date -->
+                                                    <div class="fw-semibold text-dark" style="font-size: 0.85rem; color: #0f172a;">
+                                                        Preferred Date:
+                                                        <span class="font-monospace fw-bold">
+                                                            {% if t.booking and t.booking.preferred_service_date %}
+                                                                {{ t.booking.preferred_service_date.strftime('%m-%d-%y') }}
+                                                            {% else %}
+                                                                --/--/--
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
 
-                                                <div class="assigned-staff-box">
-                                                    <label class="extra-small fw-900 text-muted text-uppercase d-block mb-1">Personnel Deployed</label>
+                                                    <!-- Preferred Time: Separated and formatted in 12-hour AM/PM -->
+                                                    <div class="fw-semibold text-dark" style="font-size: 0.85rem; color: #0f172a;">
+                                                        Preferred Time:
+                                                        <span class="font-monospace fw-bold">
+                                                            {% if t.booking and t.booking.preferred_service_time %}
+                                                                {% set time_parts = t.booking.preferred_service_time.split(':') %}
+                                                                {% if time_parts | length == 2 %}
+                                                                    {% set hr = time_parts[0] | int %}
+                                                                    {% set min = time_parts[1] %}
+                                                                    {% set ampm = 'AM' %}
+                                                                    {% if hr >= 12 %}
+                                                                        {% set ampm = 'PM' %}
+                                                                        {% if hr > 12 %}{% set hr = hr - 12 %}{% endif %}
+                                                                    {% elif hr == 0 %}
+                                                                        {% set hr = 12 %}
+                                                                    {% endif %}
+                                                                    {{ "%02d"|format(hr) }}:{{ min }} {{ ampm }}
+                                                                {% else %}
+                                                                    {{ t.booking.preferred_service_time }}
+                                                                {% endif %}
+                                                            {% else %}
+                                                                08:00 AM
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="fw-medium text-slate" style="font-size: 0.8rem; color: #64748b;">
+                                                        Date of Entry:
+                                                        <span class="font-monospace">
+                                                            {% if t.booking and t.booking.date_of_entry %}
+                                                                {{ t.booking.date_of_entry.strftime('%m-%d-%y') }}
+                                                            {% else %}
+                                                                --/--/--
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="mt-2">
+                                                        <button type="button" class="btn btn-primary fw-bold d-inline-flex align-items-center gap-1"
+                                                                data-bs-toggle="collapse"
+                                                                data-bs-target="#active-form-{{ t.id }}"
+                                                                style="border-radius: 8px; font-size: 0.75rem; padding: 6px 14px; background-color: #0066ff; border: none; box-shadow: 0 2px 4px rgba(0, 102, 255, 0.2);">
+                                                            <i class="fa-solid fa-screwdriver-wrench me-1"></i> MANAGE
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {% if t.assigned_techs %}
+                                            <div class="mt-2">
+                                                <div class="p-2 bg-light rounded-3 border" style="font-size: 0.65rem;">
+                                                    <span class="fw-800 text-muted text-uppercase d-block mb-1">Assigned Techs:</span>
                                                     <div class="d-flex flex-wrap gap-1">
-                                                        {% for staff in s.assigned_techs | sort(attribute='name') %}
-                                                        <span class="staff-pill"><i class="fa-solid fa-user-gear"></i> {{ staff.name }}</span>
+                                                        {% for tech in t.assigned_techs %}
+                                                        <span class="badge bg-white text-dark border py-1 px-2" style="font-weight: 700;">
+                                                            <i class="fa-solid fa-user-gear text-primary me-1"></i>{{ tech.name }}
+                                                        </span>
                                                         {% endfor %}
                                                     </div>
                                                 </div>
+                                            </div>
+                                            {% endif %}
 
-                                                <form action="/staff/complete-work/{{ s.id }}" method="POST" class="border-top mt-3 pt-3">
-                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <!-- Collapsible Form matching Screenshot Layout -->
+                                            <div class="collapse mt-3" id="active-form-{{ t.id }}">
+                                                <div class="p-3 border-top pt-3 bg-white" style="border-radius: 12px;">
 
-                                                    <!-- DATE OF WORK INPUT SELECTION -->
+                                                    <!-- Service type pill on left, advisor badge on right -->
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <span class="service-pill m-0 text-primary bg-primary-subtle border-0 px-3 py-2 fw-extrabold" style="font-size: 0.75rem;">
+                                                            {{ t.booking.service_type if t.booking else "General Service" }}
+                                                        </span>
+
+                                                        <span class="badge text-white px-3 py-2 d-inline-flex align-items-center gap-1" style="background-color: #0f172a; font-size: 0.75rem; border-radius: 8px;">
+                                                            <i class="fa-solid fa-user-tie"></i> Advisor: {{ t.booking.advisor.name if (t.booking and t.booking.advisor) else 'Unassigned' }}
+                                                        </span>
+                                                    </div>
+
+                                                    <!-- Technicians assigned row -->
                                                     <div class="mb-3">
-                                                        <label class="extra-small fw-900 text-muted">DATE OF WORK</label>
-                                                        <input type="date" name="date_of_work" class="form-control form-control-sm fw-bold border-2"
-                                                               value="{{ s.date_of_work.strftime('%Y-%m-%d') if s.date_of_work else today_date }}" required>
-                                                    </div>
-
-                                                    <!-- EDITABLE TIME SELECTIONS -->
-                                                    <div class="row g-2 mb-3">
-                                                        <div class="col-6">
-                                                            <label class="extra-small fw-900 text-muted">START TIME</label>
-                                                            <input type="time" name="manual_start" class="form-control form-control-sm fw-bold border-2"
-                                                                   value="{{ s.start_time.strftime('%H:%M') if s.start_time else '' }}" required>
-                                                        </div>
-                                                        <div class="col-6">
-                                                            <label class="extra-small fw-900 text-muted">END TIME</label>
-                                                            <input type="time" name="manual_end" class="form-control form-control-sm fw-bold border-2"
-                                                                   value="{{ s.end_time.strftime('%H:%M') if s.end_time else '' }}" required>
+                                                        <label class="extra-small fw-semibold text-uppercase text-slate mb-2" style="color: #64748b; font-size: 0.8rem; letter-spacing: 0.5px;">Technicians Assigned</label>
+                                                        <div class="d-flex flex-wrap gap-2">
+                                                            {% if t.assigned_techs %}
+                                                                {% for tech in t.assigned_techs %}
+                                                                <span class="badge bg-white text-dark border px-3 py-2" style="font-weight: 500; font-size: 0.8rem; border-radius: 8px; color: #1e293b; border-color: #cbd5e1 !important;">
+                                                                    {{ tech.name }}
+                                                                </span>
+                                                                {% endfor %}
+                                                            {% else %}
+                                                                <span class="text-muted small">No technicians assigned.</span>
+                                                            {% endif %}
                                                         </div>
                                                     </div>
 
-                                                    <div class="row g-2 mb-3">
-                                                        <div class="col-7"><label class="extra-small fw-900 text-muted">JO NUMBER (OPTIONAL)</label><input type="text" name="job_order" class="form-control form-control-sm fw-bold border-2" value="{{ s.booking.job_order or '' }}"></div>
-                                                        <div class="col-5"><label class="extra-small fw-900 text-muted">STD HRS (OPTIONAL)</label><input type="number" step="0.1" name="std_repair_hours" class="form-control form-control-sm fw-bold border-2" value="{{ s.booking.std_repair_hours or '' }}"></div>
-                                                    </div>
+                                                    <form action="/staff/complete-work/{{ t.id }}" method="POST">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                                                    <div class="mb-4">
-                                                        <label class="extra-small fw-900 text-primary">SCOPE OF WORK (SOW)</label>
-                                                        <textarea name="scope_of_work" class="form-control form-control-sm fw-bold border-2" rows="2" placeholder="Describe actual work performed..." required>{{ s.booking.scope_of_work or '' }}</textarea>
-                                                    </div>
+                                                        <!-- Official JO and STD HRS row container -->
+                                                        <div class="p-3 border rounded-3 bg-light bg-opacity-50 mb-3" style="border-radius: 12px; border-color: #e2e8f0 !important;">
+                                                            <div class="row g-3">
+                                                                <div class="col-7">
+                                                                    <label class="fw-bold text-uppercase text-primary mb-1" style="font-size: 0.85rem; letter-spacing: 0.5px;">Official JO#</label>
+                                                                    <input type="text" name="job_order" class="form-control form-control-lg fw-bold border-2 bg-white" style="font-size: 0.95rem;" value="{{ t.booking.job_order or 'JO-XXXX' }}" placeholder="JO-XXXX">
+                                                                </div>
+                                                                <div class="col-5">
+                                                                    <label class="fw-bold text-uppercase text-primary mb-1" style="font-size: 0.85rem; letter-spacing: 0.5px;">Std Hrs</label>
+                                                                    <input type="number" step="0.1" name="std_repair_hours" class="form-control form-control-lg fw-bold border-2 bg-white" style="font-size: 0.95rem;" value="{{ t.booking.std_repair_hours or '0.0' }}" placeholder="0.0">
+                                                                </div>
+                                                            </div>
+                                                        </div>
 
-                                                    <!-- RETURN TO QUEUE ACTION TRIGGER -->
-                                                    <div class="mb-3">
-                                                        <a href="/staff/revert-ticket/{{ s.id }}" class="btn btn-outline-danger w-100 btn-action shadow-sm" onclick="return confirm('Are you sure you want to return Ticket {{ s.ticket_number }} back to the waiting queue?')">
-                                                            <i class="fa-solid fa-arrow-rotate-left me-1"></i> Return to Queue
-                                                        </a>
-                                                    </div>
+                                                        <!-- Date of work selection -->
+                                                        <div class="mb-3">
+                                                            <label class="extra-small fw-semibold text-uppercase text-slate mb-1" style="color: #64748b; font-size: 0.8rem;">Date of Work</label>
+                                                            <input type="date" name="date_of_work" class="form-control form-control-lg fw-bold border-2 bg-white" style="font-size: 0.95rem;" value="{{ t.date_of_work or today_date }}">
+                                                        </div>
 
-                                                    <div class="d-flex gap-2">
-                                                        <button type="button" class="btn btn-light border px-3" data-bs-toggle="modal" data-bs-target="#jobDetails-{{ s.id }}"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                                        <!-- Work Start & End array -->
+                                                        <div class="row g-3 mb-3">
+                                                            <div class="col-6">
+                                                                <label class="extra-small fw-semibold text-uppercase text-slate mb-1" style="color: #64748b; font-size: 0.8rem;">Work Start</label>
+                                                                <input type="time" name="manual_start" class="form-control form-control-lg fw-bold border-2 bg-white" style="font-size: 0.95rem;" value="{{ t.start_time.strftime('%H:%M') if t.start_time else '' }}">
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <label class="extra-small fw-semibold text-uppercase text-slate mb-1" style="color: #64748b; font-size: 0.8rem;">Work End</label>
+                                                                <input type="time" name="manual_end" class="form-control form-control-lg fw-bold border-2 bg-white" style="font-size: 0.95rem;" value="{{ t.end_time.strftime('%H:%M') if t.end_time else '' }}">
+                                                            </div>
+                                                        </div>
 
-                                                        <a href="/staff/recall-ticket/{{ s.id }}" class="btn btn-outline-warning px-3 d-inline-flex align-items-center justify-content-center shadow-sm" style="border-radius: 12px;" title="Recall on TV Monitor">
-                                                            <i class="fa-solid fa-volume-high"></i>
-                                                        </a>
+                                                        <!-- Scope of work field (Required by complete_work admin logic) -->
+                                                        <div class="mb-4">
+                                                            <label class="extra-small fw-semibold text-uppercase text-slate mb-1" style="color: #64748b; font-size: 0.8rem;">Scope of Work (SOW)</label>
+                                                            <textarea name="scope_of_work" rows="3" class="form-control fw-semibold border-2 bg-white" required placeholder="Describe repairs, parts replaced..." style="font-size: 0.9rem; border-radius: 8px;"></textarea>
+                                                        </div>
 
-                                                        <button type="submit" class="btn btn-primary btn-action flex-grow-1 shadow-sm">Complete & Release</button>
-                                                    </div>
-                                                </form>
+                                                        <!-- Red outline Revert button spanning full width -->
+                                                        <div class="mb-3">
+                                                            <a href="/staff/revert-ticket/{{ t.id }}" class="btn btn-outline-danger fw-bold w-100 py-2 d-inline-flex align-items-center justify-content-center gap-2" style="border-radius: 12px; border-width: 1.5px; font-size: 0.85rem;">
+                                                                <i class="fa-solid fa-rotate-left"></i> RETURN TO QUEUE
+                                                            </a>
+                                                        </div>
+
+                                                        <!-- Bottom action strip (Info, Sound, Submit Removed as Requested, Submit is now Full-Width) -->
+                                                        <div class="d-flex gap-2">
+                                                            <button type="submit" class="btn btn-primary fw-bold w-100 text-uppercase" style="border-radius: 8px; font-size: 0.85rem; height: 45px; background-color: #0066ff; border: none; box-shadow: 0 4px 6px rgba(0, 102, 255, 0.2);">
+                                                                Complete & Release
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    {% endif %}
-                                {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+
+                                <!-- OUT-PLANT ACTIVE -->
+                                <div class="tab-pane fade" id="active-outplant-{{ hub.info.id }}" role="tabpanel">
+                                    {% for t in hub.tickets %}
+                                        {% if t.status == 'served' and t.booking and t.booking.service_location == 'Out-Plant' %}
+                                        <div class="compact-ticket-item card-strip-active mb-3 shadow-sm bg-white p-3" style="border-radius: 12px; transition: 0.2s;">
+                                            <div class="d-flex justify-content-between align-items-start">
+
+                                                <!-- Left Panel Content matches requested layout -->
+                                                <div class="d-flex flex-column gap-1">
+                                                    <div class="fw-medium text-uppercase text-slate" style="font-size: 1.1rem; color: #475569; letter-spacing: 0.2px;">
+                                                        {{ t.booking.customer.company_name if (t.booking and t.booking.customer) else t.booking.guest_name if t.booking else "Walk-In Guest" }}
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
+                                                        <i class="fa-solid fa-truck-pickup text-danger fs-5" title="Out-Plant"></i>
+                                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">Out-Plant</span>
+
+                                                        <span class="fw-extrabold text-dark font-monospace" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">
+                                                            {{ t.ticket_number }}
+                                                        </span>
+
+                                                        <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
+                                                            {{ t.booking.plate_number if t.booking else "WALK-IN" }}
+                                                        </span>
+
+                                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">
+                                                            {{ t.booking.service_type if t.booking else "General Service" }}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-1 mt-2" style="font-size: 0.8rem;">
+                                                        <i class="fa-solid fa-user-tie text-primary" style="font-size: 0.85rem;"></i>
+                                                        <span class="fw-bold text-slate" style="color: #334155;">Advisor:</span>
+                                                        <span class="fw-medium text-muted" style="color: #94a3b8;">
+                                                            {% if t.booking and t.booking.advisor %}
+                                                                {{ t.booking.advisor.name }}
+                                                            {% else %}
+                                                                Unassigned
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Right Panel Content matches requested layout -->
+                                                <div class="text-end d-flex flex-column align-items-end gap-1">
+                                                    <!-- Preferred Date -->
+                                                    <div class="fw-semibold text-dark" style="font-size: 0.85rem; color: #0f172a;">
+                                                        Preferred Date:
+                                                        <span class="font-monospace fw-bold">
+                                                            {% if t.booking and t.booking.preferred_service_date %}
+                                                                {{ t.booking.preferred_service_date.strftime('%m-%d-%y') }}
+                                                            {% else %}
+                                                                --/--/--
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+
+                                                    <!-- Preferred Time: Separated and formatted in 12-hour AM/PM -->
+                                                    <div class="fw-semibold text-dark" style="font-size: 0.85rem; color: #0f172a;">
+                                                        Preferred Time:
+                                                        <span class="font-monospace fw-bold">
+                                                            {% if t.booking and t.booking.preferred_service_time %}
+                                                                {% set time_parts = t.booking.preferred_service_time.split(':') %}
+                                                                {% if time_parts | length == 2 %}
+                                                                    {% set hr = time_parts[0] | int %}
+                                                                    {% set min = time_parts[1] %}
+                                                                    {% set ampm = 'AM' %}
+                                                                    {% if hr >= 12 %}
+                                                                        {% set ampm = 'PM' %}
+                                                                        {% if hr > 12 %}{% set hr = hr - 12 %}{% endif %}
+                                                                    {% elif hr == 0 %}
+                                                                        {% set hr = 12 %}
+                                                                    {% endif %}
+                                                                    {{ "%02d"|format(hr) }}:{{ min }} {{ ampm }}
+                                                                {% else %}
+                                                                    {{ t.booking.preferred_service_time }}
+                                                                {% endif %}
+                                                            {% else %}
+                                                                08:00 AM
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="fw-medium text-slate" style="font-size: 0.8rem; color: #64748b;">
+                                                        Date of Entry:
+                                                        <span class="font-monospace">
+                                                            {% if t.booking and t.booking.date_of_entry %}
+                                                                {{ t.booking.date_of_entry.strftime('%m-%d-%y') }}
+                                                            {% else %}
+                                                                --/--/--
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="mt-2">
+                                                        <button type="button" class="btn btn-primary fw-bold d-inline-flex align-items-center gap-1"
+                                                                data-bs-toggle="collapse"
+                                                                data-bs-target="#active-form-{{ t.id }}"
+                                                                style="border-radius: 8px; font-size: 0.75rem; padding: 6px 14px; background-color: #0066ff; border: none; box-shadow: 0 2px 4px rgba(0, 102, 255, 0.2);">
+                                                            <i class="fa-solid fa-screwdriver-wrench me-1"></i> MANAGE
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {% if t.assigned_techs %}
+                                            <div class="mt-2">
+                                                <div class="p-2 bg-light rounded-3 border" style="font-size: 0.65rem;">
+                                                    <span class="fw-800 text-muted text-uppercase d-block mb-1">Assigned Techs:</span>
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        {% for tech in t.assigned_techs %}
+                                                        <span class="badge bg-white text-dark border py-1 px-2" style="font-weight: 700;">
+                                                            <i class="fa-solid fa-user-gear text-primary me-1"></i>{{ tech.name }}
+                                                        </span>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+
+                                            <!-- Collapsible Form matching Screenshot Layout -->
+                                            <div class="collapse mt-3" id="active-form-{{ t.id }}">
+                                                <div class="p-3 border-top pt-3 bg-white" style="border-radius: 12px;">
+
+                                                    <!-- Service type pill on left, advisor badge on right -->
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <span class="service-pill m-0 text-primary bg-primary-subtle border-0 px-3 py-2 fw-extrabold" style="font-size: 0.75rem;">
+                                                            {{ t.booking.service_type if t.booking else "General Service" }}
+                                                        </span>
+
+                                                        <span class="badge text-white px-3 py-2 d-inline-flex align-items-center gap-1" style="background-color: #0f172a; font-size: 0.75rem; border-radius: 8px;">
+                                                            <i class="fa-solid fa-user-tie"></i> Advisor: {{ t.booking.advisor.name if (t.booking and t.booking.advisor) else 'Unassigned' }}
+                                                        </span>
+                                                    </div>
+
+                                                    <!-- Technicians assigned row -->
+                                                    <div class="mb-3">
+                                                        <label class="extra-small fw-semibold text-uppercase text-slate mb-2" style="color: #64748b; font-size: 0.8rem; letter-spacing: 0.5px;">Technicians Assigned</label>
+                                                        <div class="d-flex flex-wrap gap-2">
+                                                            {% if t.assigned_techs %}
+                                                                {% for tech in t.assigned_techs %}
+                                                                <span class="badge bg-white text-dark border px-3 py-2" style="font-weight: 500; font-size: 0.8rem; border-radius: 8px; color: #1e293b; border-color: #cbd5e1 !important;">
+                                                                    {{ tech.name }}
+                                                                </span>
+                                                                {% endfor %}
+                                                            {% else %}
+                                                                <span class="text-muted small">No technicians assigned.</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+
+                                                    <form action="/staff/complete-work/{{ t.id }}" method="POST">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                                        <!-- Official JO and STD HRS row container -->
+                                                        <div class="p-3 border rounded-3 bg-light bg-opacity-50 mb-3" style="border-radius: 12px; border-color: #e2e8f0 !important;">
+                                                            <div class="row g-3">
+                                                                <div class="col-7">
+                                                                    <label class="fw-bold text-uppercase text-primary mb-1" style="font-size: 0.85rem; letter-spacing: 0.5px;">Official JO#</label>
+                                                                    <input type="text" name="job_order" class="form-control form-control-lg fw-bold border-2 bg-white" style="font-size: 0.95rem;" value="{{ t.booking.job_order or 'JO-XXXX' }}" placeholder="JO-XXXX">
+                                                                </div>
+                                                                <div class="col-5">
+                                                                    <label class="fw-bold text-uppercase text-primary mb-1" style="font-size: 0.85rem; letter-spacing: 0.5px;">Std Hrs</label>
+                                                                    <input type="number" step="0.1" name="std_repair_hours" class="form-control form-control-lg fw-bold border-2 bg-white" style="font-size: 0.95rem;" value="{{ t.booking.std_repair_hours or '0.0' }}" placeholder="0.0">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Date of work selection -->
+                                                        <div class="mb-3">
+                                                            <label class="extra-small fw-semibold text-uppercase text-slate mb-1" style="color: #64748b; font-size: 0.8rem;">Date of Work</label>
+                                                            <input type="date" name="date_of_work" class="form-control form-control-lg fw-bold border-2 bg-white" style="font-size: 0.95rem;" value="{{ t.date_of_work or today_date }}">
+                                                        </div>
+
+                                                        <!-- Work Start & End array -->
+                                                        <div class="row g-3 mb-3">
+                                                            <div class="col-6">
+                                                                <label class="extra-small fw-semibold text-uppercase text-slate mb-1" style="color: #64748b; font-size: 0.8rem;">Work Start</label>
+                                                                <input type="time" name="manual_start" class="form-control form-control-lg fw-bold border-2 bg-white" style="font-size: 0.95rem;" value="{{ t.start_time.strftime('%H:%M') if t.start_time else '' }}">
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <label class="extra-small fw-semibold text-uppercase text-slate mb-1" style="color: #64748b; font-size: 0.8rem;">Work End</label>
+                                                                <input type="time" name="manual_end" class="form-control form-control-lg fw-bold border-2 bg-white" style="font-size: 0.95rem;" value="{{ t.end_time.strftime('%H:%M') if t.end_time else '' }}">
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Scope of work field (Required by complete_work admin logic) -->
+                                                        <div class="mb-4">
+                                                            <label class="extra-small fw-semibold text-uppercase text-slate mb-1" style="color: #64748b; font-size: 0.8rem;">Scope of Work (SOW)</label>
+                                                            <textarea name="scope_of_work" rows="3" class="form-control fw-semibold border-2 bg-white" required placeholder="Describe repairs, parts replaced..." style="font-size: 0.9rem; border-radius: 8px;"></textarea>
+                                                        </div>
+
+                                                        <!-- Red outline Revert button spanning full width -->
+                                                        <div class="mb-3">
+                                                            <a href="/staff/revert-ticket/{{ t.id }}" class="btn btn-outline-danger fw-bold w-100 py-2 d-inline-flex align-items-center justify-content-center gap-2" style="border-radius: 12px; border-width: 1.5px; font-size: 0.85rem;">
+                                                                <i class="fa-solid fa-rotate-left"></i> RETURN TO QUEUE
+                                                            </a>
+                                                        </div>
+
+                                                        <!-- Bottom action strip (Info, Sound, Submit Removed as Requested, Submit is now Full-Width) -->
+                                                        <div class="d-flex gap-2">
+                                                            <button type="submit" class="btn btn-primary fw-bold w-100 text-uppercase" style="border-radius: 8px; font-size: 0.85rem; height: 45px; background-color: #0066ff; border: none; box-shadow: 0 4px 6px rgba(0, 102, 255, 0.2);">
+                                                                Complete & Release
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+
                             </div>
                         </div>
                     </section>
 
                     <!-- COLUMN 2: RELEASED TODAY -->
                     <section>
-                        <h5 class="col-label"><i class="fa-solid fa-circle-check text-success"></i> Released Today</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="col-label mb-0"><i class="fa-solid fa-circle-check text-success"></i> Released Today</h5>
+                            <ul class="nav nav-pills border bg-white p-1 rounded-3" id="releasedTabs-{{ hub.info.id }}" role="tablist" style="font-size: 0.7rem;">
+                                <li class="nav-item">
+                                    <button class="nav-link active py-1 px-3 fw-bold text-uppercase" id="released-inplant-tab-{{ hub.info.id }}" data-bs-toggle="pill" data-bs-target="#released-inplant-{{ hub.info.id }}" type="button" role="tab">In-Plant</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link py-1 px-3 fw-bold text-uppercase" id="released-outplant-tab-{{ hub.info.id }}" data-bs-toggle="pill" data-bs-target="#released-outplant-{{ hub.info.id }}" type="button" role="tab">Out-Plant</button>
+                                </li>
+                            </ul>
+                        </div>
 
                         <div class="op-instruction">
                             <h6>Released Today Log</h6>
-                            <p>List of units successfully completed, SOW logged, and released to client today.</p>
+                            <p>Completed jobs filtered by location. Expand to view finalized records and administrative logs.</p>
                         </div>
 
                         <div class="column-scroll-area">
-                            {% for t in hub.tickets %}
-                                {% if t.status == 'done' %}
-                                <div class="ticket-card animate__animated animate__fadeInRight" style="opacity: 0.85;">
-                                    <div class="status-strip bg-success" style="background-color: var(--saas-success);"></div>
-                                    <div class="p-4 pt-5">
-                                        <div class="d-flex justify-content-between align-items-start mb-3">
-                                            <div>
-                                                <div class="ticket-id-text text-success">{{ t.ticket_number }}</div>
-                                                <div class="mt-2">
-                                                    <span class="loc-tag {% if t.booking and t.booking.service_location == 'Out-Plant' %}loc-out{% else %}loc-in{% endif %}">
-                                                        <i class="fa-solid {% if t.booking and t.booking.service_location == 'Out-Plant' %}fa-truck-fast{% else %}fa-warehouse{% endif %} me-1"></i>
-                                                        {{ t.booking.service_location if t.booking else 'In-Plant' }}
-                                                    </span>
-                                                    <span class="status-badge bg-success text-white ms-1">COMPLETED</span>
+                            <div class="tab-content" id="releasedTabContent-{{ hub.info.id }}">
+
+                                <!-- IN-PLANT RELEASED -->
+                                <div class="tab-pane fade show active" id="released-inplant-{{ hub.info.id }}" role="tabpanel">
+                                    {% for t in hub.tickets %}
+                                        {% if t.status == 'done' and (not t.booking or t.booking.service_location != 'Out-Plant') %}
+                                        <div class="compact-ticket-item card-strip-done mb-3 shadow-sm bg-white p-3" style="border-radius: 12px; transition: 0.2s; cursor: default;">
+                                            <div class="d-flex justify-content-between align-items-start">
+
+                                                <!-- Left Panel Content matches requested layout -->
+                                                <div class="d-flex flex-column gap-1">
+                                                    <div class="fw-medium text-uppercase text-slate" style="font-size: 1.1rem; color: #475569; letter-spacing: 0.2px;">
+                                                        {{ t.booking.customer.company_name if (t.booking and t.booking.customer) else t.booking.guest_name if t.booking else "Walk-In Guest" }}
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
+                                                        <i class="fa-solid fa-house-chimney text-success fs-5" title="In-Plant"></i>
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">In-Plant</span>
+
+                                                        <span class="fw-extrabold text-dark font-monospace" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">
+                                                            {{ t.ticket_number }}
+                                                        </span>
+
+                                                        <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
+                                                            {{ t.booking.plate_number if t.booking else "WALK-IN" }}
+                                                        </span>
+
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">
+                                                            {{ t.booking.service_type if t.booking else "General Service" }}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-1 mt-2" style="font-size: 0.8rem;">
+                                                        <i class="fa-solid fa-user-tie text-primary" style="font-size: 0.85rem;"></i>
+                                                        <span class="fw-bold text-slate" style="color: #334155;">Advisor:</span>
+                                                        <span class="fw-medium text-muted" style="color: #94a3b8;">
+                                                            {% if t.booking and t.booking.advisor %}
+                                                                {{ t.booking.advisor.name }}
+                                                            {% else %}
+                                                                Unassigned
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Right Panel Content matches requested layout -->
+                                                <div class="text-end d-flex flex-column align-items-end gap-1">
+                                                    <!-- Preferred Date -->
+                                                    <div class="fw-semibold text-dark" style="font-size: 0.85rem; color: #0f172a;">
+                                                        Preferred Date:
+                                                        <span class="font-monospace fw-bold">
+                                                            {% if t.booking and t.booking.preferred_service_date %}
+                                                                {{ t.booking.preferred_service_date.strftime('%m-%d-%y') }}
+                                                            {% else %}
+                                                                --/--/--
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+
+                                                    <!-- Preferred Time: Separated and formatted in 12-hour AM/PM -->
+                                                    <div class="fw-semibold text-dark" style="font-size: 0.85rem; color: #0f172a;">
+                                                        Preferred Time:
+                                                        <span class="font-monospace fw-bold">
+                                                            {% if t.booking and t.booking.preferred_service_time %}
+                                                                {% set time_parts = t.booking.preferred_service_time.split(':') %}
+                                                                {% if time_parts | length == 2 %}
+                                                                    {% set hr = time_parts[0] | int %}
+                                                                    {% set min = time_parts[1] %}
+                                                                    {% set ampm = 'AM' %}
+                                                                    {% if hr >= 12 %}
+                                                                        {% set ampm = 'PM' %}
+                                                                        {% if hr > 12 %}{% set hr = hr - 12 %}{% endif %}
+                                                                    {% elif hr == 0 %}
+                                                                        {% set hr = 12 %}
+                                                                    {% endif %}
+                                                                    {{ "%02d"|format(hr) }}:{{ min }} {{ ampm }}
+                                                                {% else %}
+                                                                    {{ t.booking.preferred_service_time }}
+                                                                {% endif %}
+                                                            {% else %}
+                                                                08:00 AM
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="fw-medium text-slate" style="font-size: 0.8rem; color: #64748b;">
+                                                        Date of Entry:
+                                                        <span class="font-monospace">
+                                                            {% if t.booking and t.booking.date_of_entry %}
+                                                                {{ t.booking.date_of_entry.strftime('%m-%d-%y') }}
+                                                            {% else %}
+                                                                --/--/--
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="mt-2">
+                                                        <button type="button" class="btn btn-sm btn-outline-success fw-bold"
+                                                                data-bs-toggle="collapse"
+                                                                data-bs-target="#released-card-{{ t.id }}"
+                                                                style="border-radius: 8px; font-size: 0.75rem; padding: 6px 14px;">
+                                                            <i class="fa-solid fa-folder-open me-1"></i> DETAILS
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Collapsible details inside identical card layout -->
+                                            <div class="collapse mt-2" id="released-card-{{ t.id }}">
+                                                <div class="p-3 border rounded-3 bg-light">
+                                                    <div class="small text-muted font-monospace" style="font-size: 0.75rem;">
+                                                        <strong>SOW Details:</strong> {{ t.internal_notes or 'No SOW entered' }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <div class="plate-pill bg-success">{{ t.booking.plate_number if t.booking else "WALK-IN" }}</div>
-                                        <div class="d-block"><span class="service-pill" style="background: #e6f4ea; color: #137333; border: none;">{{ t.booking.service_type if t.booking else "Service Completed" }}</span></div>
-                                        <div class="mt-3 small fw-900 text-navy">{{ t.booking.customer.company_name if t.booking and t.booking.customer else t.booking.guest_name }}</div>
-                                        <div class="mt-2 small text-muted font-monospace" style="font-size: 0.7rem;">
-                                            SOW: {{ t.internal_notes or 'No SOW entered' }}
-                                        </div>
-                                    </div>
+                                        {% endif %}
+                                    {% endfor %}
                                 </div>
-                                {% endif %}
-                            {% endfor %}
+
+                                <!-- OUT-PLANT RELEASED -->
+                                <div class="tab-pane fade" id="released-outplant-{{ hub.info.id }}" role="tabpanel">
+                                    {% for t in hub.tickets %}
+                                        {% if t.status == 'done' and t.booking and t.booking.service_location == 'Out-Plant' %}
+                                        <div class="compact-ticket-item card-strip-done mb-3 shadow-sm bg-white p-3" style="border-radius: 12px; transition: 0.2s; cursor: default;">
+                                            <div class="d-flex justify-content-between align-items-start">
+
+                                                <!-- Left Panel Content matches requested layout -->
+                                                <div class="d-flex flex-column gap-1">
+                                                    <div class="fw-medium text-uppercase text-slate" style="font-size: 1.1rem; color: #475569; letter-spacing: 0.2px;">
+                                                        {{ t.booking.customer.company_name if (t.booking and t.booking.customer) else t.booking.guest_name if t.booking else "Walk-In Guest" }}
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
+                                                        <i class="fa-solid fa-truck-pickup text-danger fs-5" title="Out-Plant"></i>
+                                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">Out-Plant</span>
+
+                                                        <span class="fw-extrabold text-dark font-monospace" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">
+                                                            {{ t.ticket_number }}
+                                                        </span>
+
+                                                        <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
+                                                            {{ t.booking.plate_number if t.booking else "WALK-IN" }}
+                                                        </span>
+
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">
+                                                            {{ t.booking.service_type if t.booking else "General Service" }}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-1 mt-2" style="font-size: 0.8rem;">
+                                                        <i class="fa-solid fa-user-tie text-primary" style="font-size: 0.85rem;"></i>
+                                                        <span class="fw-bold text-slate" style="color: #334155;">Advisor:</span>
+                                                        <span class="fw-medium text-muted" style="color: #94a3b8;">
+                                                            {% if t.booking and t.booking.advisor %}
+                                                                {{ t.booking.advisor.name }}
+                                                            {% else %}
+                                                                Unassigned
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Right Panel Content matches requested layout -->
+                                                <div class="text-end d-flex flex-column align-items-end gap-1">
+                                                    <!-- Preferred Date -->
+                                                    <div class="fw-semibold text-dark" style="font-size: 0.85rem; color: #0f172a;">
+                                                        Preferred Date:
+                                                        <span class="font-monospace fw-bold">
+                                                            {% if t.booking and t.booking.preferred_service_date %}
+                                                                {{ t.booking.preferred_service_date.strftime('%m-%d-%y') }}
+                                                            {% else %}
+                                                                --/--/--
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+
+                                                    <!-- Preferred Time: Separated and formatted in 12-hour AM/PM -->
+                                                    <div class="fw-semibold text-dark" style="font-size: 0.85rem; color: #0f172a;">
+                                                        Preferred Time:
+                                                        <span class="font-monospace fw-bold">
+                                                            {% if t.booking and t.booking.preferred_service_time %}
+                                                                {% set time_parts = t.booking.preferred_service_time.split(':') %}
+                                                                {% if time_parts | length == 2 %}
+                                                                    {% set hr = time_parts[0] | int %}
+                                                                    {% set min = time_parts[1] %}
+                                                                    {% set ampm = 'AM' %}
+                                                                    {% if hr >= 12 %}
+                                                                        {% set ampm = 'PM' %}
+                                                                        {% if hr > 12 %}{% set hr = hr - 12 %}{% endif %}
+                                                                    {% elif hr == 0 %}
+                                                                        {% set hr = 12 %}
+                                                                    {% endif %}
+                                                                    {{ "%02d"|format(hr) }}:{{ min }} {{ ampm }}
+                                                                {% else %}
+                                                                    {{ t.booking.preferred_service_time }}
+                                                                {% endif %}
+                                                            {% else %}
+                                                                08:00 AM
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="fw-medium text-slate" style="font-size: 0.8rem; color: #64748b;">
+                                                        Date of Entry:
+                                                        <span class="font-monospace">
+                                                            {% if t.booking and t.booking.date_of_entry %}
+                                                                {{ t.booking.date_of_entry.strftime('%m-%d-%y') }}
+                                                            {% else %}
+                                                                --/--/--
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="mt-2">
+                                                        <button type="button" class="btn btn-sm btn-outline-success fw-bold"
+                                                                data-bs-toggle="collapse"
+                                                                data-bs-target="#released-card-{{ t.id }}"
+                                                                style="border-radius: 8px; font-size: 0.75rem; padding: 6px 14px;">
+                                                            <i class="fa-solid fa-folder-open me-1"></i> DETAILS
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Collapsible details inside identical card layout -->
+                                            <div class="collapse mt-2" id="released-card-{{ t.id }}">
+                                                <div class="p-3 border rounded-3 bg-light">
+                                                    <div class="small text-muted font-monospace" style="font-size: 0.75rem;">
+                                                        <strong>SOW Details:</strong> {{ t.internal_notes or 'No SOW entered' }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+
+                            </div>
                         </div>
                     </section>
 
@@ -452,23 +1103,41 @@
                             <div class="roster-head"><h6>Personnel Status</h6></div>
                             <div class="column-scroll-area" style="max-height: 600px;">
                                 {% for tech in hub.techs | sort(attribute='name') %}
-                                    {% set assignments = (busy_map | default({})).get(tech.id) %}
-                                    <div class="tech-row" style="{% if not tech.is_present %}opacity: 0.5; background: #f8fafc;{% endif %}">
-                                        <span class="tech-status-dot {% if not tech.is_present %}dot-away{% elif assignments %}dot-busy{% else %}dot-active{% endif %}"></span>
+
+                                    {# DYNAMIC JINJA QUERY VERIFYING BUSY LEVEL AND LOADING TASK META #}
+                                    {% set ns = namespace(has_serving=false) %}
+                                    {% for task in tech.tasks if task.status == 'serving' %}
+                                        {% set ns.has_serving = true %}
+                                    {% endfor %}
+
+                                    <div class="tech-row {% if not tech.is_present %}tech-row-muted{% endif %}">
+                                        <span class="tech-status-dot {% if not tech.is_present %}dot-away{% elif ns.has_serving %}dot-busy{% else %}dot-active{% endif %}"></span>
+
                                         <div class="flex-grow-1">
-                                            <div class="fw-800 text-navy" style="font-size: 0.95rem;">{{ tech.name }}</div>
+                                            <div class="tech-name-text">{{ tech.name }}</div>
                                             <div class="small">
-                                                {% if not tech.is_present %}<span class="text-muted fw-800 extra-small">OFF-DUTY</span>
-                                                {% elif assignments %}
-                                                    <div class="d-flex flex-column gap-2 mt-1">
-                                                        {% for assignment in assignments %}
-                                                        <div class="p-1 rounded bg-light border border-warning-subtle" style="font-size: 0.65rem; line-height: 1.2;">
-                                                            <span class="text-primary fw-900 d-block" style="font-size: 0.65rem; text-transform: uppercase;"><i class="fa-solid fa-tag me-1"></i> TICKET: {{ assignment.ticket }}</span>
-                                                            <span class="text-muted fw-700 d-block" style="font-size: 0.6rem;">{{ assignment.service }}</span>
+                                                {% if not tech.is_present %}
+                                                    <span class="tech-status-label tech-status-off-duty">OFF-DUTY</span>
+                                                {% else %}
+
+                                                    {# IF BUSY: Renders stacked amber task cards exactly as requested #}
+                                                    {% for task in tech.tasks if task.status == 'serving' %}
+                                                        <div class="tech-task-pill">
+                                                            <div class="tech-task-header">
+                                                                <i class="fa-solid fa-thumbtack"></i> {{ task.ticket_number }}
+                                                            </div>
+                                                            <span class="tech-task-desc">
+                                                                {{ task.booking.plate_number if (task.booking and task.booking.plate_number) else "WALK-IN" }} - {{ task.booking.service_type if (task.booking and task.booking.service_type) else "General Service" }}
+                                                            </span>
                                                         </div>
-                                                        {% endfor %}
-                                                    </div>
-                                                {% else %}<span class="text-success fw-900 extra-small">READY</span>{% endif %}
+                                                    {% endfor %}
+
+                                                    {# IF READY: Shows light green indicator #}
+                                                    {% if not ns.has_serving %}
+                                                        <span class="tech-status-label tech-status-ready">READY</span>
+                                                    {% endif %}
+
+                                                {% endif %}
                                             </div>
                                         </div>
                                         <div class="ms-2">
@@ -507,11 +1176,23 @@
                     <div id="staffManifestList" class="mb-4 d-none"><label class="extra-small fw-800 text-primary">UNITS IN MANIFEST</label><div class="border-2 rounded-4 bg-light p-3" id="staffTableItems" style="max-height: 150px; overflow-y: auto;"></div></div>
                     <div class="bg-white p-4 rounded-4 border-2 border-primary border-opacity-10 shadow-sm">
                         <div class="row g-3 mb-3">
-                            <div class="col-4"><label class="extra-small fw-800">PLATE</label><input type="text" id="sPlate" class="form-control fw-bold border-light bg-light"></div>
+                            <div class="col-4"><label class="extra-small fw-800">PLATE</label><input type="text" id="sPlate" class="form-control fw-bold border-light bg-light" style="text-transform: uppercase;"></div>
                             <div class="col-4"><label class="extra-small fw-800">JO#</label><input type="text" id="sJO" class="form-control fw-bold border-light bg-light"></div>
                             <div class="col-4"><label class="extra-small fw-800">SRH</label><input type="number" step="0.5" id="sSRH" class="form-control fw-bold border-light bg-light" placeholder="Hrs"></div>
-                            <div class="col-6"><label class="extra-small fw-800 text-uppercase text-muted">Date of Entry (Today)</label><input type="date" id="sEntryDate" class="form-control fw-bold border-light bg-light" value="{{ today_date }}" readonly></div>
+                            <div class="col-6"><label class="extra-small fw-800 text-uppercase text-muted">Date of Entry (Today)</label><input type="date" id="sEntryDate" class="form-control fw-bold border-light bg-light" value="{{ today_date }}"></div>
                             <div class="col-6"><label class="extra-small fw-800 text-uppercase text-muted">Preferred Date of Service</label><input type="date" id="sPreferredDate" class="form-control fw-bold border-light bg-light" value="{{ today_date }}"></div>
+                            <div class="col-6"><label class="extra-small fw-800 text-uppercase text-muted">Preferred Time of Service</label><input type="time" id="sPreferredTime" class="form-control fw-bold border-light bg-light" value="08:00"></div>
+
+                            <div class="col-6">
+                                <label class="extra-small fw-800 text-uppercase text-muted">Service Advisor</label>
+                                <select id="sAdvisor" class="form-select fw-bold border-light bg-light">
+                                    <option value="none">None / Unassigned</option>
+                                    {% for adv in advisors %}
+                                    <option value="{{ adv.id }}">{{ adv.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
                             <div class="col-12 mt-2"><label class="extra-small fw-800">SERVICE CATEGORY</label><select id="sService" class="form-select fw-bold border-light bg-light"><option value="" selected disabled>Select Category...</option>{% for cat in categories %}<option value="{{ cat.name }}">{{ cat.name }}</option>{% endfor %}</select></div>
                         </div>
                         <button type="button" onclick="addStaffManifest()" class="btn btn-navy btn-action w-100 text-white shadow-sm" style="background: var(--saas-navy);"><i class="fa-solid fa-plus-circle me-1"></i> Add Unit to Manifest</button>
@@ -523,42 +1204,13 @@
     </div>
 </div>
 
-{% for hub in hub_data %}
-{% for s in hub.tickets %}
-<div class="modal fade" id="jobDetails-{{ s.id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
-            <div class="modal-header border-0 p-4 pb-0"><h5 class="modal-title fw-900">Unit Diagnostics: {{ s.ticket_number }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body p-4">
-                <div class="row g-4">
-                    <div class="col-md-5 border-end">
-                        <label class="extra-small fw-800 text-muted text-uppercase mb-2 text-primary">Technical Specs</label>
-                        <div class="p-4 bg-light rounded-4 border">
-                            <p class="small text-muted mb-2">Plate: <span class="fw-900 text-navy">{{ s.booking.plate_number if s.booking else 'WALK-IN' }}</span></p>
-                            <p class="small text-muted mb-2">Service: <span class="fw-900 text-primary">{{ s.booking.service_type if s.booking else 'N/A' }}</span></p>
-                        </div>
-                    </div>
-                    <div class="col-md-7">
-                        <label class="extra-small fw-800 text-muted text-uppercase mb-2 text-primary">Admin Internal Log</label>
-                        <form action="/staff/save-notes/{{ s.id }}" method="POST">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><textarea name="notes" class="form-control border-0 bg-light p-4 fw-600 mb-3 shadow-inner" rows="6" style="border-radius: 16px; font-size: 0.85rem;" placeholder="Office notes...">{{ s.internal_notes or '' }}</textarea>
-                            <button type="submit" class="btn btn-primary btn-action w-100">Update Internal Log</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endfor %}
-{% endfor %}
-
 <script>
     function scrollHubs(amount) {
         const container = document.getElementById('hubScrollContainer');
         if(container) container.scrollBy({ left: amount, behavior: 'smooth' });
     }
 
+    // LIVE CLOCK & DATE LOGIC
     function updateClock() {
         const now = new Date();
         const options = { weekday: 'short', year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
@@ -580,12 +1232,98 @@
         const preloader = document.getElementById('preloader');
         const viewport = document.getElementById('staff-viewport');
 
+        // REAL-TIME SEARCH ENGINE FOR ADMIN CONSOLE SEARCH (WITH AUTO TAB-SWITCHING)
+        const searchInput = document.getElementById('adminConsoleSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.toLowerCase().trim();
+                const ticketRows = document.querySelectorAll('.compact-ticket-item');
+
+                let paneMatches = {};
+
+                ticketRows.forEach(row => {
+                    const textContent = row.textContent.toLowerCase();
+                    const matches = textContent.includes(query);
+
+                    if (matches || query === '') {
+                        row.style.setProperty('display', 'block', 'important');
+
+                        const parentPane = row.closest('.tab-pane');
+                        if (parentPane) {
+                            const paneId = parentPane.id;
+                            if (!paneMatches[paneId]) paneMatches[paneId] = 0;
+                            paneMatches[paneId]++;
+                        }
+                    } else {
+                        row.style.setProperty('display', 'none', 'important');
+                    }
+                });
+
+                // Automated Tab Toggling per Active Hub Node for both Active & Released tab sets
+                if (query !== '') {
+                    const activePanes = document.querySelectorAll('.tab-content .tab-pane.active');
+                    activePanes.forEach(pane => {
+                        const paneId = pane.id;
+
+                        // Check Active Column tabs
+                        if (paneId.startsWith('active-inplant-')) {
+                            const hubId = paneId.replace('active-inplant-', '');
+                            const inplantCount = paneMatches[paneId] || 0;
+                            const outplantPaneId = 'active-outplant-' + hubId;
+                            const outplantCount = paneMatches[outplantPaneId] || 0;
+
+                            if (inplantCount === 0 && outplantCount > 0) {
+                                const trigger = document.getElementById('active-outplant-tab-' + hubId);
+                                if (trigger) trigger.click();
+                            }
+                        } else if (paneId.startsWith('active-outplant-')) {
+                            const hubId = paneId.replace('active-outplant-', '');
+                            const outplantCount = paneMatches[paneId] || 0;
+                            const inplantPaneId = 'active-inplant-' + hubId;
+                            const inplantCount = paneMatches[inplantPaneId] || 0;
+
+                            if (outplantCount === 0 && inplantCount > 0) {
+                                const trigger = document.getElementById('active-inplant-tab-' + hubId);
+                                if (trigger) trigger.click();
+                            }
+                        }
+
+                        // Check Released Column tabs
+                        if (paneId.startsWith('released-inplant-')) {
+                            const hubId = paneId.replace('released-inplant-', '');
+                            const inplantCount = paneMatches[paneId] || 0;
+                            const outplantPaneId = 'released-outplant-' + hubId;
+                            const outplantCount = paneMatches[outplantPaneId] || 0;
+
+                            if (inplantCount === 0 && outplantCount > 0) {
+                                const trigger = document.getElementById('released-outplant-tab-' + hubId);
+                                if (trigger) trigger.click();
+                            }
+                        } else if (paneId.startsWith('released-outplant-')) {
+                            const hubId = paneId.replace('released-outplant-', '');
+                            const outplantCount = paneMatches[paneId] || 0;
+                            const inplantPaneId = 'released-inplant-' + hubId;
+                            const inplantCount = paneMatches[inplantPaneId] || 0;
+
+                            if (outplantCount === 0 && inplantCount > 0) {
+                                const trigger = document.getElementById('released-inplant-tab-' + hubId);
+                                if (trigger) trigger.click();
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // Top level tab manager target selector restrictor mapping
         const activeTabTarget = localStorage.getItem('activeStaffTab');
         if (activeTabTarget) {
             const tabTrigger = document.querySelector(`#hubTabs button[data-bs-target="${activeTabTarget}"]`);
             if (tabTrigger) {
                 document.querySelectorAll('#hubTabs .nav-link').forEach(el => el.classList.remove('active'));
-                document.querySelectorAll('.tab-content .tab-pane').forEach(el => el.classList.remove('show', 'active'));
+
+                // RESTRICTED TO ROOT DIRECT DIAL OF MAIN TARGET ELEMENT TO AVOID CORRUPTING CHILD TABS
+                document.querySelectorAll('#hubTabContent > .tab-pane').forEach(el => el.classList.remove('show', 'active'));
 
                 tabTrigger.classList.add('active');
                 const pane = document.querySelector(activeTabTarget);
@@ -618,12 +1356,30 @@
         const client = document.getElementById('sClient').value.trim();
         const plate = document.getElementById('sPlate').value.trim().toUpperCase();
         const service = document.getElementById('sService').value;
+        const site = document.querySelector('input[name="sLoc"]:checked').value;
         const jo = document.getElementById('sJO').value.trim();
         const srh = document.getElementById('sSRH').value.trim();
         const entry_date = document.getElementById('sEntryDate').value;
         const preferred_date = document.getElementById('sPreferredDate').value;
+        const preferred_time = document.getElementById('sPreferredTime').value || '08:00';
+
+        // Convert the 24-hour raw time string to a 12-hour AM/PM string for display purposes
+        let timeParts = preferred_time.split(':');
+        let hrs = parseInt(timeParts[0], 10);
+        let mins = timeParts[1] || '00';
+        let ampmDisplay = hrs >= 12 ? 'PM' : 'AM';
+        let hrs12 = hrs % 12 || 12;
+        const preferred_time_display = `${hrs12.toString().padStart(2, '0')}:${mins} ${ampmDisplay}`;
+
+        const sAdvisorEl = document.getElementById('sAdvisor');
+        const advisor_id = sAdvisorEl.value;
+        const advisor_name = sAdvisorEl.options[sAdvisorEl.selectedIndex].text;
+
         if(!client || !plate || !service) { alert("Fill Client, Plate, and select a Service."); return; }
-        staffManifest.push({client, plate, service, site: 'In-Plant', jo, srh, entry_date, preferred_date});
+        staffManifest.push({
+            client, plate, service, site, jo, srh, entry_date, preferred_date,
+            preferred_time, preferred_time_display, advisor_id, advisor_name
+        });
         renderStaffManifest();
         document.getElementById('sPlate').value = "";
         document.getElementById('sJO').value = "";
@@ -637,13 +1393,14 @@
         const submitBtn = document.getElementById('staffSubmitBtn');
         itemsDiv.innerHTML = "";
         staffManifest.forEach((m, idx) => {
+            const advDisplay = m.advisor_id !== 'none' ? ` | Advisor: ${m.advisor_name}` : '';
             itemsDiv.innerHTML += `
                 <div class="d-flex justify-content-between align-items-center small fw-bold border-bottom py-3">
                     <span>
                         <i class="fa-solid fa-truck-front me-2 text-primary"></i>${m.plate} [${m.service}]
                         <br>
                         <small class="text-muted" style="font-size: 0.65rem; margin-left: 1.5rem;">
-                            Entry: ${m.entry_date} | Preferred: ${m.preferred_date}
+                            Entry: ${m.entry_date} | Preferred: ${m.preferred_date} @ ${m.preferred_time_display}${advDisplay}
                         </small>
                     </span>
                     <i class="fa-solid fa-circle-minus text-danger fs-5" style="cursor:pointer;" onclick="removeStaffManifest(${idx})"></i>

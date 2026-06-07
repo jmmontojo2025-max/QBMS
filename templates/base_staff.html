@@ -219,6 +219,13 @@
                 </a>
                 {% endif %}
 
+                <!-- SERVICE ADVISORS LINK -->
+                {% if has_perm('settings') or current_user.role == 'super_admin' %}
+                <a href="/staff/advisors" class="sn-nav-link {{ 'active' if 'advisors' in request.path }}">
+                    <i class="fa-solid fa-user-tie"></i> <span>Advisor Hub</span>
+                </a>
+                {% endif %}
+
                 {% if has_perm('locations') %}
                 <a href="{{ url_for('staff_locations') }}" class="sn-nav-link {{ 'active' if 'locations' in request.path }}">
                     <i class="fa-solid fa-network-wired"></i> <span>Hub Network</span>
