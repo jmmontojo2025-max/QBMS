@@ -94,10 +94,10 @@
 
     /* INDIVIDUAL COLUMN SCROLLBARS */
     .column-scroll-area {
-        max-height: 850px;
-        overflow-y: auto;
-        overflow-x: hidden;
-        padding-right: 10px;
+        max-height: none !important;
+        overflow-y: visible !important;
+        overflow-x: visible !important;
+        padding-right: 0;
         scrollbar-width: thin;
         scrollbar-color: var(--saas-border) transparent;
     }
@@ -166,6 +166,86 @@
         border-color: var(--saas-primary);
         color: var(--saas-primary);
         box-shadow: var(--saas-shadow);
+    }
+
+    /* --- WINDOWS-STYLE LIST VIEW COMPRESSION --- */
+    .main-grid.view-list-mode .compact-ticket-item {
+        padding: 8px 16px !important;
+        margin-bottom: 6px !important;
+        border-radius: 8px !important;
+        border-left-width: 4px !important;
+    }
+    .main-grid.view-list-mode .compact-ticket-item .d-flex.justify-content-between {
+        align-items: center !important;
+        width: 100% !important;
+    }
+    /* Hide non-essential layout blocks in List View */
+    .main-grid.view-list-mode .compact-ticket-item .extra-small,
+    .main-grid.view-list-mode .compact-ticket-item .service-pill,
+    .main-grid.view-list-mode .compact-ticket-item .badge:not(.bg-success-subtle):not(.bg-danger-subtle):not(.plate-badge),
+    .main-grid.view-list-mode .compact-ticket-item .mt-2,
+    .main-grid.view-list-mode .compact-ticket-item .border-top {
+        display: none !important;
+    }
+    /* Align Left Info Block Horizontally */
+    .main-grid.view-list-mode .compact-ticket-item .flex-column {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 12px !important;
+        width: auto !important;
+        justify-content: flex-start !important;
+    }
+    /* Keep only the Manage/Dispatch Button Visible in the Right Panel */
+    .main-grid.view-list-mode .compact-ticket-item .text-end {
+        display: block !important;
+        width: auto !important;
+    }
+    .main-grid.view-list-mode .compact-ticket-item .text-end > div:not(.mt-2) {
+        display: none !important; /* Hides Preferred Date, Preferred Time, and Date of Entry */
+    }
+    .main-grid.view-list-mode .compact-ticket-item .text-end .mt-2 {
+        display: block !important;
+        margin: 0 !important;
+    }
+    /* Make Plate Pill explicitly visible in List Mode */
+    .main-grid.view-list-mode .compact-ticket-item .plate-badge {
+        display: inline-block !important;
+        background-color: var(--saas-navy) !important;
+        color: #ffffff !important;
+        padding: 3px 8px !important;
+        border-radius: 6px !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-weight: 700 !important;
+    }
+    /* Keep Collapsible Forms functional when expanded in List Mode */
+    .main-grid.view-list-mode .compact-ticket-item .collapse.show {
+        display: block !important;
+        width: 100% !important;
+        margin-top: 15px !important;
+    }
+
+    /* --- DYNAMIC TRANSITION: LIST ROW EXPANDS TO CARD ON MANAGE --- */
+    .main-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode {
+        padding: 1.25rem !important;
+        margin-bottom: 0.75rem !important;
+        border-radius: 12px !important;
+    }
+    .main-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .extra-small,
+    .main-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .service-pill,
+    .main-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .badge,
+    .main-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .mt-2,
+    .main-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .border-top,
+    .main-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .text-end {
+        display: block !important;
+    }
+    .main-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .text-end > div {
+        display: block !important;
+    }
+    .main-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .flex-column {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.25rem !important;
+        width: auto !important;
     }
 </style>
 
@@ -245,12 +325,22 @@
                 <a href="/tv" target="_blank" class="btn btn-outline-primary btn-saas d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px; padding: 0;" title="TV Display">
                     <i class="fa-solid fa-display"></i>
                 </a>
+
+                <!-- WINDOWS-STYLE VIEW SEGMENT TOGGLER -->
+                <div class="btn-group border bg-white p-1 rounded-3" role="group" style="height: 38px;">
+                    <button type="button" class="btn btn-sm py-1 px-3 fw-bold text-uppercase active-view-btn" id="setViewCardBtn" onclick="setConsoleView('card')" style="font-size: 0.7rem; border-radius: 8px; border: none; background: var(--saas-primary); color: white;">
+                        <i class="fa-solid fa-table-cells-large me-1"></i> Cards
+                    </button>
+                    <button type="button" class="btn btn-sm py-1 px-3 fw-bold text-uppercase text-muted" id="setViewListBtn" onclick="setConsoleView('list')" style="font-size: 0.7rem; border-radius: 8px; border: none; background: transparent;">
+                        <i class="fa-solid fa-list me-1"></i> List
+                    </button>
+                </div>
             </div>
 
         </div>
     </header>
 
-    <main class="main-grid">
+    <main class="main-grid" id="staffMainGrid">
         <!-- COLUMN 1: ACTIVE WORKFLOOR -->
         <section class="column">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -288,8 +378,8 @@
                                         <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
                                             <i class="fa-solid fa-house-chimney text-success fs-5" title="In-Plant"></i>
                                             <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">In-Plant</span>
-                                            <span class="fw-extrabold text-dark font-monospace" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">{{ s.ticket_number }}</span>
-                                            <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">{{ s.booking.plate_number if s.booking else "WALK-IN" }}</span>
+                                            <span class="fw-extrabold text-dark font-monospace ticket-id-text" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">{{ s.ticket_number }}</span>
+                                            <span class="badge text-white px-2 py-1 plate-badge" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">{{ s.booking.plate_number if s.booking else "WALK-IN" }}</span>
                                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">{{ s.booking.service_type if s.booking else "General Service" }}</span>
                                         </div>
                                         <div class="d-flex align-items-center gap-1 mt-2" style="font-size: 0.8rem;">
@@ -306,7 +396,6 @@
                                             </span>
                                         </div>
 
-                                        <!-- Separated Preferred Time formatted in 12-hour AM/PM -->
                                         <div class="fw-semibold text-dark" style="font-size: 0.85rem; color: #0f172a;">
                                             Preferred Time:
                                             <span class="font-monospace fw-bold">
@@ -411,7 +500,11 @@
                                                 <a href="/staff/revert-ticket/{{ s.id }}" class="btn btn-outline-danger fw-bold w-100 py-2 d-inline-flex align-items-center justify-content-center gap-2" style="border-radius: 12px; border-width: 1.5px; font-size: 0.85rem;"><i class="fa-solid fa-rotate-left"></i> RETURN TO QUEUE</a>
                                             </div>
                                             <div class="d-flex gap-2">
-                                                <button type="submit" class="btn btn-primary fw-bold w-100 text-uppercase" style="border-radius: 8px; font-size: 0.85rem; height: 45px; background-color: #0066ff; border: none; box-shadow: 0 4px 6px rgba(0, 102, 255, 0.2);">Complete & Release</button>
+                                                <!-- Restored TV Recall Button (Yellow Speaker) -->
+                                                <a href="/staff/recall-ticket/{{ s.id }}" class="btn btn-outline-warning d-flex align-items-center justify-content-center" style="width: 45px; height: 45px; border-radius: 8px; border-color: #f59e0b; color: #d97706; border-width: 1.5px;" title="Recall on TV Monitor">
+                                                    <i class="fa-solid fa-volume-high fs-5"></i>
+                                                </a>
+                                                <button type="submit" class="btn btn-primary fw-bold flex-grow-1 text-uppercase" style="border-radius: 8px; font-size: 0.85rem; height: 45px; background-color: #0066ff; border: none; box-shadow: 0 4px 6px rgba(0, 102, 255, 0.2);">Complete & Release</button>
                                             </div>
                                         </form>
                                     </div>
@@ -436,8 +529,8 @@
                                         <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
                                             <i class="fa-solid fa-truck-pickup text-danger fs-5" title="Out-Plant"></i>
                                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">Out-Plant</span>
-                                            <span class="fw-extrabold text-dark font-monospace" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">{{ s.ticket_number }}</span>
-                                            <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">{{ s.booking.plate_number if s.booking else "WALK-IN" }}</span>
+                                            <span class="fw-extrabold text-dark font-monospace ticket-id-text" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">{{ s.ticket_number }}</span>
+                                            <span class="badge text-white px-2 py-1 plate-badge" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">{{ s.booking.plate_number if s.booking else "WALK-IN" }}</span>
                                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">{{ s.booking.service_type if s.booking else "General Service" }}</span>
                                         </div>
                                         <div class="d-flex align-items-center gap-1 mt-2" style="font-size: 0.8rem;">
@@ -454,7 +547,6 @@
                                             </span>
                                         </div>
 
-                                        <!-- Separated Preferred Time formatted in 12-hour AM/PM -->
                                         <div class="fw-semibold text-dark" style="font-size: 0.85rem; color: #0f172a;">
                                             Preferred Time:
                                             <span class="font-monospace fw-bold">
@@ -559,7 +651,11 @@
                                                 <a href="/staff/revert-ticket/{{ s.id }}" class="btn btn-outline-danger fw-bold w-100 py-2 d-inline-flex align-items-center justify-content-center gap-2" style="border-radius: 12px; border-width: 1.5px; font-size: 0.85rem;"><i class="fa-solid fa-rotate-left"></i> RETURN TO QUEUE</a>
                                             </div>
                                             <div class="d-flex gap-2">
-                                                <button type="submit" class="btn btn-primary fw-bold w-100 text-uppercase" style="border-radius: 8px; font-size: 0.85rem; height: 45px; background-color: #0066ff; border: none; box-shadow: 0 4px 6px rgba(0, 102, 255, 0.2);">Complete & Release</button>
+                                                <!-- Restored TV Recall Button (Yellow Speaker) -->
+                                                <a href="/staff/recall-ticket/{{ s.id }}" class="btn btn-outline-warning d-flex align-items-center justify-content-center" style="width: 45px; height: 45px; border-radius: 8px; border-color: #f59e0b; color: #d97706; border-width: 1.5px;" title="Recall on TV Monitor">
+                                                    <i class="fa-solid fa-volume-high fs-5"></i>
+                                                </a>
+                                                <button type="submit" class="btn btn-primary fw-bold flex-grow-1 text-uppercase" style="border-radius: 8px; font-size: 0.85rem; height: 45px; background-color: #0066ff; border: none; box-shadow: 0 4px 6px rgba(0, 102, 255, 0.2);">Complete & Release</button>
                                             </div>
                                         </form>
                                     </div>
@@ -609,8 +705,8 @@
                                         <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
                                             <i class="fa-solid fa-house-chimney text-success fs-5" title="In-Plant"></i>
                                             <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">In-Plant</span>
-                                            <span class="fw-extrabold text-dark font-monospace" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">{{ t.ticket_number }}</span>
-                                            <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">{{ t.booking.plate_number if t.booking else "WALK-IN" }}</span>
+                                            <span class="fw-extrabold text-dark font-monospace ticket-id-text" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">{{ t.ticket_number }}</span>
+                                            <span class="badge text-white px-2 py-1 plate-badge" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">{{ t.booking.plate_number if t.booking else "WALK-IN" }}</span>
                                             <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">{{ t.booking.service_type if t.booking else "General Service" }}</span>
                                         </div>
                                         <div class="d-flex align-items-center gap-1 mt-2" style="font-size: 0.8rem;">
@@ -721,8 +817,8 @@
                                         <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
                                             <i class="fa-solid fa-truck-pickup text-danger fs-5" title="Out-Plant"></i>
                                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">Out-Plant</span>
-                                            <span class="fw-extrabold text-dark font-monospace" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">{{ t.ticket_number }}</span>
-                                            <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">{{ t.booking.plate_number if t.booking else "WALK-IN" }}</span>
+                                            <span class="fw-extrabold text-dark font-monospace ticket-id-text" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">{{ t.ticket_number }}</span>
+                                            <span class="badge text-white px-2 py-1 plate-badge" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">{{ t.booking.plate_number if t.booking else "WALK-IN" }}</span>
                                             <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">{{ t.booking.service_type if t.booking else "General Service" }}</span>
                                         </div>
                                         <div class="d-flex align-items-center gap-1 mt-2" style="font-size: 0.8rem;">
@@ -1113,5 +1209,60 @@
         document.getElementById('sClient').readOnly = (staffManifest.length > 0);
     }
     function removeStaffManifest(idx) { staffManifest.splice(idx, 1); renderStaffManifest(); }
+
+    /* VIEW MODE STORAGE ENGINE */
+    function setConsoleView(mode) {
+        const grid = document.getElementById('staffMainGrid');
+        const cardBtn = document.getElementById('setViewCardBtn');
+        const listBtn = document.getElementById('setViewListBtn');
+
+        if (mode === 'list') {
+            grid.classList.add('view-list-mode');
+            listBtn.classList.add('active-view-btn', 'btn-primary');
+            listBtn.classList.remove('text-muted');
+            listBtn.style.background = 'var(--saas-primary)';
+            listBtn.style.color = 'white';
+
+            cardBtn.classList.remove('active-view-btn', 'btn-primary');
+            cardBtn.classList.add('text-muted');
+            cardBtn.style.background = 'transparent';
+            cardBtn.style.color = 'var(--saas-slate)';
+            localStorage.setItem('staffConsoleViewMode', 'list');
+        } else {
+            grid.classList.remove('view-list-mode');
+            cardBtn.classList.add('active-view-btn', 'btn-primary');
+            cardBtn.classList.remove('text-muted');
+            cardBtn.style.background = 'var(--saas-primary)';
+            cardBtn.style.color = 'white';
+
+            listBtn.classList.remove('active-view-btn', 'btn-primary');
+            listBtn.classList.add('text-muted');
+            listBtn.style.background = 'transparent';
+            listBtn.style.color = 'var(--saas-slate)';
+            localStorage.setItem('staffConsoleViewMode', 'card');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedMode = localStorage.getItem('staffConsoleViewMode') || 'card';
+        setConsoleView(savedMode);
+
+        // DYNAMIC COLLAPSE EVENT LISTENERS FOR WINDOWS-STYLE EXPANSION
+        const collapses = document.querySelectorAll('.collapse');
+        collapses.forEach(el => {
+            el.addEventListener('show.bs.collapse', () => {
+                const parentCard = el.closest('.compact-ticket-item');
+                if (parentCard) {
+                    parentCard.classList.add('force-detailed-card-mode');
+                }
+            });
+            el.addEventListener('hide.bs.collapse', () => {
+                const parentCard = el.closest('.compact-ticket-item');
+                if (parentCard) {
+                    parentCard.classList.remove('force-detailed-card-mode');
+                }
+            });
+        });
+    });
 </script>
 {% endblock %}

@@ -97,10 +97,10 @@
 
     /* COLUMN SCROLL AREAS */
     .column-scroll-area {
-        max-height: 850px;
-        overflow-y: auto;
-        overflow-x: hidden;
-        padding-right: 10px;
+        max-height: none !important;
+        overflow-y: visible !important;
+        overflow-x: visible !important;
+        padding-right: 0;
         scrollbar-width: thin;
         scrollbar-color: var(--saas-border) transparent;
     }
@@ -255,6 +255,89 @@
     }
 
     .extra-small { font-size: 0.65rem; }
+
+    /* --- WINDOWS-STYLE LIST VIEW COMPRESSION --- */
+    .system-grid.view-list-mode .compact-ticket-item {
+        padding: 8px 16px !important;
+        margin-bottom: 6px !important;
+        border-radius: 8px !important;
+        border-left-width: 4px !important;
+    }
+    .system-grid.view-list-mode .compact-ticket-item .d-flex.justify-content-between {
+        align-items: center !important;
+        width: 100% !important;
+    }
+    /* Hide non-essential layout blocks in List View */
+    .system-grid.view-list-mode .compact-ticket-item .extra-small,
+    .system-grid.view-list-mode .compact-ticket-item .service-pill,
+    .system-grid.view-list-mode .compact-ticket-item .badge:not(.bg-success-subtle):not(.bg-danger-subtle):not(.plate-pill):not(.plate-badge),
+    .system-grid.view-list-mode .compact-ticket-item .mt-2,
+    .system-grid.view-list-mode .compact-ticket-item .border-top {
+        display: none !important;
+    }
+    /* Align Left Info Block Horizontally */
+    .system-grid.view-list-mode .compact-ticket-item .flex-column {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 12px !important;
+        width: auto !important;
+        justify-content: flex-start !important;
+    }
+    /* Keep only the Manage/Dispatch Button Visible in the Right Panel */
+    .system-grid.view-list-mode .compact-ticket-item .text-end {
+        display: block !important;
+        width: auto !important;
+    }
+    .system-grid.view-list-mode .compact-ticket-item .text-end > div:not(.mt-2) {
+        display: none !important; /* Hides Preferred Date, Preferred Time, and Date of Entry */
+    }
+    .system-grid.view-list-mode .compact-ticket-item .text-end .mt-2 {
+        display: block !important;
+        margin: 0 !important;
+    }
+    /* Make Plate Pill explicitly visible in List Mode */
+    .system-grid.view-list-mode .compact-ticket-item .plate-pill,
+    .system-grid.view-list-mode .compact-ticket-item .plate-badge {
+        display: inline-block !important;
+        padding: 3px 8px !important;
+        font-size: 0.75rem !important;
+        background-color: var(--saas-navy) !important;
+        color: #ffffff !important;
+        border-radius: 6px !important;
+        margin: 0 !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-weight: 700 !important;
+    }
+    /* Keep Collapsible Forms functional when expanded in List Mode */
+    .system-grid.view-list-mode .compact-ticket-item .collapse.show {
+        display: block !important;
+        width: 100% !important;
+        margin-top: 15px !important;
+    }
+
+    /* --- DYNAMIC TRANSITION: LIST ROW EXPANDS TO CARD ON MANAGE --- */
+    .system-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode {
+        padding: 1.25rem !important;
+        margin-bottom: 0.75rem !important;
+        border-radius: 12px !important;
+    }
+    .system-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .extra-small,
+    .system-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .service-pill,
+    .system-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .badge,
+    .system-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .mt-2,
+    .system-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .border-top,
+    .system-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .text-end {
+        display: block !important;
+    }
+    .system-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .text-end > div {
+        display: block !important;
+    }
+    .system-grid.view-list-mode .compact-ticket-item.force-detailed-card-mode .flex-column {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.25rem !important;
+        width: auto !important;
+    }
 </style>
 
 <!-- SYNCING DATA PRELOADER -->
@@ -353,6 +436,16 @@
                 <a href="/tv" target="_blank" class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px; padding: 0; border-radius: 12px;" title="TV Display">
                     <i class="fa-solid fa-display"></i>
                 </a>
+
+                <!-- WINDOWS-STYLE VIEW SEGMENT TOGGLER -->
+                <div class="btn-group border bg-white p-1 rounded-3" role="group" style="height: 38px;">
+                    <button type="button" class="btn btn-sm py-1 px-3 fw-bold text-uppercase active-view-btn" id="setViewCardBtn" onclick="setConsoleView('card')" style="font-size: 0.7rem; border-radius: 8px; border: none; background: var(--saas-primary); color: white;">
+                        <i class="fa-solid fa-table-cells-large me-1"></i> Cards
+                    </button>
+                    <button type="button" class="btn btn-sm py-1 px-3 fw-bold text-uppercase text-muted" id="setViewListBtn" onclick="setConsoleView('list')" style="font-size: 0.7rem; border-radius: 8px; border: none; background: transparent;">
+                        <i class="fa-solid fa-list me-1"></i> List
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -415,11 +508,11 @@
                                                         <i class="fa-solid fa-house-chimney text-success fs-5" title="In-Plant"></i>
                                                         <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.65rem; border-radius: 6px;">In-Plant</span>
 
-                                                        <span class="fw-extrabold text-dark font-monospace" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">
+                                                        <span class="fw-extrabold text-dark font-monospace ticket-id-text" style="font-size: 1.2rem; color: #0f172a; letter-spacing: -0.5px;">
                                                             {{ t.ticket_number }}
                                                         </span>
 
-                                                        <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
+                                                        <span class="badge text-white px-2 py-1 plate-badge" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
                                                             {{ t.booking.plate_number if t.booking else "WALK-IN" }}
                                                         </span>
 
@@ -632,7 +725,7 @@
                                                             {{ t.ticket_number }}
                                                         </span>
 
-                                                        <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
+                                                        <span class="badge text-white px-2 py-1 plate-badge" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
                                                             {{ t.booking.plate_number if t.booking else "WALK-IN" }}
                                                         </span>
 
@@ -871,7 +964,7 @@
                                                             {{ t.ticket_number }}
                                                         </span>
 
-                                                        <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
+                                                        <span class="badge text-white px-2 py-1 plate-badge" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
                                                             {{ t.booking.plate_number if t.booking else "WALK-IN" }}
                                                         </span>
 
@@ -989,7 +1082,7 @@
                                                             {{ t.ticket_number }}
                                                         </span>
 
-                                                        <span class="badge text-white px-2 py-1" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
+                                                        <span class="badge text-white px-2 py-1 plate-badge" style="background-color: #0f172a; font-family: 'JetBrains Mono'; font-size: 0.75rem; font-weight: 700; border-radius: 6px;">
                                                             {{ t.booking.plate_number if t.booking else "WALK-IN" }}
                                                         </span>
 
@@ -1412,5 +1505,66 @@
         document.getElementById('sClient').readOnly = (staffManifest.length > 0);
     }
     function removeStaffManifest(idx) { staffManifest.splice(idx, 1); renderStaffManifest(); }
+
+    /* VIEW MODE STORAGE ENGINE */
+    function setConsoleView(mode) {
+        const grid = document.querySelectorAll('.system-grid');
+        const cardBtn = document.getElementById('setViewCardBtn');
+        const listBtn = document.getElementById('setViewListBtn');
+
+        grid.forEach(el => {
+            if (mode === 'list') {
+                el.classList.add('view-list-mode');
+            } else {
+                el.classList.remove('view-list-mode');
+            }
+        });
+
+        if (mode === 'list') {
+            listBtn.classList.add('active-view-btn', 'btn-primary');
+            listBtn.classList.remove('text-muted');
+            listBtn.style.background = 'var(--saas-primary)';
+            listBtn.style.color = 'white';
+
+            cardBtn.classList.remove('active-view-btn', 'btn-primary');
+            cardBtn.classList.add('text-muted');
+            cardBtn.style.background = 'transparent';
+            cardBtn.style.color = 'var(--saas-slate)';
+            localStorage.setItem('adminConsoleViewMode', 'list');
+        } else {
+            cardBtn.classList.add('active-view-btn', 'btn-primary');
+            cardBtn.classList.remove('text-muted');
+            cardBtn.style.background = 'var(--saas-primary)';
+            cardBtn.style.color = 'white';
+
+            listBtn.classList.remove('active-view-btn', 'btn-primary');
+            listBtn.classList.add('text-muted');
+            listBtn.style.background = 'transparent';
+            listBtn.style.color = 'var(--saas-slate)';
+            localStorage.setItem('adminConsoleViewMode', 'card');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedMode = localStorage.getItem('adminConsoleViewMode') || 'card';
+        setConsoleView(savedMode);
+
+        // DYNAMIC COLLAPSE EVENT LISTENERS FOR WINDOWS-STYLE EXPANSION
+        const collapses = document.querySelectorAll('.collapse');
+        collapses.forEach(el => {
+            el.addEventListener('show.bs.collapse', () => {
+                const parentCard = el.closest('.compact-ticket-item');
+                if (parentCard) {
+                    parentCard.classList.add('force-detailed-card-mode');
+                }
+            });
+            el.addEventListener('hide.bs.collapse', () => {
+                const parentCard = el.closest('.compact-ticket-item');
+                if (parentCard) {
+                    parentCard.classList.remove('force-detailed-card-mode');
+                }
+            });
+        });
+    });
 </script>
 {% endblock %}
