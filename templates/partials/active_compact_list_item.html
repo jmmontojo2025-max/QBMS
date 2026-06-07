@@ -1,0 +1,108 @@
+<!-- Compact List Row Trigger -->
+<div class="compact-ticket-item card-strip-active mb-1" style="cursor: default;">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <!-- Client name on top of Ticket ID -->
+            <div class="extra-small fw-800 text-uppercase text-muted" style="letter-spacing: 0.5px;">
+                {{ s.booking.customer.company_name if (s.booking and s.booking.customer) else s.booking.guest_name if s.booking else "Walk-In Guest" }}
+            </div>
+            <div class="ticket-id-text" style="font-size: 1.15rem; color: var(--saas-navy);">
+                <!-- Location Icon & Text Badges -->
+                {% if s.booking and s.booking.service_location == 'Out-Plant' %}
+                    <i class="fa-solid fa-truck-pickup text-danger me-1"></i> <span class="badge bg-danger-subtle text-danger me-2" style="font-size: 0.65rem;">Out-Plant</span>
+                {% else %}
+                    <i class="fa-solid fa-house-chimney-window text-success me-1"></i> <span class="badge bg-success-subtle text-success me-2" style="font-size: 0.65rem;">In-Plant</span>
+                {% endif %}
+
+                <!-- EXPLICITLY BOLD TICKET NUMBER -->
+                <strong class="fw-black" style="font-weight: 900 !important; letter-spacing: -0.5px;">{{ s.ticket_number }}</strong>
+
+                <span class="plate-badge" style="font-size: 0.75rem; margin-top: 0; padding: 2px 8px;">
+                    {{ s.booking.plate_number if s.booking else 'WALK-IN' }}
+                </span>
+            </div>
+
+            <!-- VISIBLE ADVISOR LABEL WITH FALLBACK UNASSIGNED PLACEHOLDER -->
+            <div class="extra-small fw-bold text-navy mt-1" style="font-size: 0.685rem;">
+                <i class="fa-solid fa-user-tie text-primary me-1"></i> Advisor:
+                {% if s.booking and s.booking.advisor %}
+                    <span class="text-dark">{{ s.booking.advisor.name }}</span>
+                {% else %}
+                    <span class="text-muted font-monospace small" style="opacity: 0.6;">Unassigned</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="text-end font-monospace">
+            <!-- Complete text labels formatted strictly as MM-DD-YY -->
+            <div class="small text-dark fw-bold">Preferred Date: {{ s.booking.preferred_service_date.strftime('%m-%d-%y') if (s.booking and s.booking.preferred_service_date) else '---' }} @ {{ s.booking.preferred_service_time | default('08:00') }}</div>
+            <div class="extra-small text-muted mb-2">Date of Entry: {{ s.booking.date_of_entry.strftime('%m-%d-%y') if (s.booking and s.booking.date_of_entry) else '---' }}</div>
+
+            <!-- EXPLICIT ACTION TOGGLE BUTTON -->
+            <button type="button" class="btn btn-sm btn-primary fw-bold px-3 shadow-sm"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#active-card-{{ s.id }}"
+                    style="border-radius: 8px; font-size: 0.65rem; padding: 4px 10px; letter-spacing: 0.5px;">
+                <i class="fa-solid fa-screwdriver-wrench me-1"></i> MANAGE
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Collapsible Content -->
+<div class="collapse mb-3" id="active-card-{{ s.id }}">
+    <div class="p-4 bg-white border rounded-3 shadow-sm" style="border-top-left-radius: 0 !important; border-top-right-radius: 0 !important; margin-top: -16px; border-top: none !important;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="service-text mb-0">{% if s.booking %}{{ s.booking.service_type }}{% endif %}</span>
+            <span class="badge bg-navy text-white fw-bold px-2 py-1" style="font-size: 0.65rem; background-color: var(--saas-navy);">
+                <i class="fa-solid fa-user-tie me-1"></i> Advisor:
+                {% if s.booking and s.booking.advisor %}
+                    {{ s.booking.advisor.name }}
+                {% else %}
+                    Unassigned
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="mb-3">
+            <label class="extra-small fw-800 text-muted text-uppercase d-block mb-2">Technicians Assigned</label>
+            <div class="d-flex flex-wrap gap-2">
+                {% for tech in s.assigned_techs | sort(attribute='name') %}
+                <span class="badge bg-light text-dark border p-2" style="font-size: 0.65rem;">{{ tech.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        <form action="/staff/complete-work/{{ s.id }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-2 mb-3 bg-light p-2 rounded-3 border">
+                <div class="col-7"><label class="extra-small fw-800 text-primary">OFFICIAL JO#</label><input type="text" name="job_order" class="form-control form-control-sm fw-bold" placeholder="JO-XXXX" value="{{ s.booking.job_order or '' }}"></div>
+                <div class="col-5"><label class="extra-small fw-800 text-primary">STD HRS</label><input type="number" step="0.1" name="std_repair_hours" class="form-control form-control-sm fw-bold" value="{{ s.booking.std_repair_hours or '' }}"></div>
+            </div>
+
+            <!-- DATE OF WORK INPUT FIELD -->
+            <div class="mb-3">
+                <label class="extra-small fw-800 text-muted text-uppercase">Date of Work</label>
+                <input type="date" name="date_of_work" class="form-control form-control-sm fw-bold" value="{{ today_date }}" required>
+            </div>
+
+            <div class="row g-2 mb-4">
+                <div class="col-6"><label class="extra-small fw-800 text-muted text-uppercase">Work Start</label><input type="time" name="manual_start" class="form-control form-control-sm fw-bold" required></div>
+                <div class="col-6"><label class="extra-small fw-800 text-muted text-uppercase">Work End</label><input type="time" name="manual_end" class="form-control form-control-sm fw-bold" required></div>
+            </div>
+
+            <!-- REVERT TICKET BACK TO WAITING LIST -->
+            <div class="mb-3">
+                <a href="/staff/revert-ticket/{{ s.id }}" class="btn btn-outline-danger w-100 btn-saas fw-bold shadow-sm" style="font-size: 0.7rem;" onclick="return confirm('Are you sure you want to return Ticket {{ s.ticket_number }} back to the waiting queue? This will release the assigned technicians.')">
+                    <i class="fa-solid fa-arrow-rotate-left me-1"></i> Return to Queue
+                </a>
+            </div>
+
+            <div class="d-flex gap-1">
+                <button type="button" class="btn btn-light border px-3" data-bs-toggle="modal" data-bs-target="#jobDetails-{{ s.id }}"><i class="fa-solid fa-circle-info text-muted"></i></button>
+                <a href="/staff/recall-ticket/{{ s.id }}" class="btn btn-outline-warning px-3 d-inline-flex align-items-center justify-content-center shadow-sm" style="border-radius: 12px;" title="Chime & Call on TV Monitor">
+                    <i class="fa-solid fa-volume-high"></i>
+                </a>
+                <button type="submit" class="btn btn-primary fw-bold flex-grow-1 btn-saas">COMPLETE & RELEASE</button>
+            </div>
+        </form>
+    </div>
+</div>

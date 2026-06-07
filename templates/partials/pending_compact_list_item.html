@@ -1,0 +1,96 @@
+<!-- Compact List Row Trigger -->
+<div class="compact-ticket-item card-strip-pending mb-1" style="cursor: default;">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <!-- Client name on top of Ticket ID -->
+            <div class="extra-small fw-800 text-uppercase text-muted" style="letter-spacing: 0.5px;">
+                {{ t.booking.customer.company_name if (t.booking and t.booking.customer) else t.booking.guest_name if t.booking else "Walk-In Guest" }}
+            </div>
+            <div class="ticket-id-text" style="font-size: 1.15rem; color: var(--saas-navy);">
+                <!-- HOUSE ICON & IN-PLANT LABEL -->
+                {% if t.booking and t.booking.service_location == 'Out-Plant' %}
+                    <i class="fa-solid fa-truck-pickup text-danger me-1"></i> <span class="badge bg-danger-subtle text-danger me-2" style="font-size: 0.65rem;">Out-Plant</span>
+                {% else %}
+                    <i class="fa-solid fa-house-chimney-window text-success me-1"></i> <span class="badge bg-success-subtle text-success me-2" style="font-size: 0.65rem;">In-Plant</span>
+                {% endif %}
+
+                <!-- EXPLICITLY BOLD TICKET NUMBER -->
+                <strong class="fw-black" style="font-weight: 900 !important; letter-spacing: -0.5px;">{{ t.ticket_number }}</strong>
+
+                <span class="plate-badge" style="font-size: 0.75rem; margin-top: 0; padding: 2px 8px; background-color: var(--saas-warning);">
+                    {{ t.booking.plate_number if t.booking else 'WALK-IN' }}
+                </span>
+            </div>
+
+            <!-- VISIBLE ADVISOR LABEL WITH FALLBACK UNASSIGNED PLACEHOLDER -->
+            <div class="extra-small fw-bold text-navy mt-1" style="font-size: 0.685rem;">
+                <i class="fa-solid fa-user-tie text-primary me-1"></i> Advisor:
+                {% if t.booking and t.booking.advisor %}
+                    <span class="text-dark">{{ t.booking.advisor.name }}</span>
+                {% else %}
+                    <span class="text-muted font-monospace small" style="opacity: 0.6;">Unassigned</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="text-end font-monospace">
+            <!-- Both Entry Date and Preferred Date visible on list row header formatted strictly as MM-DD-YY -->
+            <div class="small text-dark fw-bold">Preferred Date: {{ t.booking.preferred_service_date.strftime('%m-%d-%y') if (t.booking and t.booking.preferred_service_date) else '---' }} @ {{ t.booking.preferred_service_time | default('08:00') }}</div>
+            <div class="extra-small text-muted mb-2">Date of Entry: {{ t.booking.date_of_entry.strftime('%m-%d-%y') if (t.booking and t.booking.date_of_entry) else '---' }}</div>
+
+            <!-- EXPLICIT ACTION TOGGLE BUTTON -->
+            <button type="button" class="btn btn-sm btn-warning fw-bold px-3 text-dark shadow-sm"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#pending-card-{{ t.id }}"
+                    style="border-radius: 8px; font-size: 0.65rem; padding: 4px 10px; letter-spacing: 0.5px;">
+                <i class="fa-solid fa-route me-1"></i> DISPATCH
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Collapsible Content -->
+<div class="collapse mb-3" id="pending-card-{{ t.id }}">
+    <div class="p-4 bg-white border rounded-3 shadow-sm" style="border-top-left-radius: 0 !important; border-top-right-radius: 0 !important; margin-top: -16px; border-top: none !important;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="service-text" style="background: #fef3c7; color: #92400e; font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 900;">{% if t.booking %}{{ t.booking.service_type }}{% endif %}</span>
+            <span class="badge bg-navy text-white fw-bold px-2 py-1" style="font-size: 0.65rem; background-color: var(--saas-navy);">
+                <i class="fa-solid fa-user-tie me-1"></i> Advisor:
+                {% if t.booking and t.booking.advisor %}
+                    {{ t.booking.advisor.name }}
+                {% else %}
+                    Unassigned
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="mt-3 d-flex justify-content-between">
+            <div class="small fw-900 text-dark">
+                {% if t.booking and t.booking.customer %}
+                    {{ t.booking.customer.company_name }}
+                {% elif t.booking %}
+                    {{ t.booking.guest_name }}
+                {% else %}
+                    Guest Client
+                {% endif %}
+            </div>
+            <a href="/staff/expire-ticket/{{ t.id }}" class="text-danger opacity-50" onclick="return confirm('Dismiss ticket?')"><i class="fa-solid fa-xmark fs-5"></i></a>
+        </div>
+
+        <hr class="my-3">
+
+        <form action="/staff/start-work/{{ t.id }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="d-block mb-2 extra-small fw-800 text-muted">ASSIGN TEAM FOR FLOOR DEPLOYMENT</label>
+            {% if technicians|length > 0 %}
+                <select name="technician_ids" class="form-select mb-3 fw-bold border-2" multiple required style="height: 100px;">
+                    {% for tech in technicians | sort(attribute='name') %}
+                    <option value="{{ tech.id }}"> {{ tech.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-warning w-100 fw-bold btn-saas text-dark">DISPATCH TO FLOOR</button>
+            {% else %}
+                <div class="alert alert-warning small py-2 mb-3 fw-bold text-center border-dashed">NO STAFF ON-DUTY</div>
+            {% endif %}
+        </form>
+    </div>
+</div>
